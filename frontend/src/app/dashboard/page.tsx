@@ -43,7 +43,7 @@ export default function DashboardPage() {
   // WebSocket para notificações globais em tempo real no Dashboard
   useEffect(() => {
     if (!token) return;
-    const socket = io('http://localhost:5001');
+    const socket = io((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'));
 
     socket.on('dashboard-notification', (notif: { title: string; description: string; type: any }) => {
       addNotification({
@@ -61,7 +61,7 @@ export default function DashboardPage() {
   // Buscar clientes para o CRM
   const { data: clients = [], isLoading, error } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => fetch('http://localhost:5001/clients').then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`).then((res) => res.json()),
   });
 
   const getTitle = () => {

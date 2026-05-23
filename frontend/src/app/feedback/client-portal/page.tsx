@@ -43,7 +43,7 @@ export default function ClientPortalPage() {
   const clientId = user?.id;
   const { data: client, isLoading, error } = useQuery({
     queryKey: ['clientPortalProfile', clientId],
-    queryFn: () => fetch(`http://localhost:5001/clients/${clientId}`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${clientId}`).then((res) => res.json()),
     enabled: !!clientId,
   });
 
@@ -55,7 +55,7 @@ export default function ClientPortalPage() {
 
   const updateBirthdayMutation = useMutation({
     mutationFn: (newAniv: string) =>
-      fetch(`http://localhost:5001/clients/${clientId}`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${clientId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -73,23 +73,23 @@ export default function ClientPortalPage() {
   // Fetch Barbers & Services for booking selection
   const { data: barbers = [] } = useQuery({
     queryKey: ['barbers'],
-    queryFn: () => fetch('http://localhost:5001/barbers').then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/barbers`).then((res) => res.json()),
   });
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
-    queryFn: () => fetch('http://localhost:5001/services').then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/services`).then((res) => res.json()),
   });
 
   // Buscar todos os agendamentos para checar horários ocupados
   const { data: appointments = [] } = useQuery({
     queryKey: ['appointments'],
-    queryFn: () => fetch('http://localhost:5001/appointments').then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments`).then((res) => res.json()),
   });
 
   const createAppointmentMutation = useMutation({
     mutationFn: (newApp: any) =>
-      fetch('http://localhost:5001/appointments', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newApp),

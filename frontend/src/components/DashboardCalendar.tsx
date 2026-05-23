@@ -22,28 +22,28 @@ export default function DashboardCalendar() {
   // Fetch Barbers, Clients, Services, Appointments
   const { data: barbers = [] } = useQuery({
     queryKey: ['barbers'],
-    queryFn: () => fetch('http://localhost:5001/barbers').then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/barbers`).then((res) => res.json()),
   });
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => fetch('http://localhost:5001/clients').then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`).then((res) => res.json()),
   });
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
-    queryFn: () => fetch('http://localhost:5001/services').then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/services`).then((res) => res.json()),
   });
 
   const { data: appointments = [] } = useQuery({
     queryKey: ['appointments'],
-    queryFn: () => fetch('http://localhost:5001/appointments').then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments`).then((res) => res.json()),
   });
 
   // Mutations
   const createMutation = useMutation({
     mutationFn: (newApp: any) =>
-      fetch('http://localhost:5001/appointments', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newApp),
@@ -57,7 +57,7 @@ export default function DashboardCalendar() {
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
-      fetch(`http://localhost:5001/appointments/${id}`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),

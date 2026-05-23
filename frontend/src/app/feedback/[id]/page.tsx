@@ -24,7 +24,7 @@ export default function FeedbackRatingPage() {
   const { data: app, isLoading, error } = useQuery({
     queryKey: ['feedbackAppointment', appointmentId],
     queryFn: () =>
-      fetch(`http://localhost:5001/appointments/${appointmentId}`).then((res) => {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments/${appointmentId}`).then((res) => {
         if (!res.ok) throw new Error('Agendamento não encontrado');
         return res.json();
       }),
@@ -33,7 +33,7 @@ export default function FeedbackRatingPage() {
 
   const submitMutation = useMutation({
     mutationFn: (feedback: any) =>
-      fetch('http://localhost:5001/feedbacks', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/feedbacks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(feedback),

@@ -16,7 +16,7 @@ export default function CRMDrawer({ clientId, onClose }: CRMDrawerProps) {
   // Buscar detalhes do cliente
   const { data: client, isLoading, error } = useQuery({
     queryKey: ['client', clientId],
-    queryFn: () => fetch(`http://localhost:5001/clients/${clientId}`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${clientId}`).then((res) => res.json()),
     enabled: !!clientId,
   });
 
@@ -42,7 +42,7 @@ export default function CRMDrawer({ clientId, onClose }: CRMDrawerProps) {
   // Mutation para atualizar cadastro do cliente no backend
   const updateClientMutation = useMutation({
     mutationFn: (updatedData: any) =>
-      fetch(`http://localhost:5001/clients/${clientId}`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${clientId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData),

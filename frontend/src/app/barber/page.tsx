@@ -29,14 +29,14 @@ export default function BarberPage() {
   const barberId = user?.barberId;
   const { data: dashboard, isLoading, error } = useQuery({
     queryKey: ['barberDashboard', barberId],
-    queryFn: () => fetch(`http://localhost:5001/barbers/${barberId}/dashboard`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/barbers/${barberId}/dashboard`).then((res) => res.json()),
     enabled: !!barberId,
   });
 
   // Mutation para atualizar as preferências do cliente
   const updateClientMutation = useMutation({
     mutationFn: ({ id, preferences, observacoes }: { id: string; preferences: string; observacoes: string }) =>
-      fetch(`http://localhost:5001/clients/${id}`, {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ preferences, observacoes }),

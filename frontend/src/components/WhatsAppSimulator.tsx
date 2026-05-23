@@ -21,7 +21,7 @@ export default function WhatsAppSimulator() {
   // Fetch clients to populate left chat list
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => fetch('http://localhost:5001/clients').then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`).then((res) => res.json()),
   });
 
   // Fetch chat history for selected client
@@ -29,7 +29,7 @@ export default function WhatsAppSimulator() {
     queryKey: ['chatHistory', selectedClientId],
     queryFn: () =>
       selectedClientId
-        ? fetch(`http://localhost:5001/whatsapp/history/${selectedClientId}`).then((res) => res.json())
+        ? fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/whatsapp/history/${selectedClientId}`).then((res) => res.json())
         : Promise.resolve([]),
     enabled: !!selectedClientId,
   });
@@ -49,7 +49,7 @@ export default function WhatsAppSimulator() {
 
   // WebSockets Listener
   useEffect(() => {
-    const socket = io('http://localhost:5001');
+    const socket = io((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'));
 
     socket.on('connect', () => {
       console.log('Simulador conectado ao WebSocket backend');
@@ -88,7 +88,7 @@ export default function WhatsAppSimulator() {
   // Send Mutation: Customer
   const customerSendMutation = useMutation({
     mutationFn: (msg: any) =>
-      fetch('http://localhost:5001/whatsapp/customer', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/whatsapp/customer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(msg),
@@ -101,7 +101,7 @@ export default function WhatsAppSimulator() {
   // Send Mutation: Operator
   const operatorSendMutation = useMutation({
     mutationFn: (msg: any) =>
-      fetch('http://localhost:5001/whatsapp/operator', {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/whatsapp/operator`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(msg),
