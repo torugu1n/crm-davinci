@@ -1,0 +1,118 @@
+'use client';
+
+import React from 'react';
+import { Calendar, Users, DollarSign, MessageSquare, Star, Scissors, LogOut } from 'lucide-react';
+import { useStore } from '@/store/useStore';
+import { useRouter } from 'next/navigation';
+
+interface SidebarProps {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+}
+
+export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
+  const router = useRouter();
+  const user = useStore((state) => state.user);
+  const logout = useStore((state) => state.logout);
+  const mobileMenuOpen = useStore((state) => state.mobileMenuOpen);
+  const setMobileMenuOpen = useStore((state) => state.setMobileMenuOpen);
+
+  const menuItems = [
+    { id: 'calendar', label: 'Agenda Inteligente', icon: Calendar },
+    { id: 'crm', label: 'CRM Clientes', icon: Users },
+    { id: 'whatsapp', label: 'WhatsApp Concierge', icon: MessageSquare },
+    { id: 'finance', label: 'Painel Financeiro', icon: DollarSign },
+  ];
+
+  // Apenas Admin visualiza feedbacks de acordo com a regra de negócio
+  if (user?.role === 'ADMIN') {
+    menuItems.push({ id: 'feedbacks', label: 'Feedbacks & Ratings', icon: Star });
+  }
+
+  const handleLogout = () => {
+    logout();
+    setMobileMenuOpen(false);
+    router.push('/login');
+  };
+
+  return (
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden transition-all duration-300"
+        />
+      )}
+
+      <aside
+        className={`w-64 bg-[#111111] border-r border-davinci-gold/10 flex flex-col h-screen fixed left-0 top-0 z-40 lg:z-20 transition-transform duration-300 ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        {/* Brand Logo */}
+        <div className="p-6 border-b border-davinci-gold/10 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-[#0A0A0A] border border-davinci-gold/30">
+            <Scissors className="h-5 w-5 text-davinci-gold" />
+          </div>
+          <div>
+            <h2 className="text-md font-bold text-davinci-white uppercase tracking-wider text-glow">
+              Da Vinci
+            </h2>
+            <p className="text-[8px] text-davinci-gold uppercase tracking-[0.05em] font-semibold">
+              Salão & Estética | Barbearia
+            </p>
+          </div>
+        </div>
+
+        {/* Nav List */}
+        <nav className="flex-1 px-4 py-6 space-y-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-davinci-gold/10 text-davinci-gold border-l-2 border-davinci-gold pl-3'
+                    : 'text-davinci-gray hover:text-davinci-white hover:bg-davinci-gold/5'
+                }`}
+              >
+                <Icon className={`h-4.5 w-4.5 ${isActive ? 'text-davinci-gold' : 'text-davinci-gray'}`} />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+
+      {/* User Info & Logout */}
+      <div className="p-4 border-t border-davinci-gold/10 bg-[#0A0A0A]/50">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-davinci-gold/10 border border-davinci-gold/30 flex items-center justify-center font-bold text-davinci-gold">
+            {user?.nome ? user.nome.charAt(0).toUpperCase() : 'U'}
+          </div>
+          <div className="overflow-hidden">
+            <h4 className="text-xs font-semibold text-davinci-white truncate">{user?.nome}</h4>
+            <span className="text-[9px] text-davinci-gold uppercase font-semibold tracking-wider">
+              {user?.role === 'ADMIN' ? 'Administrador' : 'Atendente'}
+            </span>
+          </div>
+        </div>
+
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-red-500/20 text-red-400 hover:bg-red-500/10 transition-colors text-xs font-medium cursor-pointer"
+        >
+          <LogOut className="h-4.5 w-4.5" />
+          Sair do Sistema
+        </button>
+      </div>
+    </aside>
+  </>
+  );
+}
