@@ -23,6 +23,11 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('calendar');
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [crmSearch, setCrmSearch] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Redirecionamento se não autenticado ou papel incorreto
   useEffect(() => {
@@ -81,7 +86,7 @@ export default function DashboardPage() {
     c.telefone.includes(crmSearch)
   );
 
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'ATTENDANT')) {
+  if (!isMounted || !user || (user.role !== 'ADMIN' && user.role !== 'ATTENDANT')) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="h-8 w-8 border-2 border-davinci-gold border-t-transparent rounded-full animate-spin" />
