@@ -72,7 +72,7 @@ export class WhatsappService {
 
   async sendRealWhatsApp(clientId: string, text: string) {
     const apiUrl = process.env.EVOLUTION_API_URL;
-    const apiKey = process.env.EVOLUTION_API_KEY;
+    const apiKey = process.env.EVOLUTION_API_KEY || process.env.GLOBAL_API_KEY;
     const instanceName = process.env.EVOLUTION_INSTANCE_NAME;
 
     if (!apiUrl || !apiKey || !instanceName) {
@@ -322,34 +322,51 @@ export class WhatsappService {
 
   async debugIntegration() {
     const apiUrl = process.env.EVOLUTION_API_URL;
-    const apiKey = process.env.EVOLUTION_API_KEY;
+    const apiKey = process.env.EVOLUTION_API_KEY || process.env.GLOBAL_API_KEY;
     const instanceName = process.env.EVOLUTION_INSTANCE_NAME;
 
+    if (!apiUrl) {
+      return { status: 'error', message: 'EVOLUTION_API_URL está indefinido.' };
+    }
+
+    const sanitizedUrl = apiUrl.replace(/\/$/, '');
     const config = {
-      apiUrl: apiUrl ? `${apiUrl.substring(0, Math.min(15, apiUrl.length))}...` : 'undefined',
-      apiKey: apiKey ? `${apiKey.substring(0, Math.min(5, apiKey.length))}...` : 'undefined',
+      rawApiUrl: apiUrl,
+      sanitizedUrl,
+      apiKeyMasked: apiKey ? `${apiKey.substring(0, Math.min(5, apiKey.length))}...${apiKey.substring(Math.max(0, apiKey.length - 3))}` : 'undefined',
       instanceName: instanceName || 'undefined',
     };
 
-    if (!apiUrl || !apiKey || !instanceName) {
+    if (!apiKey || !instanceName) {
       return {
         status: 'error',
-        message: 'Variáveis de ambiente da Evolution API não estão totalmente configuradas.',
+        message: 'Variáveis de ambiente da Evolution API (apiKey ou instanceName) não estão totalmente configuradas.',
         config,
       };
     }
 
     try {
-      // 1. Verificar estado da conexão da instância
-      const connUrl = `${apiUrl}/instance/connectionState/${instanceName}`;
+      // 1. Tentar buscar todas as instâncias para ver os nomes e status disponíveis
+      const fetchInstancesUrl = `${sanitizedUrl}/instance/fetchInstances`;
+      console.log(`[Debug Webhook] Chamando: ${fetchInstancesUrl}`);
+      const listResponse = await fetch(fetchInstancesUrl, {
+        method: 'GET',
+        headers: { 'apikey': apiKey },
+      });
+      const instancesList = listResponse.ok ? await listResponse.json() : { error: await listResponse.text(), status: listResponse.status };
+
+      // 2. Verificar estado da conexão da instância específica
+      const connUrl = `${sanitizedUrl}/instance/connectionState/${instanceName}`;
+      console.log(`[Debug Webhook] Chamando: ${connUrl}`);
       const connResponse = await fetch(connUrl, {
         method: 'GET',
         headers: { 'apikey': apiKey },
       });
       const connState = connResponse.ok ? await connResponse.json() : { error: await connResponse.text(), status: connResponse.status };
 
-      // 2. Verificar configurações do Webhook da instância
-      const webhookUrl = `${apiUrl}/webhook/find/${instanceName}`;
+      // 3. Verificar configurações do Webhook da instância
+      const webhookUrl = `${sanitizedUrl}/webhook/find/${instanceName}`;
+      console.log(`[Debug Webhook] Chamando: ${webhookUrl}`);
       const webhookResponse = await fetch(webhookUrl, {
         method: 'GET',
         headers: { 'apikey': apiKey },
@@ -359,6 +376,7 @@ export class WhatsappService {
       return {
         status: 'success',
         config,
+        instancesList,
         connectionState: connState,
         webhookConfigOnEvolution: webhookConfig,
       };
