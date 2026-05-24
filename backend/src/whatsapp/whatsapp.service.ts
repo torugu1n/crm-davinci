@@ -319,4 +319,55 @@ export class WhatsappService {
       await this.sendRealWhatsApp(clientId, text);
     }, 1500);
   }
+
+  async debugIntegration() {
+    const apiUrl = process.env.EVOLUTION_API_URL;
+    const apiKey = process.env.EVOLUTION_API_KEY;
+    const instanceName = process.env.EVOLUTION_INSTANCE_NAME;
+
+    const config = {
+      apiUrl: apiUrl ? `${apiUrl.substring(0, Math.min(15, apiUrl.length))}...` : 'undefined',
+      apiKey: apiKey ? `${apiKey.substring(0, Math.min(5, apiKey.length))}...` : 'undefined',
+      instanceName: instanceName || 'undefined',
+    };
+
+    if (!apiUrl || !apiKey || !instanceName) {
+      return {
+        status: 'error',
+        message: 'Variáveis de ambiente da Evolution API não estão totalmente configuradas.',
+        config,
+      };
+    }
+
+    try {
+      // 1. Verificar estado da conexão da instância
+      const connUrl = `${apiUrl}/instance/connectionState/${instanceName}`;
+      const connResponse = await fetch(connUrl, {
+        method: 'GET',
+        headers: { 'apikey': apiKey },
+      });
+      const connState = connResponse.ok ? await connResponse.json() : { error: await connResponse.text(), status: connResponse.status };
+
+      // 2. Verificar configurações do Webhook da instância
+      const webhookUrl = `${apiUrl}/webhook/find/${instanceName}`;
+      const webhookResponse = await fetch(webhookUrl, {
+        method: 'GET',
+        headers: { 'apikey': apiKey },
+      });
+      const webhookConfig = webhookResponse.ok ? await webhookResponse.json() : { error: await webhookResponse.text(), status: webhookResponse.status };
+
+      return {
+        status: 'success',
+        config,
+        connectionState: connState,
+        webhookConfigOnEvolution: webhookConfig,
+      };
+    } catch (error: any) {
+      return {
+        status: 'error',
+        message: `Falha ao conectar na Evolution API: ${error.message}`,
+        config,
+      };
+    }
+  }
 }

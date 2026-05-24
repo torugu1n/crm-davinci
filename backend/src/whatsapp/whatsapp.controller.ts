@@ -24,4 +24,9 @@ export class WhatsappController {
   async handleWebhook(@Body() body: any) {
     return this.whatsappService.handleEvolutionWebhook(body);
   }
+
+  @Get('debug-integration')
+  async debugIntegration() {
+    return this.whatsappService.debugIntegration();
+  }
 }
