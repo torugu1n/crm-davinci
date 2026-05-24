@@ -124,19 +124,24 @@ export class WhatsappService {
   }
 
   async handleEvolutionWebhook(body: any) {
+    console.log('[Webhook] Recebido payload da Evolution API:', JSON.stringify(body, null, 2));
+
     const event = body.event || body.type;
     // O evento de mensagem recebida na Evolution API v2 é 'messages.upsert'
     if (event !== 'messages.upsert' && event !== 'MESSAGES_UPSERT') {
+      console.log(`[Webhook] Evento ignorado: ${event}`);
       return { status: 'ignored_event', event };
     }
 
     const fromMe = body.data?.key?.fromMe;
     if (fromMe === true) {
+      console.log('[Webhook] Mensagem de saída ignorada (fromMe = true)');
       return { status: 'ignored_outgoing' };
     }
 
     const remoteJid = body.data?.key?.remoteJid;
     if (!remoteJid) {
+      console.log('[Webhook] Sem remoteJid no payload');
       return { status: 'no_remote_jid' };
     }
 
@@ -144,14 +149,22 @@ export class WhatsappService {
     const phone = remoteJid.split('@')[0];
     const cleanedPhone = phone.replace(/\D/g, '');
     if (!cleanedPhone) {
+      console.log('[Webhook] Número de telefone inválido ou vazio');
       return { status: 'invalid_phone' };
     }
 
-    // Tentar obter o conteúdo do texto
-    const text = body.data?.message?.conversation || body.data?.message?.extendedTextMessage?.text;
+    // Tentar obter o conteúdo do texto ou mapear tipos de mídia/outros
+    let text = body.data?.message?.conversation || body.data?.message?.extendedTextMessage?.text;
     if (!text) {
-      return { status: 'no_text_content' };
+      const messageType = body.data?.messageType;
+      if (messageType) {
+        text = `[Mensagem do tipo: ${messageType}]`;
+      } else {
+        text = '[Mensagem sem conteúdo textual]';
+      }
     }
+
+    console.log(`[Webhook] Processando mensagem de ${cleanedPhone}: "${text}"`);
 
     // Tentar casar o cliente no CRM usando os últimos 8 dígitos do telefone
     const last8 = cleanedPhone.substring(cleanedPhone.length - 8);

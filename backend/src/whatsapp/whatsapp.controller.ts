@@ -20,7 +20,7 @@ export class WhatsappController {
     return this.whatsappService.sendOperatorMessage(body.clientId, body.mensagem);
   }
 
-  @Post('webhook')
+  @Post('webhook/:event?')
   async handleWebhook(@Body() body: any) {
     return this.whatsappService.handleEvolutionWebhook(body);
   }
