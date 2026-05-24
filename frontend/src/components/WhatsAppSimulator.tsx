@@ -21,7 +21,11 @@ export default function WhatsAppSimulator() {
   // Fetch clients to populate left chat list
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`).then((res) => res.json()),
+    queryFn: () =>
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`).then((res) => {
+        if (!res.ok) throw new Error('Falha ao carregar clientes');
+        return res.json();
+      }),
   });
 
   // Fetch chat history for selected client
@@ -29,21 +33,25 @@ export default function WhatsAppSimulator() {
     queryKey: ['chatHistory', selectedClientId],
     queryFn: () =>
       selectedClientId
-        ? fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/whatsapp/history/${selectedClientId}`).then((res) => res.json())
+        ? fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/whatsapp/history/${selectedClientId}`).then((res) => {
+            if (!res.ok) throw new Error('Falha ao carregar histórico');
+            return res.json();
+          })
         : Promise.resolve([]),
     enabled: !!selectedClientId,
   });
 
   useEffect(() => {
-    if (history) {
+    if (Array.isArray(history)) {
       setChats(history);
     }
   }, [history]);
 
   // Set default selected client on load
   useEffect(() => {
-    if (clients.length > 0 && !selectedClientId) {
-      setSelectedClientId(clients[0].id);
+    const clientList = Array.isArray(clients) ? clients : [];
+    if (clientList.length > 0 && !selectedClientId) {
+      setSelectedClientId(clientList[0].id);
     }
   }, [clients, selectedClientId]);
 
@@ -129,10 +137,11 @@ export default function WhatsAppSimulator() {
     });
   };
 
-  const selectedClient = clients.find((c: any) => c.id === selectedClientId);
+  const clientList = Array.isArray(clients) ? clients : [];
+  const selectedClient = clientList.find((c: any) => c.id === selectedClientId);
 
-  const filteredClients = clients.filter((c: any) =>
-    c.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredClients = clientList.filter((c: any) =>
+    (c.nome || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
