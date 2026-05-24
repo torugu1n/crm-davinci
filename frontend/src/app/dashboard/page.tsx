@@ -88,14 +88,14 @@ export default function DashboardPage() {
 
   if (!isMounted || !user || (user.role !== 'ADMIN' && user.role !== 'ATTENDANT')) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="h-8 w-8 border-2 border-davinci-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-davinci-white font-sans flex">
+    <div className="min-h-screen bg-background text-davinci-black font-sans flex">
       {/* Navigation Sidebar */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
@@ -111,7 +111,7 @@ export default function DashboardPage() {
           {activeTab === 'crm' && (
             <div className="space-y-6">
               {/* Toolbar */}
-              <div className="flex justify-between items-center bg-[#111111] p-4 rounded-xl border border-davinci-gold/10">
+              <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-zinc-200/85 shadow-sm">
                 <div className="relative w-72">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-davinci-gray" />
                   <input
@@ -119,23 +119,23 @@ export default function DashboardPage() {
                     placeholder="Pesquisar por nome ou telefone..."
                     value={crmSearch}
                     onChange={(e) => setCrmSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-[#0A0A0A] border border-davinci-gold/25 rounded-lg text-davinci-white focus:outline-none focus:border-davinci-gold text-xs"
+                    className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-xs"
                   />
                 </div>
-                <div className="text-xs font-light text-davinci-gray uppercase tracking-widest flex items-center gap-1.5">
+                <div className="text-xs font-bold text-davinci-gray uppercase tracking-widest flex items-center gap-1.5">
                   <UserCheck className="h-4 w-4 text-davinci-gold" />
-                  Total de Clientes: <strong>{clients.length}</strong>
+                  Total de Clientes: <strong className="text-davinci-black">{clients.length}</strong>
                 </div>
               </div>
 
               {/* Table */}
-              <div className="bg-[#111111] rounded-xl border border-davinci-gold/10 overflow-hidden shadow-2xl">
+              <div className="bg-white rounded-xl border border-zinc-200/80 overflow-hidden shadow-md">
                 {isLoading ? (
                   <div className="flex items-center justify-center p-12">
                     <div className="h-8 w-8 border-2 border-davinci-gold border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : error ? (
-                  <div className="p-8 text-center text-red-400 flex items-center justify-center gap-2">
+                  <div className="p-8 text-center text-red-500 flex items-center justify-center gap-2">
                     <ShieldAlert className="h-5 w-5" />
                     Erro ao carregar banco de dados do CRM.
                   </div>
@@ -143,7 +143,7 @@ export default function DashboardPage() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs text-left">
                       <thead>
-                        <tr className="border-b border-davinci-gold/10 text-davinci-gray uppercase tracking-wider text-[10px] bg-[#0A0A0A]">
+                        <tr className="border-b border-zinc-200 text-davinci-gray uppercase tracking-wider text-[10px] bg-background">
                           <th className="py-4 px-6">Nome Completo</th>
                           <th className="py-4 px-6">WhatsApp</th>
                           <th className="py-4 px-6 text-center">Niver</th>
@@ -152,24 +152,24 @@ export default function DashboardPage() {
                           <th className="py-4 px-6 text-right">Preferencia</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-davinci-gold/5">
+                      <tbody className="divide-y divide-zinc-100">
                         {filteredClients.map((client: any) => (
                           <tr
                             key={client.id}
                             onClick={() => setSelectedClientId(client.id)}
-                            className="hover:bg-davinci-gold/2 transition-colors cursor-pointer"
+                            className="hover:bg-davinci-gold/5 transition-colors cursor-pointer"
                           >
-                            <td className="py-4 px-6 font-bold text-davinci-white flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-full bg-davinci-gold/10 border border-davinci-gold/25 flex items-center justify-center text-[10px] text-davinci-gold">
+                            <td className="py-4 px-6 font-bold text-davinci-black flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full bg-davinci-gold/10 border border-davinci-gold/20 flex items-center justify-center text-[10px] text-davinci-gold font-bold">
                                 {client.nome.charAt(0).toUpperCase()}
                               </div>
                               {client.nome}
                             </td>
-                            <td className="py-4 px-6 text-davinci-gray">{client.telefone}</td>
-                            <td className="py-4 px-6 text-center text-davinci-gray">{client.aniversario || '--'}</td>
-                            <td className="py-4 px-6 text-center font-semibold text-davinci-white">{client.frequency}</td>
-                            <td className="py-4 px-6 text-right font-semibold text-davinci-gold">R$ {client.ticketMedio.toFixed(2)}</td>
-                            <td className="py-4 px-6 text-right text-davinci-gray truncate max-w-[150px]">
+                            <td className="py-4 px-6 text-davinci-gray font-medium">{client.telefone}</td>
+                            <td className="py-4 px-6 text-center text-davinci-gray font-medium">{client.aniversario || '--'}</td>
+                            <td className="py-4 px-6 text-center font-bold text-davinci-black">{client.frequency}</td>
+                            <td className="py-4 px-6 text-right font-bold text-davinci-gold">R$ {client.ticketMedio.toFixed(2)}</td>
+                            <td className="py-4 px-6 text-right text-davinci-gray truncate max-w-[150px] font-medium">
                               {client.preferences || 'Nenhuma preferência'}
                             </td>
                           </tr>

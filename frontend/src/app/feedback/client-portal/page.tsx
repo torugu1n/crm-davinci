@@ -185,22 +185,22 @@ export default function ClientPortalPage() {
 
   if (isLoading || !client) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="h-8 w-8 border-2 border-davinci-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-davinci-white p-6 max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background text-davinci-black p-6 max-w-4xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center bg-[#111111] p-5 rounded-2xl border border-davinci-gold/15 shadow-xl">
+      <div className="flex justify-between items-center bg-white p-5 rounded-2xl border border-zinc-200 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-davinci-gold/15 border border-davinci-gold/40 flex items-center justify-center font-bold text-davinci-gold">
             {client.nome.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h2 className="text-md font-bold text-davinci-white">Olá, {client.nome}</h2>
+            <h2 className="text-md font-bold text-davinci-black">Olá, {client.nome}</h2>
             <p className="text-[10px] text-davinci-gray font-light uppercase tracking-wider flex flex-wrap items-center gap-1.5 mt-0.5">
               <span>Portal do Cliente Da Vinci</span>
               <span>•</span>
@@ -220,7 +220,7 @@ export default function ClientPortalPage() {
 
         <button
           onClick={handleLogout}
-          className="p-2 rounded-lg bg-[#0A0A0A] border border-davinci-gold/10 hover:border-red-500/30 text-davinci-gray hover:text-red-400 transition-colors text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+          className="p-2 rounded-lg bg-white border border-red-200 text-red-500 hover:bg-red-50 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
         >
           <LogOut className="h-4 w-4" />
           Sair
@@ -229,26 +229,26 @@ export default function ClientPortalPage() {
 
       {/* Metrics & Profile summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-[#111111] p-5 rounded-xl border border-davinci-gold/5 space-y-1">
+        <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-sm space-y-1">
           <span className="text-[9px] text-davinci-gray uppercase tracking-widest font-bold block">Suas Visitas</span>
-          <h3 className="text-2xl font-black text-davinci-white text-glow">{client.frequency} cortes</h3>
+          <h3 className="text-2xl font-black text-davinci-black text-glow">{client.frequency} cortes</h3>
         </div>
 
-        <div className="bg-[#111111] p-5 rounded-xl border border-davinci-gold/5 space-y-1">
+        <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-sm space-y-1">
           <span className="text-[9px] text-davinci-gray uppercase tracking-widest font-bold block">Gasto Total Acumulado</span>
           <h3 className="text-2xl font-black text-davinci-gold text-glow">
             R$ {(client.frequency * client.ticketMedio).toFixed(2)}
           </h3>
         </div>
 
-        <div className="bg-[#111111] p-5 rounded-xl border border-davinci-gold/5 space-y-1">
+        <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-sm space-y-1">
           <span className="text-[9px] text-davinci-gray uppercase tracking-widest font-bold block">Preferências</span>
           <p className="text-xs text-davinci-gray italic truncate mt-1">
             {client.preferences || 'Nenhuma preferência ainda.'}
           </p>
         </div>
 
-        <div className="bg-[#111111] p-5 rounded-xl border border-davinci-gold/5 space-y-1 flex flex-col justify-between">
+        <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-sm space-y-1 flex flex-col justify-between">
           <div>
             <span className="text-[9px] text-davinci-gray uppercase tracking-widest font-bold block">Data de Aniversário</span>
             {editBirthday ? (
@@ -258,7 +258,7 @@ export default function ClientPortalPage() {
                   value={birthdayVal}
                   onChange={(e) => setBirthdayVal(e.target.value)}
                   placeholder="Ex: 15/09"
-                  className="w-24 px-2 py-1 bg-[#0A0A0A] border border-davinci-gold/30 rounded text-davinci-white text-xs focus:outline-none focus:border-davinci-gold"
+                  className="w-24 px-2 py-1 bg-white border border-zinc-200 rounded text-davinci-black text-xs focus:outline-none focus:border-davinci-gold shadow-sm"
                 />
                 <button
                   onClick={() => updateBirthdayMutation.mutate(birthdayVal)}
@@ -270,7 +270,7 @@ export default function ClientPortalPage() {
               </div>
             ) : (
               <div className="flex items-center justify-between mt-1">
-                <h3 className="text-xl font-black text-davinci-white text-glow">
+                <h3 className="text-xl font-black text-davinci-black text-glow">
                   {client.aniversario || 'Não definida'}
                 </h3>
                 <button
@@ -287,17 +287,17 @@ export default function ClientPortalPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Booking Form Card */}
-        <div className="bg-[#111111] p-6 rounded-2xl border border-davinci-gold/10 space-y-6 shadow-xl">
+        <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm space-y-6">
           <div>
-            <h3 className="text-sm font-bold text-davinci-white uppercase tracking-wider flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-davinci-gold animate-pulse" />
+            <h3 className="text-sm font-bold text-davinci-black uppercase tracking-wider flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-davinci-gold" />
               Agendar Novo Atendimento
             </h3>
             <p className="text-[10px] text-davinci-gray mt-1">Escolha seu serviço e reserve seu horário premium.</p>
           </div>
 
           {bookingSuccess && (
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-lg flex items-center gap-2 font-medium">
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 text-xs rounded-lg flex items-center gap-2 font-medium">
               <CheckCircle className="h-5 w-5" />
               Agendamento efetuado! Estaremos te esperando.
             </div>
@@ -312,7 +312,7 @@ export default function ClientPortalPage() {
                 required
                 value={selectedService}
                 onChange={(e) => setSelectedService(e.target.value)}
-                className="w-full px-3 py-2.5 bg-[#0A0A0A] border border-davinci-gold/20 rounded-lg text-davinci-white focus:outline-none focus:border-davinci-gold text-xs"
+                className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-xs shadow-sm"
               >
                 <option value="" disabled>-- Serviços Premium --</option>
                 {services.map((s: any) => (
@@ -332,7 +332,7 @@ export default function ClientPortalPage() {
                   setSelectedBarber(e.target.value);
                   setSelectedHour('');
                 }}
-                className="w-full px-3 py-2.5 bg-[#0A0A0A] border border-davinci-gold/20 rounded-lg text-davinci-white focus:outline-none focus:border-davinci-gold text-xs"
+                className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-xs shadow-sm"
               >
                 <option value="" disabled>-- Profissionais Da Vinci --</option>
                 {barbers.map((b: any) => (
@@ -348,23 +348,23 @@ export default function ClientPortalPage() {
                 </label>
                 
                 {/* Mini Monthly Calendar Widget */}
-                <div className="bg-[#0A0A0A] p-4 rounded-xl border border-davinci-gold/20 space-y-4">
+                <div className="bg-white p-4 rounded-xl border border-zinc-200 space-y-4 shadow-sm">
                   {/* Month header */}
                   <div className="flex justify-between items-center text-xs">
                     <button
                       type="button"
                       onClick={() => changeMonth(-1)}
-                      className="p-1 px-2.5 rounded bg-[#111111] hover:bg-davinci-gold/10 text-davinci-gold border border-davinci-gold/10 hover:border-davinci-gold/30 transition-all cursor-pointer font-extrabold"
+                      className="p-1 px-2.5 rounded bg-white hover:bg-davinci-gold/10 text-davinci-gold border border-zinc-200 hover:border-davinci-gold transition-all cursor-pointer font-extrabold"
                     >
                       &lt;
                     </button>
-                    <span className="font-bold uppercase tracking-wider text-davinci-white text-[11px]">
+                    <span className="font-bold uppercase tracking-wider text-davinci-black text-[11px]">
                       {currentMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                     </span>
                     <button
                       type="button"
                       onClick={() => changeMonth(1)}
-                      className="p-1 px-2.5 rounded bg-[#111111] hover:bg-davinci-gold/10 text-davinci-gold border border-davinci-gold/10 hover:border-davinci-gold/30 transition-all cursor-pointer font-extrabold"
+                      className="p-1 px-2.5 rounded bg-white hover:bg-davinci-gold/10 text-davinci-gold border border-zinc-200 hover:border-davinci-gold transition-all cursor-pointer font-extrabold"
                     >
                       &gt;
                     </button>
@@ -405,10 +405,10 @@ export default function ClientPortalPage() {
                           }}
                           className={`py-1.5 rounded text-xs font-semibold transition-all ${
                             isDisabled
-                              ? 'text-davinci-gray/25 cursor-not-allowed line-through bg-[#0A0A0A]/20'
+                              ? 'text-davinci-gray/25 cursor-not-allowed line-through bg-zinc-50'
                               : isSelected
-                              ? 'bg-davinci-gold text-davinci-black font-extrabold shadow-[0_0_10px_rgba(198,161,91,0.25)]'
-                              : 'bg-[#111111] text-davinci-white border border-davinci-gold/5 hover:border-davinci-gold/30 cursor-pointer'
+                              ? 'bg-davinci-gold text-white font-extrabold shadow-[0_0_10px_rgba(198,161,91,0.25)]'
+                              : 'bg-white text-davinci-black border border-zinc-200 hover:border-davinci-gold cursor-pointer'
                           }`}
                         >
                           {day.getDate()}
@@ -425,7 +425,7 @@ export default function ClientPortalPage() {
                 </label>
                 
                 {!selectedBarber ? (
-                  <p className="text-[10px] text-davinci-gray font-light italic bg-[#0A0A0A] p-3 rounded-lg border border-davinci-gold/5 text-center">
+                  <p className="text-[10px] text-davinci-gray font-light italic bg-zinc-50 p-3 rounded-lg border border-zinc-200/60 text-center">
                     Por favor, selecione um profissional para visualizar os horários disponíveis.
                   </p>
                 ) : (
@@ -438,10 +438,10 @@ export default function ClientPortalPage() {
                         onClick={() => setSelectedHour(slot.hour)}
                         className={`py-2 rounded-lg text-xs transition-all flex flex-col items-center justify-center font-medium relative overflow-hidden ${
                           !slot.available
-                            ? 'bg-[#0A0A0A]/40 text-davinci-gray/45 border border-white/5 cursor-not-allowed line-through'
+                            ? 'bg-zinc-50 text-davinci-gray/40 border border-zinc-200/40 cursor-not-allowed line-through'
                             : selectedHour === slot.hour
                             ? 'bg-davinci-gold/20 border-2 border-davinci-gold text-davinci-gold font-bold shadow-[0_0_10px_rgba(198,161,91,0.15)] cursor-pointer'
-                            : 'bg-[#0A0A0A] border border-davinci-gold/15 text-davinci-white hover:border-davinci-gold/50 cursor-pointer'
+                            : 'bg-white border border-zinc-200 text-davinci-black hover:border-davinci-gold cursor-pointer shadow-sm'
                         }`}
                       >
                         <span>{slot.label}</span>
@@ -449,7 +449,7 @@ export default function ClientPortalPage() {
                           <span className="text-[6px] uppercase tracking-tighter opacity-50 block mt-0.5">Ocupado</span>
                         )}
                         {slot.available && (
-                          <span className="text-[6px] uppercase tracking-tighter text-emerald-500 block mt-0.5">Livre</span>
+                          <span className="text-[6px] uppercase tracking-tighter text-emerald-600 block mt-0.5">Livre</span>
                         )}
                       </button>
                     ))}
@@ -470,17 +470,17 @@ export default function ClientPortalPage() {
         </div>
 
         {/* History timeline card */}
-        <div className="bg-[#111111] p-6 rounded-2xl border border-davinci-gold/10 space-y-4 shadow-xl">
-          <h3 className="text-xs font-bold text-davinci-white uppercase tracking-widest">Seu Histórico de Cortes</h3>
+        <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm space-y-4">
+          <h3 className="text-xs font-bold text-davinci-black uppercase tracking-widest">Seu Histórico de Cortes</h3>
 
           {client.appointments.length === 0 ? (
             <p className="text-xs text-davinci-gray font-light">Nenhum atendimento registrado no seu perfil.</p>
           ) : (
             <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
               {client.appointments.map((app: any) => (
-                <div key={app.id} className="bg-[#0A0A0A] p-4 rounded-xl border border-davinci-gold/5 flex justify-between items-center text-xs">
+                <div key={app.id} className="bg-zinc-50 p-4 rounded-xl border border-zinc-200/60 flex justify-between items-center text-xs">
                   <div>
-                    <h4 className="font-bold text-davinci-white">{app.service.nome}</h4>
+                    <h4 className="font-bold text-davinci-black">{app.service.nome}</h4>
                     <p className="text-[10px] text-davinci-gray mt-1">
                       {new Date(app.data).toLocaleDateString('pt-BR')} com {app.barber.user.nome}
                     </p>

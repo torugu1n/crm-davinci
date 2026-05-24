@@ -159,15 +159,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-[#0A0A0A] flex flex-col lg:flex-row overflow-hidden">
+    <div className="relative min-h-screen w-full bg-background flex flex-col lg:flex-row overflow-hidden">
       {/* Background Particles */}
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-0" />
 
       {/* Radial ambient glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle_at_center,rgba(198,161,91,0.04)_0%,transparent_70%)] pointer-events-none z-0" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle_at_center,rgba(197,168,128,0.06)_0%,transparent_70%)] pointer-events-none z-0" />
 
       {/* HERO SECTION (Left) */}
-      <div className="relative flex-1 lg:flex-[1.2] flex flex-col justify-between p-8 lg:p-16 z-10 border-b lg:border-b-0 lg:border-r border-davinci-gold/10 bg-[radial-gradient(circle_at_top_left,rgba(198,161,91,0.03),transparent_45%)]">
+      <div className="relative flex-1 lg:flex-[1.2] flex flex-col justify-between p-8 lg:p-16 z-10 border-b lg:border-b-0 lg:border-r border-zinc-200/85 bg-[radial-gradient(circle_at_top_left,rgba(197,168,128,0.04),transparent_45%)]">
         {/* Top logo */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -175,14 +175,14 @@ export default function LoginPage() {
           transition={{ duration: 0.8 }}
           className="flex items-center gap-3"
         >
-          <div className="p-2.5 rounded-full bg-[#111111] border border-davinci-gold/25 shadow-[0_0_15px_rgba(198,161,91,0.15)] flex items-center justify-center">
-            <Scissors className="h-6 w-6 text-davinci-gold animate-pulse" />
+          <div className="p-2.5 rounded-full bg-white border border-davinci-gold/25 shadow-[0_0_15px_rgba(197,168,128,0.1)] flex items-center justify-center">
+            <Scissors className="h-6 w-6 text-davinci-gold" />
           </div>
           <div>
-            <span className="text-lg font-black tracking-widest text-davinci-white uppercase text-glow">
+            <span className="text-lg font-black tracking-widest text-davinci-black uppercase text-glow">
               Da Vinci
             </span>
-            <span className="block text-[8px] tracking-[0.1em] font-light text-davinci-gold uppercase">
+            <span className="block text-[8px] tracking-[0.1em] font-bold text-davinci-gold uppercase">
               Salão & Estética | Barbearia
             </span>
           </div>
@@ -199,12 +199,12 @@ export default function LoginPage() {
             <span className="px-3 py-1 rounded-full bg-davinci-gold/10 border border-davinci-gold/30 text-davinci-gold text-[10px] font-bold uppercase tracking-widest inline-block">
               Experiência Exclusiva
             </span>
-            <h1 className="text-4xl lg:text-6xl font-black text-davinci-white leading-tight uppercase">
+            <h1 className="text-4xl lg:text-6xl font-black text-davinci-black leading-tight uppercase">
               A Arte da Estética <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-davinci-gold to-white">Elevada ao Extremo</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-davinci-gold to-davinci-black">Elevada ao Extremo</span>
             </h1>
-            <p className="text-sm lg:text-md text-davinci-gray font-light max-w-lg leading-relaxed">
-              Bem-vindo ao espaço onde beleza, estilo e inovação tecnológica se encontram. Uma experiência premium desenhada sob medida para realçar o seu melhor.
+            <p className="text-sm lg:text-md text-davinci-gray font-semibold max-w-lg leading-relaxed">
+              Bem-vindo ao espaço onde beleza, estilo e excelência no atendimento se encontram. Uma experiência premium desenhada sob medida para realçar o seu melhor.
             </p>
           </motion.div>
 
@@ -219,7 +219,7 @@ export default function LoginPage() {
                 }
               }
             }}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t border-davinci-gold/10"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6 border-t border-zinc-200/80"
           >
             {[
               {
@@ -229,7 +229,7 @@ export default function LoginPage() {
               },
               {
                 title: "Concierge Digital",
-                desc: "Agendamentos automáticos via simulador integrado.",
+                desc: "Agendamentos integrados e confirmações instantâneas.",
                 icon: Sparkles,
               },
               {
@@ -249,13 +249,13 @@ export default function LoginPage() {
                   transition={{ duration: 0.5 }}
                   className="space-y-2 group"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-davinci-gold/5 border border-davinci-gold/15 flex items-center justify-center group-hover:border-davinci-gold/40 transition-colors">
+                  <div className="w-8 h-8 rounded-lg bg-davinci-gold/10 border border-davinci-gold/20 flex items-center justify-center group-hover:border-davinci-gold/50 transition-colors">
                     <Icon className="h-4 w-4 text-davinci-gold" />
                   </div>
-                  <h3 className="text-xs font-bold text-davinci-white uppercase tracking-wider">
+                  <h3 className="text-xs font-bold text-davinci-black uppercase tracking-wider">
                     {feat.title}
                   </h3>
-                  <p className="text-[10px] text-davinci-gray font-light leading-relaxed">
+                  <p className="text-[10px] text-davinci-gray font-semibold leading-relaxed">
                     {feat.desc}
                   </p>
                 </motion.div>
@@ -269,30 +269,30 @@ export default function LoginPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9, duration: 0.5 }}
-          className="text-[9px] text-davinci-gray font-light uppercase tracking-widest hidden lg:block"
+          className="text-[9px] text-davinci-gray font-bold uppercase tracking-widest hidden lg:block"
         >
           © 2026 Da Vinci | Salão & Estética | Barbearia. Todos os direitos reservados.
         </motion.div>
       </div>
 
       {/* LOGIN CARD SECTION (Right) */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-16 z-10 bg-[#0A0A0A]/85 lg:bg-[#0A0A0A]/30">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-16 z-10 bg-background/90 lg:bg-transparent">
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="w-full max-w-md glass-card rounded-2xl overflow-hidden shadow-2xl border border-davinci-gold/10"
+          className="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-xl border border-zinc-200/80"
         >
           {/* Tabs */}
-          <div className="flex border-b border-davinci-gold/10 bg-[#111111]/30">
+          <div className="flex border-b border-zinc-200 bg-zinc-50/50">
             <button
               onClick={() => {
                 setActiveTab('client');
                 setError('');
               }}
-              className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'client'
+              className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${activeTab === 'client'
                   ? 'text-davinci-gold border-b-2 border-davinci-gold bg-davinci-gold/5'
-                  : 'text-davinci-gray hover:text-davinci-white hover:bg-davinci-gold/2'
+                  : 'text-davinci-gray hover:text-davinci-black hover:bg-davinci-gold/2'
                 }`}
             >
               Portal do Cliente
@@ -302,9 +302,9 @@ export default function LoginPage() {
                 setActiveTab('staff');
                 setError('');
               }}
-              className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all ${activeTab === 'staff'
+              className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${activeTab === 'staff'
                   ? 'text-davinci-gold border-b-2 border-davinci-gold bg-davinci-gold/5'
-                  : 'text-davinci-gray hover:text-davinci-white hover:bg-davinci-gold/2'
+                  : 'text-davinci-gray hover:text-davinci-black hover:bg-davinci-gold/2'
                 }`}
             >
               Acesso Staff
@@ -322,13 +322,13 @@ export default function LoginPage() {
                   onSubmit={handleClientLogin}
                   className="space-y-5"
                 >
-                  <p className="text-xs text-davinci-gray leading-relaxed text-center font-light">
+                  <p className="text-xs text-davinci-gray leading-relaxed text-center font-semibold">
                     Acesse utilizando seu nome e telefone para agendar serviços premium e acompanhar seu histórico.
                   </p>
 
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-bold text-davinci-gray uppercase tracking-wider mb-2">
+                      <label className="block text-[10px] font-bold text-davinci-black uppercase tracking-wider mb-2">
                         Seu Nome
                       </label>
                       <div className="relative">
@@ -339,13 +339,13 @@ export default function LoginPage() {
                           value={clientNome}
                           onChange={(e) => setClientNome(e.target.value)}
                           placeholder="Digite seu nome completo"
-                          className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A]/85 border border-davinci-gold/15 rounded-lg text-davinci-white focus:outline-none focus:border-davinci-gold transition-colors text-xs"
+                          className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-davinci-gray uppercase tracking-wider mb-2">
+                      <label className="block text-[10px] font-bold text-davinci-black uppercase tracking-wider mb-2">
                         WhatsApp / Celular
                       </label>
                       <div className="relative">
@@ -356,13 +356,13 @@ export default function LoginPage() {
                           value={clientTelefone}
                           onChange={(e) => setClientTelefone(e.target.value)}
                           placeholder="Ex: 11 98888-7777"
-                          className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A]/85 border border-davinci-gold/15 rounded-lg text-davinci-white focus:outline-none focus:border-davinci-gold transition-colors text-xs"
+                          className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-davinci-gray uppercase tracking-wider mb-2">
+                      <label className="block text-[10px] font-bold text-davinci-black uppercase tracking-wider mb-2">
                         Data de Aniversário
                       </label>
                       <div className="relative">
@@ -372,25 +372,25 @@ export default function LoginPage() {
                           value={clientAniversario}
                           onChange={(e) => setClientAniversario(e.target.value)}
                           placeholder="Ex: 15/09 (Opcional)"
-                          className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A]/85 border border-davinci-gold/15 rounded-lg text-davinci-white focus:outline-none focus:border-davinci-gold transition-colors text-xs"
+                          className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {error && <div className="text-red-400 text-[11px] text-center font-medium">{error}</div>}
+                  {error && <div className="text-red-500 text-[11px] text-center font-bold">{error}</div>}
 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3 bg-gold-gradient rounded-lg text-davinci-black font-bold text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-transform shadow-[0_4px_20px_rgba(198,161,91,0.2)] flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                    className="w-full py-3 bg-gold-gradient rounded-lg text-davinci-black font-bold text-xs uppercase tracking-widest hover:scale-[1.01] active:scale-[0.99] transition-transform shadow-[0_4px_20px_rgba(197,168,128,0.25)] flex items-center justify-center gap-1.5 cursor-pointer mt-2"
                   >
                     {loading ? (
                       <div className="h-4 w-4 border-2 border-davinci-black border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
                         Entrar no Portal
-                        <Sparkles className="h-4 w-4" />
+                        <Sparkles className="h-4 w-4 text-davinci-black" />
                       </>
                     )}
                   </button>
@@ -404,13 +404,13 @@ export default function LoginPage() {
                   onSubmit={handleStaffLogin}
                   className="space-y-5"
                 >
-                  <p className="text-xs text-davinci-gray leading-relaxed text-center font-light">
-                    Acesso corporativo para administradores, atendentes e barbeiros da barbearia Da Vinci.
+                  <p className="text-xs text-davinci-gray leading-relaxed text-center font-semibold">
+                    Acesso corporativo para administradores, atendentes e profissionais da barbearia Da Vinci.
                   </p>
 
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-[10px] font-bold text-davinci-gray uppercase tracking-wider mb-2">
+                      <label className="block text-[10px] font-bold text-davinci-black uppercase tracking-wider mb-2">
                         E-mail Corporativo
                       </label>
                       <div className="relative">
@@ -420,14 +420,14 @@ export default function LoginPage() {
                           required
                           value={staffEmail}
                           onChange={(e) => setStaffEmail(e.target.value)}
-                          placeholder="barbeiro@davinci.com"
-                          className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A]/85 border border-davinci-gold/15 rounded-lg text-davinci-white focus:outline-none focus:border-davinci-gold transition-colors text-xs"
+                          placeholder="profissional@davinci.com"
+                          className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-bold text-davinci-gray uppercase tracking-wider mb-2">
+                      <label className="block text-[10px] font-bold text-davinci-black uppercase tracking-wider mb-2">
                         Senha de Acesso
                       </label>
                       <div className="relative">
@@ -438,31 +438,31 @@ export default function LoginPage() {
                           value={staffSenha}
                           onChange={(e) => setStaffSenha(e.target.value)}
                           placeholder="••••••••"
-                          className="w-full pl-10 pr-4 py-2.5 bg-[#0A0A0A]/85 border border-davinci-gold/15 rounded-lg text-davinci-white focus:outline-none focus:border-davinci-gold transition-colors text-xs"
+                          className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {error && <div className="text-red-400 text-[11px] text-center font-medium">{error}</div>}
+                  {error && <div className="text-red-500 text-[11px] text-center font-bold">{error}</div>}
 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3 bg-gold-gradient rounded-lg text-davinci-black font-bold text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-transform shadow-[0_4px_20px_rgba(198,161,91,0.2)] flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                    className="w-full py-3 bg-gold-gradient rounded-lg text-davinci-black font-bold text-xs uppercase tracking-widest hover:scale-[1.01] active:scale-[0.99] transition-transform shadow-[0_4px_20px_rgba(197,168,128,0.25)] flex items-center justify-center gap-1.5 cursor-pointer mt-2"
                   >
                     {loading ? (
                       <div className="h-4 w-4 border-2 border-davinci-black border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
                         Entrar no Sistema
-                        <ShieldCheck className="h-4 w-4" />
+                        <ShieldCheck className="h-4 w-4 text-davinci-black" />
                       </>
                     )}
                   </button>
 
-                  <div className="text-center text-[9px] text-davinci-gray font-light uppercase tracking-wider mt-4">
-                    Consulte as credenciais padrão no manual.
+                  <div className="text-center text-[9px] text-davinci-gray font-bold uppercase tracking-wider mt-4">
+                    Consulte as credenciais padrão no manual do sistema.
                   </div>
                 </motion.form>
               )}

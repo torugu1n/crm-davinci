@@ -90,7 +90,7 @@ export default function FeedbackRatingPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="h-8 w-8 border-2 border-davinci-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -98,9 +98,9 @@ export default function FeedbackRatingPage() {
 
   if (error || !app) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center p-6 text-center space-y-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center space-y-4">
         <ShieldAlert className="h-12 w-12 text-red-500" />
-        <h2 className="text-lg font-bold text-davinci-white">Link de Avaliação Inválido</h2>
+        <h2 className="text-lg font-bold text-davinci-black">Link de Avaliação Inválido</h2>
         <p className="text-xs text-davinci-gray max-w-sm">
           Este agendamento não existe ou o link de feedback expirou.
         </p>
@@ -110,7 +110,7 @@ export default function FeedbackRatingPage() {
 
   if (app.feedback || submitted) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -119,7 +119,7 @@ export default function FeedbackRatingPage() {
           <div className="inline-flex p-3 rounded-full bg-davinci-gold/10 border border-davinci-gold/30 text-davinci-gold mb-2 shadow-[0_0_15px_rgba(198,161,91,0.1)]">
             <CheckCircle2 className="h-10 w-10" />
           </div>
-          <h2 className="text-xl font-bold text-davinci-white uppercase tracking-wider text-glow">
+          <h2 className="text-xl font-bold text-davinci-black uppercase tracking-wider text-glow">
             Avaliação Recebida!
           </h2>
           <p className="text-xs text-davinci-gray leading-relaxed">
@@ -137,11 +137,11 @@ export default function FeedbackRatingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-black tracking-wider text-davinci-white uppercase text-glow">
+          <h1 className="text-2xl font-black tracking-wider text-davinci-black uppercase text-glow">
             Da Vinci
           </h1>
           <p className="text-[10px] font-light text-davinci-gold mt-1 uppercase tracking-[0.2em]">
@@ -152,9 +152,9 @@ export default function FeedbackRatingPage() {
         {/* Form Card */}
         <form onSubmit={handleSubmit} className="glass-card p-8 rounded-2xl space-y-6 shadow-2xl">
           <div className="border-b border-davinci-gold/10 pb-4 text-center">
-            <h3 className="text-sm font-bold text-davinci-white">Como foi seu atendimento hoje?</h3>
+            <h3 className="text-sm font-bold text-davinci-black">Como foi seu atendimento hoje?</h3>
             <p className="text-[10px] text-davinci-gray mt-1 font-light">
-              Serviço: <strong className="text-davinci-white">{app.service.nome}</strong> com o barbeiro <strong className="text-davinci-gold">{app.barber.user.nome}</strong>.
+              Serviço: <strong className="text-davinci-black">{app.service.nome}</strong> com o barbeiro <strong className="text-davinci-gold">{app.barber.user.nome}</strong>.
             </p>
           </div>
 
@@ -188,7 +188,7 @@ export default function FeedbackRatingPage() {
               <select
                 value={ratingPunctual}
                 onChange={(e) => setRatingPunctual(e.target.value)}
-                className="bg-[#0A0A0A] border border-davinci-gold/20 rounded-lg px-4 py-2 text-davinci-white focus:outline-none focus:border-davinci-gold text-xs w-48 text-center cursor-pointer"
+                className="bg-white border border-zinc-200 rounded-lg px-4 py-2 text-davinci-black focus:outline-none focus:border-davinci-gold text-xs w-48 text-center cursor-pointer shadow-sm"
               >
                 <option value="5">Excelente (No horário)</option>
                 <option value="3">Atraso Leve (5 a 10 min)</option>
@@ -207,7 +207,7 @@ export default function FeedbackRatingPage() {
               onChange={(e) => setComentario(e.target.value)}
               placeholder="Escreva como foi sua experiência..."
               rows={3}
-              className="w-full bg-[#0A0A0A] border border-davinci-gold/20 focus:border-davinci-gold rounded-xl px-4 py-3 text-xs text-davinci-white focus:outline-none leading-relaxed"
+              className="w-full bg-white border border-zinc-200 focus:border-davinci-gold rounded-xl px-4 py-3 text-xs text-davinci-black focus:outline-none leading-relaxed shadow-sm"
             />
           </div>
 
