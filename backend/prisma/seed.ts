@@ -13,6 +13,7 @@ async function main() {
   await prisma.barber.deleteMany({});
   await prisma.user.deleteMany({});
   await prisma.client.deleteMany({});
+  await prisma.product.deleteMany({});
   await prisma.service.deleteMany({});
 
   // 2. Criar Serviços com foco em Salão Premium (Foco Feminino + Cortes Masculinos)
@@ -36,6 +37,33 @@ async function main() {
   });
 
   console.log('Serviços criados com sucesso!');
+
+  await prisma.product.createMany({
+    data: [
+      {
+        nome: 'Shampoo Repair Da Vinci',
+        preco: 89.9,
+        descricao: 'Shampoo de tratamento para manutenção premium pós-coloração e hidratação.',
+      },
+      {
+        nome: 'Máscara Nutritiva Imperial',
+        preco: 129.9,
+        descricao: 'Máscara capilar de nutrição intensa para uso semanal.',
+      },
+      {
+        nome: 'Pomada Matte Signature',
+        preco: 59.9,
+        descricao: 'Pomada de fixação média com acabamento seco para penteados masculinos.',
+      },
+      {
+        nome: 'Óleo Finalizador Golden Touch',
+        preco: 74.9,
+        descricao: 'Óleo leve para brilho e controle de frizz sem pesar nos fios.',
+      },
+    ],
+  });
+
+  console.log('Produtos criados com sucesso!');
 
   // Senhas hash
   const adminSenha = await bcrypt.hash('adminsecret', 10);

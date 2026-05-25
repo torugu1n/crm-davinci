@@ -13,6 +13,7 @@ import WhatsAppSimulator from '@/components/WhatsAppSimulator';
 import FinanceSummary from '@/components/FinanceSummary';
 import AdminFeedbacks from '@/components/AdminFeedbacks';
 import CRMDrawer from '@/components/CRMDrawer';
+import ServicesProductsManager from '@/components/ServicesProductsManager';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -61,7 +62,8 @@ export default function DashboardPage() {
   // Buscar clientes para o CRM
   const { data: clients = [], isLoading, error } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`).then((res) => { if (!res.ok) throw new Error('Failed to fetch clients'); return res.json(); }),
+    enabled: activeTab === 'crm',
   });
 
   const getTitle = () => {
@@ -72,6 +74,8 @@ export default function DashboardPage() {
         return 'CRM Gestão de Clientes';
       case 'whatsapp':
         return 'WhatsApp Concierge';
+      case 'services':
+        return 'Serviços & Produtos';
       case 'finance':
         return 'Dashboard Financeiro';
       case 'feedbacks':
@@ -86,12 +90,10 @@ export default function DashboardPage() {
     c.telefone.includes(crmSearch)
   );
 
-  if (!isMounted || !user || (user.role !== 'ADMIN' && user.role !== 'ATTENDANT')) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="h-8 w-8 border-2 border-davinci-gold border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+  if (!isMounted) return null;
+
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'ATTENDANT')) {
+    return null;
   }
 
   return (
@@ -183,6 +185,8 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'whatsapp' && <WhatsAppSimulator />}
+
+          {activeTab === 'services' && <ServicesProductsManager />}
 
           {activeTab === 'finance' && <FinanceSummary />}
 
