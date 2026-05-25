@@ -47,8 +47,12 @@ export class AuthService {
       throw new BadRequestException('Telefone inválido');
     }
 
-    let client = await this.prisma.client.findUnique({
-      where: { telefone: cleanedPhone },
+    // Busca flexível comparando os últimos 8 dígitos (evita duplicar registros do WhatsApp Webhook)
+    const last8 = cleanedPhone.substring(cleanedPhone.length - 8);
+    const clients = await this.prisma.client.findMany();
+    let client = clients.find((c) => {
+      const cPhoneCleaned = c.telefone.replace(/\D/g, '');
+      return cPhoneCleaned.endsWith(last8);
     });
 
     if (!client) {

@@ -29,7 +29,7 @@ export default function BarberPage() {
   const barberId = user?.barberId;
   const { data: dashboard, isLoading, error } = useQuery({
     queryKey: ['barberDashboard', barberId],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/barbers/${barberId}/dashboard`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/barbers/${barberId}/dashboard`).then((res) => { if (!res.ok) throw new Error('Failed to fetch barber dashboard'); return res.json(); }),
     enabled: !!barberId,
   });
 

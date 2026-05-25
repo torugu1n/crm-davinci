@@ -4,6 +4,7 @@ import { AppointmentsModule } from './appointments/appointments.module';
 import { ClientsModule } from './clients/clients.module';
 import { BarbersModule } from './barbers/barbers.module';
 import { ServicesModule } from './services/services.module';
+import { ProductsModule } from './products/products.module';
 import { FeedbacksModule } from './feedbacks/feedbacks.module';
 import { FinanceModule } from './finance/finance.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
@@ -18,6 +19,7 @@ import { PrismaService } from './prisma.service';
     ClientsModule,
     BarbersModule,
     ServicesModule,
+    ProductsModule,
     FeedbacksModule,
     FinanceModule,
     WhatsappModule,

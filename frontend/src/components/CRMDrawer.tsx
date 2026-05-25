@@ -16,7 +16,7 @@ export default function CRMDrawer({ clientId, onClose }: CRMDrawerProps) {
   // Buscar detalhes do cliente
   const { data: client, isLoading, error } = useQuery({
     queryKey: ['client', clientId],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${clientId}`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${clientId}`).then((res) => { if (!res.ok) throw new Error('Failed to fetch client'); return res.json(); }),
     enabled: !!clientId,
   });
 

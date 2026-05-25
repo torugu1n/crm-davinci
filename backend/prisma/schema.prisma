@@ -51,9 +51,20 @@ model Service {
   nome         String
   preco        Float
   duracao      Int // em minutos
+  descricao    String?
   appointments Appointment[]
 
   @@map("services")
+}
+
+model Product {
+  id        String   @id @default(uuid())
+  nome      String
+  preco     Float
+  descricao String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("products")
 }
 
 model Appointment {

@@ -111,22 +111,22 @@ export default function DashboardCalendar() {
   // Fetch Barbers, Clients, Services, Appointments
   const { data: barbers = [] } = useQuery({
     queryKey: ['barbers'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/barbers`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/barbers`).then((res) => { if (!res.ok) throw new Error('Failed to fetch barbers'); return res.json(); }),
   });
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`).then((res) => { if (!res.ok) throw new Error('Failed to fetch clients'); return res.json(); }),
   });
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/services`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/services`).then((res) => { if (!res.ok) throw new Error('Failed to fetch services'); return res.json(); }),
   });
 
   const { data: appointments = [] } = useQuery({
     queryKey: ['appointments'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments`).then((res) => { if (!res.ok) throw new Error('Failed to fetch appointments'); return res.json(); }),
   });
 
   // Mutations

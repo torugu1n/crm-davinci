@@ -43,7 +43,7 @@ export default function ClientPortalPage() {
   const clientId = user?.id;
   const { data: client, isLoading, error } = useQuery({
     queryKey: ['clientPortalProfile', clientId],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${clientId}`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${clientId}`).then((res) => { if (!res.ok) throw new Error('Failed to fetch client'); return res.json(); }),
     enabled: !!clientId,
   });
 
@@ -73,18 +73,18 @@ export default function ClientPortalPage() {
   // Fetch Barbers & Services for booking selection
   const { data: barbers = [] } = useQuery({
     queryKey: ['barbers'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/barbers`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/barbers`).then((res) => { if (!res.ok) throw new Error('Failed to fetch barbers'); return res.json(); }),
   });
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/services`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/services`).then((res) => { if (!res.ok) throw new Error('Failed to fetch services'); return res.json(); }),
   });
 
   // Buscar todos os agendamentos para checar horários ocupados
   const { data: appointments = [] } = useQuery({
     queryKey: ['appointments'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments`).then((res) => { if (!res.ok) throw new Error('Failed to fetch appointments'); return res.json(); }),
   });
 
   const createAppointmentMutation = useMutation({
@@ -218,13 +218,23 @@ export default function ClientPortalPage() {
           </div>
         </div>
 
-        <button
-          onClick={handleLogout}
-          className="p-2 rounded-lg bg-white border border-red-200 text-red-500 hover:bg-red-50 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
-        >
-          <LogOut className="h-4 w-4" />
-          Sair
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.open('/catalogo', '_blank')}
+            className="p-2 rounded-lg bg-white border border-davinci-gold/30 text-davinci-gold hover:bg-davinci-gold/5 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <Scissors className="h-4 w-4" />
+            Ver Catálogo
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-lg bg-white border border-red-200 text-red-500 hover:bg-red-50 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <LogOut className="h-4 w-4" />
+            Sair
+          </button>
+        </div>
       </div>
 
       {/* Metrics & Profile summary */}

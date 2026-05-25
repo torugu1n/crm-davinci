@@ -7,7 +7,7 @@ import { DollarSign, Calendar, TrendingUp, Users, Award, ShieldAlert } from 'luc
 export default function FinanceSummary() {
   const { data: summary, isLoading, error } = useQuery({
     queryKey: ['financeSummary'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/finance/summary`).then((res) => res.json()),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/finance/summary`).then((res) => { if (!res.ok) throw new Error('Failed to fetch finance summary'); return res.json(); }),
     refetchInterval: 10000, // auto refresh a cada 10s
   });
 

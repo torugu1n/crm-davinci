@@ -21,6 +21,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     { id: 'calendar', label: 'Agenda Inteligente', icon: Calendar },
     { id: 'crm', label: 'CRM Clientes', icon: Users },
     { id: 'whatsapp', label: 'Mensagens Concierge', icon: MessageSquare },
+    { id: 'services', label: 'Serviços & Produtos', icon: Scissors },
     { id: 'finance', label: 'Painel Financeiro', icon: DollarSign },
   ];
 

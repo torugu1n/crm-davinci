@@ -3,10 +3,10 @@ import { PrismaService } from '../prisma.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 
 interface BookingState {
-  step: 'AWAITING_TIME';
-  date: Date;
-  serviceId: string;
-  barberId: string;
+  step: 'AWAITING_NAME' | 'AWAITING_TIME';
+  date?: Date;
+  serviceId?: string;
+  barberId?: string;
 }
 
 @Injectable()
@@ -26,7 +26,7 @@ export class WhatsappService {
     });
   }
 
-  async receiveCustomerMessage(clientId: string, text: string) {
+  async receiveCustomerMessage(clientId: string, text: string, bypassChatbot = false) {
     // 1. Salvar mensagem recebida do cliente
     const customerMsg = await this.prisma.message.create({
       data: {
@@ -43,7 +43,9 @@ export class WhatsappService {
     });
 
     // 2. Processar chatbot de agendamento automático
-    await this.processChatbot(clientId, text);
+    if (!bypassChatbot) {
+      await this.processChatbot(clientId, text);
+    }
 
     return customerMsg;
   }
@@ -175,8 +177,8 @@ export class WhatsappService {
     });
 
     if (!client) {
-      // Se não existir, cadastramos o lead automaticamente!
-      const pushName = body.data?.pushName || 'Novo Cliente WhatsApp';
+      // Se não existir, cadastramos o lead temporariamente aguardando o nome completo
+      const tempName = 'Aguardando Nome';
       // Salva o telefone formatado de forma básica
       let formattedPhone = phone;
       if (phone.length === 13 && phone.startsWith('55')) {
@@ -185,22 +187,34 @@ export class WhatsappService {
       
       client = await this.prisma.client.create({
         data: {
-          nome: pushName,
+          nome: tempName,
           telefone: formattedPhone,
-          observacoes: 'Cadastrado automaticamente via recepção de WhatsApp.',
+          observacoes: 'Cadastrado temporariamente via recepção de WhatsApp. Aguardando o nome.',
         },
       });
 
-      // Notificar dashboard que um novo lead foi capturado
+      // Salvar o estado inicial de captura de nome
+      this.clientStates.set(client.id, { step: 'AWAITING_NAME' });
+
+      // Notificar dashboard que um novo lead iniciou o contato
       this.wsGateway.broadcast('dashboard-notification', {
-        title: 'Novo Lead Capturado',
-        description: `Cliente ${pushName} se conectou via WhatsApp e foi cadastrado no CRM.`,
+        title: 'Novo Contato WhatsApp',
+        description: `Nova conversa iniciada pelo número ${formattedPhone}. Aguardando o nome.`,
         type: 'info',
         timestamp: new Date(),
       });
+
+      // Salvar a mensagem recebida sem acionar o processamento de chatbot (pois ainda vamos perguntar o nome)
+      await this.receiveCustomerMessage(client.id, text, true);
+
+      // Enviar mensagem de saudação e perguntar o nome
+      const replyText = `Olá! Sou o concierge virtual da Da Vinci. 🤵\n\nIdentifiquei que este número de WhatsApp ainda não está cadastrado em nosso sistema.\n\n**Como posso te chamar?** Por favor, digite seu nome completo para iniciarmos seu atendimento.`;
+      await this.delayAndReply(client.id, replyText);
+
+      return { status: 'success', clientId: client.id };
     }
 
-    // Processar a mensagem recebida e acionar o chatbot
+    // Se o cliente já existia, processar a mensagem normalmente (aciona o chatbot)
     await this.receiveCustomerMessage(client.id, text);
 
     return { status: 'success', clientId: client.id };
@@ -220,6 +234,70 @@ export class WhatsappService {
 
     const barber = await this.prisma.barber.findFirst({ include: { user: true } });
     if (!barber) return;
+
+    if (state && state.step === 'AWAITING_NAME') {
+      const clientName = text.trim();
+      if (clientName.length < 2) {
+        await this.delayAndReply(clientId, 'Por favor, digite seu nome completo para que possamos te cadastrar.');
+        return;
+      }
+
+      // Buscar se já existe um cliente com esse mesmo nome no banco (case-insensitive)
+      const existingClient = await this.prisma.client.findFirst({
+        where: { nome: { equals: clientName, mode: 'insensitive' } },
+      });
+
+      let finalClientId = clientId;
+      let finalName = clientName;
+
+      if (existingClient) {
+        // Encontrou cliente por nome -> Faz o merge da conta do WhatsApp
+        try {
+          // 1. Liberar a constraint de telefone único no temporário
+          await this.prisma.client.update({
+            where: { id: client.id },
+            data: { telefone: `temp-del-${client.id}` },
+          });
+
+          // 2. Atualizar o telefone do cliente existente para o número da conversa
+          await this.prisma.client.update({
+            where: { id: existingClient.id },
+            data: { telefone: client.telefone },
+          });
+
+          // 3. Apontar todas as mensagens do temporário para o existente
+          await this.prisma.message.updateMany({
+            where: { clientId: client.id },
+            data: { clientId: existingClient.id },
+          });
+
+          // 4. Deletar o cliente temporário do banco
+          await this.prisma.client.delete({
+            where: { id: client.id },
+          });
+
+          finalClientId = existingClient.id;
+          finalName = existingClient.nome;
+        } catch (error) {
+          console.error('[Chatbot] Erro ao associar cliente existente por nome:', error);
+        }
+      } else {
+        // Não encontrou por nome -> Apenas renomeia o temporário
+        await this.prisma.client.update({
+          where: { id: client.id },
+          data: { nome: clientName },
+        });
+      }
+
+      // Limpar o estado AWAITING_NAME
+      this.clientStates.delete(clientId);
+      this.clientStates.delete(finalClientId);
+
+      // Enviar mensagem de boas vindas com link do catálogo digital
+      const replyText = `Prazer em falar com você, **${finalName}**! Realizei o vínculo do seu WhatsApp com sucesso. 🤝\n\nComo posso ajudar você hoje?\n\n👉 Se quiser agendar um horário diretamente, digite algo como *"Quero agendar um corte"*.\n\n📖 Se quiser conhecer nossos serviços, valores e produtos à venda, acesse o nosso catálogo digital: https://crm-davinci-production.up.railway.app/catalogo`;
+      await this.delayAndReply(finalClientId, replyText);
+      return;
+    }
 
     if (!state) {
       // Verificar intenção de agendamento
