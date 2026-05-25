@@ -373,12 +373,32 @@ export class WhatsappService {
       });
       const webhookConfig = webhookResponse.ok ? await webhookResponse.json() : { error: await webhookResponse.text(), status: webhookResponse.status };
 
+      // 4. Verificar estado do QR Code / Conexão ativa
+      const connectUrl = `${sanitizedUrl}/instance/connect/${instanceName}`;
+      console.log(`[Debug Webhook] Chamando: ${connectUrl}`);
+      const connectResponse = await fetch(connectUrl, {
+        method: 'GET',
+        headers: { 'apikey': apiKey },
+      });
+      let connectStatus = { status: connectResponse.status, data: {} as any };
+      if (connectResponse.ok) {
+        const data = await connectResponse.json();
+        if (data.code) {
+          connectStatus.data = { status: 'waiting_qr_code', hasCode: true, message: 'Instância aguardando leitura de QR Code.' };
+        } else {
+          connectStatus.data = data;
+        }
+      } else {
+        connectStatus.data = { error: await connectResponse.text() };
+      }
+
       return {
         status: 'success',
         config,
         instancesList,
         connectionState: connState,
         webhookConfigOnEvolution: webhookConfig,
+        connectStatusOnEvolution: connectStatus,
       };
     } catch (error: any) {
       return {
