@@ -1029,6 +1029,8 @@ export default function ProfessionalPage() {
                     setEspecialidadeInput(professional.especialidade || '');
                     setMiniBioInput(professional.miniBio || '');
                     setFotoUrlInput(professional.fotoUrl || '');
+                    setActiveTab('overview');
+                    router.push('/profissional');
                   }}
                   className="px-4 py-2.5 rounded-xl border border-zinc-200 text-xs font-bold text-davinci-gray hover:text-davinci-black transition-colors cursor-pointer"
                 >
