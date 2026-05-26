@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
+import { canAccessDashboard, isClientUser, isProfessionalUser } from '@/lib/auth';
 
 export default function RootPage() {
   const router = useRouter();
@@ -12,9 +13,11 @@ export default function RootPage() {
   useEffect(() => {
     if (!token || !user) {
       router.push('/login');
-    } else if (user.role === 'BARBER') {
-      router.push('/barber');
-    } else if (user.role === 'CLIENT') {
+    } else if (canAccessDashboard(user)) {
+      router.push('/dashboard');
+    } else if (isProfessionalUser(user)) {
+      router.push('/profissional');
+    } else if (isClientUser(user)) {
       router.push('/feedback/client-portal');
     } else {
       router.push('/dashboard');

@@ -37,11 +37,11 @@ export default function CatalogoPublicoPage() {
   const handleWhatsAppAction = () => {
     if (!selectedItem) return;
     const isService = 'duracao' in selectedItem;
-    const phone = '5511999999999'; // Número fictício do salão (ou dinâmico se houvesse configuração)
-    
+    const phone = '5511999999999';
+
     const text = isService
-      ? `Olá! Gostaria de agendar o serviço "${selectedItem.nome}" (R$ ${selectedItem.preco.toFixed(2)}) na Da Vinci.`
-      : `Olá! Tenho interesse no produto "${selectedItem.nome}" (R$ ${selectedItem.preco.toFixed(2)}) da Da Vinci.`;
+      ? `Olá! Gostaria de agendar o serviço "${selectedItem.nome}" (R$ ${selectedItem.preco.toFixed(2)}).`
+      : `Olá! Tenho interesse no produto "${selectedItem.nome}" (R$ ${selectedItem.preco.toFixed(2)}).`;
 
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
     window.open(waUrl, '_blank');
@@ -58,34 +58,32 @@ export default function CatalogoPublicoPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFBF9] text-[#1C1917] font-sans pb-16">
-      
-      {/* Premium Luxury Hero Banner */}
+
       <div className="relative overflow-hidden bg-white border-b border-zinc-200/60 py-16 px-6 text-center">
-        {/* Subtle decorative gold glows */}
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-davinci-gold/5 blur-[100px] rounded-full pointer-events-none" />
-        
+
         <div className="max-w-2xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-davinci-gold/10 border border-davinci-gold/20 text-davinci-gold text-[10px] font-bold uppercase tracking-wider">
             <Sparkles className="h-3.5 w-3.5" />
-            Experiência Da Vinci Concierge
+            Catálogo Online
           </div>
-          
+
           <h1 className="text-3xl sm:text-4xl font-extrabold text-davinci-black tracking-tight text-glow uppercase">
-            Nosso Catálogo
+            Serviços e Produtos
           </h1>
           <p className="text-xs sm:text-sm text-davinci-gray font-medium max-w-md mx-auto">
-            Explore nossa seleção de serviços de alta cutelaria, barboterapia, estética premium e produtos exclusivos para cuidados diários.
+            Explore os serviços e produtos disponíveis e escolha a melhor forma de seguir com seu atendimento.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2 text-[11px] text-davinci-gray font-semibold">
             <div className="flex items-center gap-1.5">
               <MapPin className="h-4 w-4 text-davinci-gold" />
-              <span>Av. Premium, 1000 - Jardins</span>
+              <span>Endereço do estabelecimento</span>
             </div>
             <div className="hidden sm:block text-zinc-300">|</div>
             <div className="flex items-center gap-1.5">
               <Phone className="h-4 w-4 text-davinci-gold" />
-              <span>(11) 99999-9999</span>
+              <span>(00) 00000-0000</span>
             </div>
           </div>
         </div>
@@ -96,22 +94,20 @@ export default function CatalogoPublicoPage() {
         <div className="flex justify-center bg-white p-1 rounded-xl border border-zinc-200/80 shadow-sm max-w-xs mx-auto mb-8">
           <button
             onClick={() => setActiveTab('services')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              activeTab === 'services'
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${activeTab === 'services'
                 ? 'bg-davinci-gold/15 text-davinci-gold shadow-sm font-bold border border-davinci-gold/10'
                 : 'text-davinci-gray hover:text-davinci-black'
-            }`}
+              }`}
           >
             <Scissors className="h-4 w-4" />
             Serviços
           </button>
           <button
             onClick={() => setActiveTab('products')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              activeTab === 'products'
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${activeTab === 'products'
                 ? 'bg-davinci-gold/15 text-davinci-gold shadow-sm font-bold border border-davinci-gold/10'
                 : 'text-davinci-gray hover:text-davinci-black'
-            }`}
+              }`}
           >
             <ShoppingBag className="h-4 w-4" />
             Produtos
@@ -161,10 +157,6 @@ export default function CatalogoPublicoPage() {
                       <span>R$ {item.preco.toFixed(2)}</span>
                     </div>
                   </div>
-
-                  <p className="text-xs text-davinci-gray leading-relaxed">
-                    {item.descricao || 'Item de alto padrão selecionado e executado por profissionais especializados.'}
-                  </p>
                 </div>
 
                 <div className="flex items-center justify-between border-t border-zinc-100 pt-4 mt-6">

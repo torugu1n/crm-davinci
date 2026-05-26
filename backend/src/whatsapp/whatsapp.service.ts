@@ -208,7 +208,7 @@ export class WhatsappService {
       await this.receiveCustomerMessage(client.id, text, true);
 
       // Enviar mensagem de saudação e perguntar o nome
-      const replyText = `Olá! Sou o concierge virtual da Da Vinci. 🤵\n\nIdentifiquei que este número de WhatsApp ainda não está cadastrado em nosso sistema.\n\n**Como posso te chamar?** Por favor, digite seu nome completo para iniciarmos seu atendimento.`;
+      const replyText = `Olá! Sou o atendimento virtual deste estabelecimento.\n\nIdentifiquei que este número de WhatsApp ainda não está cadastrado em nosso sistema.\n\nComo posso te chamar? Por favor, digite seu nome completo para iniciarmos seu atendimento.`;
       await this.delayAndReply(client.id, replyText);
 
       return { status: 'success', clientId: client.id };
@@ -294,7 +294,7 @@ export class WhatsappService {
       this.clientStates.delete(finalClientId);
 
       // Enviar mensagem de boas vindas com link do catálogo digital
-      const replyText = `Prazer em falar com você, **${finalName}**! Realizei o vínculo do seu WhatsApp com sucesso. 🤝\n\nComo posso ajudar você hoje?\n\n👉 Se quiser agendar um horário diretamente, digite algo como *"Quero agendar um corte"*.\n\n📖 Se quiser conhecer nossos serviços, valores e produtos à venda, acesse o nosso catálogo digital: https://crm-davinci-production.up.railway.app/catalogo`;
+      const replyText = `Prazer em falar com você, ${finalName}! Realizei o vínculo do seu WhatsApp com sucesso.\n\nComo posso ajudar você hoje?\n\nSe quiser agendar um horário diretamente, digite algo como "Quero agendar um corte".\n\nSe quiser conhecer nossos serviços, valores e produtos à venda, acesse o catálogo digital: https://crm-davinci-production.up.railway.app/catalogo`;
       await this.delayAndReply(finalClientId, replyText);
       return;
     }
@@ -319,11 +319,11 @@ export class WhatsappService {
         });
 
         // Responder com opções de horários
-        const replyText = `Olá, ${client.nome}! Sou o concierge virtual da Da Vinci. 🤵\n\nIdentifiquei que você deseja realizar um agendamento para **${service.nome}** (R$ ${service.preco.toFixed(2)}).\n\nTemos as seguintes vagas com o profissional **${barber.user.nome}** para amanhã:\n\n👉 **10:00**\n👉 **14:00**\n👉 **16:00**\n\nPor favor, digite o horário desejado para confirmarmos seu agendamento.`;
+        const replyText = `Olá, ${client.nome}!\n\nIdentifiquei que você deseja realizar um agendamento para ${service.nome} (R$ ${service.preco.toFixed(2)}).\n\nTemos as seguintes vagas com o profissional ${barber.user.nome} para amanhã:\n\n10:00\n14:00\n16:00\n\nPor favor, digite o horário desejado para confirmarmos seu agendamento.`;
         await this.delayAndReply(clientId, replyText);
       } else {
         // Resposta padrão
-        const replyText = `Olá! Sou o concierge virtual da Da Vinci. 🤵\n\nComo posso ajudar? Se você gostaria de agendar um serviço, basta digitar algo como *"Quero agendar um corte amanhã"*.`;
+        const replyText = `Olá! Como posso ajudar?\n\nSe você gostaria de agendar um serviço, basta digitar algo como "Quero agendar um corte amanhã".`;
         await this.delayAndReply(clientId, replyText);
       }
     } else if (state.step === 'AWAITING_TIME') {
@@ -368,7 +368,7 @@ export class WhatsappService {
         });
 
         // Responder confirmando
-        const replyText = `Excelente escolha, ${client.nome}! ✅\n\nSeu agendamento para **${service.nome}** está confirmado:\n\n📅 **Amanhã** às **${targetHour}:00**\n💈 Profissional: **${barber.user.nome}**\n\nSeu check-in já está ativo no nosso sistema. Estaremos te esperando com um café expresso, chá ou uma taça de espumante gelada! ☕🍵🥂`;
+        const replyText = `Excelente escolha, ${client.nome}!\n\nSeu agendamento para ${service.nome} está confirmado:\n\nData: amanhã às ${targetHour}:00\nProfissional: ${barber.user.nome}\n\nSeu atendimento já está registrado no sistema.`;
         await this.delayAndReply(clientId, replyText);
       } else {
         const replyText = `Não consegui identificar esse horário. 🧐\n\nPor favor, escolha uma das opções válidas:\n\n👉 **10:00**\n👉 **14:00**\n👉 **16:00**\n\nDigite apenas o número correspondente.`;

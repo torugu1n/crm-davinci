@@ -15,7 +15,7 @@ export class AuthService {
       where: { email },
       include: { barber: true },
     });
-    if (user && (await bcrypt.compare(pass, user.senha))) {
+    if (user && user.isActive && (await bcrypt.compare(pass, user.senha))) {
       const { senha, ...result } = user;
       return result;
     }
@@ -23,7 +23,7 @@ export class AuthService {
   }
 
   async staffLogin(user: any) {
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id, email: user.email, role: user.role, roles: user.roles, isActive: user.isActive };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -31,6 +31,8 @@ export class AuthService {
         nome: user.nome,
         email: user.email,
         role: user.role,
+        roles: user.roles,
+        isActive: user.isActive,
         barberId: user.barber?.id || null,
       },
     };

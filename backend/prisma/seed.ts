@@ -66,15 +66,17 @@ async function main() {
   console.log('Produtos criados com sucesso!');
 
   // Senhas hash
-  const adminSenha = await bcrypt.hash('adminsecret', 10);
-  const atendenteSenha = await bcrypt.hash('atendentesecret', 10);
-  const barberSenha = await bcrypt.hash('barbersecret', 10);
+  const adminSenha = await bcrypt.hash('admin1', 10);
+  const atendenteSenha = await bcrypt.hash('atendente1', 10);
+  const barber1Senha = await bcrypt.hash('barbeiro1', 10);
+  const hairdresser1Senha = await bcrypt.hash('cabeleireira1', 10);
+  const manicure2Senha = await bcrypt.hash('manicure2', 10);
 
   // 3. Criar Usuários (Incluindo estilistas masculinos e femininos)
   const userAdmin = await prisma.user.create({
     data: {
-      nome: 'Enrique Da Vinci',
-      email: 'admin@davinci.com',
+      nome: 'Administrador 1',
+      email: 'admin1@salao.com',
       senha: adminSenha,
       role: 'ADMIN',
     },
@@ -82,8 +84,8 @@ async function main() {
 
   const userAtendente = await prisma.user.create({
     data: {
-      nome: 'Sofia Alencar',
-      email: 'atendente@davinci.com',
+      nome: 'Atendente 1',
+      email: 'atendente1@salao.com',
       senha: atendenteSenha,
       role: 'ATTENDANT',
     },
@@ -91,28 +93,31 @@ async function main() {
 
   const userAlessandro = await prisma.user.create({
     data: {
-      nome: 'Alessandro Da Vinci',
-      email: 'alessandro@davinci.com',
-      senha: barberSenha,
+      nome: 'Barbeiro 1',
+      email: 'barbeiro1@salao.com',
+      senha: barber1Senha,
       role: 'BARBER',
+      roles: ['BARBER'],
     },
   });
 
   const userMarcus = await prisma.user.create({
     data: {
-      nome: 'Marcus Aurelius',
-      email: 'marcus@davinci.com',
-      senha: barberSenha,
-      role: 'BARBER',
+      nome: 'Cabeleireira 1',
+      email: 'cabeleireira1@salao.com',
+      senha: hairdresser1Senha,
+      role: 'HAIRDRESSER',
+      roles: ['HAIRDRESSER'],
     },
   });
 
   const userMariana = await prisma.user.create({
     data: {
-      nome: 'Mariana Souza',
-      email: 'mariana@davinci.com',
-      senha: barberSenha,
-      role: 'BARBER',
+      nome: 'Manicure 2',
+      email: 'manicure2@salao.com',
+      senha: manicure2Senha,
+      role: 'MANICURE_PEDICURE',
+      roles: ['MANICURE_PEDICURE'],
     },
   });
 

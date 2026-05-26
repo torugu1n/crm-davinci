@@ -214,7 +214,7 @@ export default function CRMDrawer({ clientId, onClose }: CRMDrawerProps) {
                 value={observacoes}
                 onChange={(e) => setObservacoes(e.target.value)}
                 rows={3}
-                placeholder="Ex: Alergias a certos shampoos, chá de camomila morno..."
+                placeholder="Ex: preferências de atendimento, restrições de produtos ou observações relevantes..."
                 className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-xs resize-none"
               />
             </div>

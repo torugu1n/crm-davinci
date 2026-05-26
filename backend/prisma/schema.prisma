@@ -13,6 +13,8 @@ model User {
   email     String   @unique
   senha     String
   role      String   @default("BARBER") // "ADMIN" | "ATTENDANT" | "BARBER"
+  roles     String[] @default([])
+  isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   barber    Barber?
 
@@ -22,8 +24,11 @@ model User {
 model Barber {
   id            String        @id @default(uuid())
   userId        String        @unique @map("user_id")
+  categoria     String        @default("BARBER")
   especialidade String
+  commissionRate Float        @default(50) @map("commission_rate")
   notaMedia     Float         @default(5.0) @map("nota_media")
+  fotoUrl       String?       @map("foto_url")
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   appointments  Appointment[]
 

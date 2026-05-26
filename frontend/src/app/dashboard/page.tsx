@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { io } from 'socket.io-client';
 import { useStore } from '@/store/useStore';
-import { Search, UserCheck, Plus, ShieldAlert } from 'lucide-react';
+import { Search, UserCheck, ShieldAlert } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import DashboardCalendar from '@/components/DashboardCalendar';
@@ -14,6 +14,9 @@ import FinanceSummary from '@/components/FinanceSummary';
 import AdminFeedbacks from '@/components/AdminFeedbacks';
 import CRMDrawer from '@/components/CRMDrawer';
 import ServicesProductsManager from '@/components/ServicesProductsManager';
+import EmployeesManager from '@/components/EmployeesManager';
+import UsersManager from '@/components/UsersManager';
+import { canAccessDashboard, canAccessDashboardTab, getAllowedDashboardTabs, isAdminUser, isClientUser, isProfessionalUser } from '@/lib/auth';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -30,13 +33,21 @@ export default function DashboardPage() {
     setIsMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    const allowedTabs = getAllowedDashboardTabs(user);
+    if (allowedTabs.length > 0 && !allowedTabs.includes(activeTab as any)) {
+      setActiveTab(allowedTabs[0]);
+    }
+  }, [activeTab, user]);
+
   // Redirecionamento se não autenticado ou papel incorreto
   useEffect(() => {
     if (!token || !user) {
       router.push('/login');
-    } else if (user.role === 'BARBER') {
-      router.push('/barber');
-    } else if (user.role === 'CLIENT') {
+    } else if (!canAccessDashboard(user) && isProfessionalUser(user)) {
+      router.push('/profissional');
+    } else if (isClientUser(user)) {
       router.push('/feedback/client-portal');
     }
   }, [token, user, router]);
@@ -73,15 +84,19 @@ export default function DashboardPage() {
       case 'crm':
         return 'CRM Gestão de Clientes';
       case 'whatsapp':
-        return 'WhatsApp Concierge';
+        return 'WhatsApp e Atendimento';
       case 'services':
         return 'Serviços & Produtos';
+      case 'employees':
+        return 'Equipe';
+      case 'users':
+        return 'Usuários & Permissões';
       case 'finance':
         return 'Dashboard Financeiro';
       case 'feedbacks':
         return 'Central de Feedbacks';
       default:
-        return 'Da Vinci';
+        return 'Painel de Gestão';
     }
   };
 
@@ -92,7 +107,7 @@ export default function DashboardPage() {
 
   if (!isMounted) return null;
 
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'ATTENDANT')) {
+  if (!user || !canAccessDashboard(user)) {
     return null;
   }
 
@@ -184,13 +199,17 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab === 'whatsapp' && <WhatsAppSimulator />}
+          {activeTab === 'whatsapp' && canAccessDashboardTab(user, 'whatsapp') && <WhatsAppSimulator />}
 
-          {activeTab === 'services' && <ServicesProductsManager />}
+          {activeTab === 'users' && isAdminUser(user) && <UsersManager />}
 
-          {activeTab === 'finance' && <FinanceSummary />}
+          {activeTab === 'services' && isAdminUser(user) && <ServicesProductsManager />}
 
-          {activeTab === 'feedbacks' && <AdminFeedbacks />}
+          {activeTab === 'employees' && isAdminUser(user) && <EmployeesManager />}
+
+          {activeTab === 'finance' && isAdminUser(user) && <FinanceSummary />}
+
+          {activeTab === 'feedbacks' && isAdminUser(user) && <AdminFeedbacks />}
         </main>
       </div>
 

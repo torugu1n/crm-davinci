@@ -123,7 +123,7 @@ export default function FeedbackRatingPage() {
             Avaliação Recebida!
           </h2>
           <p className="text-xs text-davinci-gray leading-relaxed">
-            Sua opinião é o pilar da nossa busca por excelência. Obrigado por compartilhar sua experiência na Da Vinci Barbearia.
+            Sua opinião é essencial para a melhoria contínua do atendimento. Obrigado por compartilhar sua experiência.
           </p>
           <button
             onClick={() => router.push('/login')}
@@ -142,10 +142,10 @@ export default function FeedbackRatingPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-black tracking-wider text-davinci-black uppercase text-glow">
-            Da Vinci
+            Avaliação de Atendimento
           </h1>
           <p className="text-[10px] font-light text-davinci-gold mt-1 uppercase tracking-[0.2em]">
-            Salão & Estética | Barbearia
+            Salões, barbearias e estética
           </p>
         </div>
 
@@ -176,7 +176,7 @@ export default function FeedbackRatingPage() {
 
             <div className="flex flex-col items-center gap-2">
               <label className="text-[10px] text-davinci-gray uppercase tracking-wider font-bold">
-                Acolhimento e Ambiente Da Vinci
+                Acolhimento e Ambiente
               </label>
               {renderStarSelector(ratingEnv, setRatingEnv)}
             </div>

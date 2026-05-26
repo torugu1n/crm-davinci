@@ -1,0 +1,3 @@
+ALTER TABLE "barbers"
+ADD COLUMN "categoria" TEXT NOT NULL DEFAULT 'BARBER',
+ADD COLUMN "foto_url" TEXT;

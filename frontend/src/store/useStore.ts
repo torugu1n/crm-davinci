@@ -1,11 +1,14 @@
 import { create } from 'zustand';
+import type { AppRole } from '@/lib/auth';
 
 interface UserSession {
   id: string;
   nome: string;
   email?: string;
   telefone?: string;
-  role: 'ADMIN' | 'ATTENDANT' | 'BARBER' | 'CLIENT';
+  role: AppRole;
+  roles?: string[];
+  isActive?: boolean;
   barberId?: string | null;
 }
 

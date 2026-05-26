@@ -3,8 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Scissors, Phone, User as UserIcon, Mail, Lock, ShieldCheck, Sparkles, Calendar } from 'lucide-react';
+import { Phone, User as UserIcon, Mail, Lock, ShieldCheck, Sparkles, Calendar } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { canAccessDashboard, isProfessionalUser } from '@/lib/auth';
+import BrandLogo from '@/components/BrandLogo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -88,7 +90,7 @@ export default function LoginPage() {
         } else {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(198, 161, 91, ${p.alpha})`; // Dourado premium
+          ctx.fillStyle = `rgba(198, 161, 91, ${p.alpha})`;
           ctx.fill();
         }
       });
@@ -146,8 +148,10 @@ export default function LoginPage() {
 
       setSession(data.access_token, data.user);
 
-      if (data.user.role === 'BARBER') {
-        router.push(`/barber`);
+      if (canAccessDashboard(data.user)) {
+        router.push(`/dashboard`);
+      } else if (isProfessionalUser(data.user)) {
+        router.push(`/profissional`);
       } else {
         router.push(`/dashboard`);
       }
@@ -173,19 +177,8 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="flex items-center gap-3"
         >
-          <div className="p-2.5 rounded-full bg-white border border-davinci-gold/25 shadow-[0_0_15px_rgba(197,168,128,0.1)] flex items-center justify-center">
-            <Scissors className="h-6 w-6 text-davinci-gold" />
-          </div>
-          <div>
-            <span className="text-lg font-black tracking-widest text-davinci-black uppercase text-glow">
-              Da Vinci
-            </span>
-            <span className="block text-[8px] tracking-[0.1em] font-bold text-davinci-gold uppercase">
-              Salão & Estética | Barbearia
-            </span>
-          </div>
+          <BrandLogo iconSize="lg" textSize="lg" />
         </motion.div>
 
         {/* Hero content */}
@@ -197,14 +190,14 @@ export default function LoginPage() {
             className="space-y-4"
           >
             <span className="px-3 py-1 rounded-full bg-davinci-gold/10 border border-davinci-gold/30 text-davinci-gold text-[10px] font-bold uppercase tracking-widest inline-block">
-              Experiência Exclusiva
+              Gestão Profissional
             </span>
             <h1 className="text-4xl lg:text-6xl font-black text-davinci-black leading-tight uppercase">
-              A Arte da Estética <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-davinci-gold to-davinci-black">Elevada ao Extremo</span>
+              Gestão Completa <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-davinci-gold to-davinci-black">Para Seu Negócio de Beleza</span>
             </h1>
             <p className="text-sm lg:text-md text-davinci-gray font-semibold max-w-lg leading-relaxed">
-              Bem-vindo ao espaço onde beleza, estilo e excelência no atendimento se encontram. Uma experiência premium desenhada sob medida para realçar o seu melhor.
+              Centralize atendimento, agenda, catálogo e relacionamento com clientes em uma plataforma pensada para salões, barbearias e clínicas de estética.
             </p>
           </motion.div>
 
@@ -224,17 +217,17 @@ export default function LoginPage() {
             {[
               {
                 title: "Agenda Inteligente",
-                desc: "Reserva de horários premium em tempo real sem filas.",
+                desc: "Organize horários, disponibilidade e atendimentos em tempo real.",
                 icon: Calendar,
               },
               {
-                title: "Concierge Digital",
-                desc: "Agendamentos integrados e confirmações instantâneas.",
+                title: "Atendimento Digital",
+                desc: "Converse com clientes, confirme horários e acompanhe solicitações.",
                 icon: Sparkles,
               },
               {
-                title: "Atendimento de Elite",
-                desc: "Profissionais de alto nível com métricas qualificadas.",
+                title: "Operação Integrada",
+                desc: "Acompanhe equipe, performance e histórico em um só lugar.",
                 icon: ShieldCheck,
               }
             ].map((feat, idx) => {
@@ -269,9 +262,10 @@ export default function LoginPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9, duration: 0.5 }}
-          className="text-[9px] text-davinci-gray font-bold uppercase tracking-widest hidden lg:block"
+          className="space-y-1 text-[9px] text-davinci-gray font-bold uppercase tracking-widest hidden lg:block"
         >
-          © 2026 Da Vinci | Salão & Estética | Barbearia. Todos os direitos reservados.
+          <div>© 2026 Beauty CRM. Todos os direitos reservados.</div>
+          <div className="text-davinci-gold">Desenvolvido por VTRX Solutions</div>
         </motion.div>
       </div>
 
@@ -291,8 +285,8 @@ export default function LoginPage() {
                 setError('');
               }}
               className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${activeTab === 'client'
-                  ? 'text-davinci-gold border-b-2 border-davinci-gold bg-davinci-gold/5'
-                  : 'text-davinci-gray hover:text-davinci-black hover:bg-davinci-gold/2'
+                ? 'text-davinci-gold border-b-2 border-davinci-gold bg-davinci-gold/5'
+                : 'text-davinci-gray hover:text-davinci-black hover:bg-davinci-gold/2'
                 }`}
             >
               Portal do Cliente
@@ -303,8 +297,8 @@ export default function LoginPage() {
                 setError('');
               }}
               className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${activeTab === 'staff'
-                  ? 'text-davinci-gold border-b-2 border-davinci-gold bg-davinci-gold/5'
-                  : 'text-davinci-gray hover:text-davinci-black hover:bg-davinci-gold/2'
+                ? 'text-davinci-gold border-b-2 border-davinci-gold bg-davinci-gold/5'
+                : 'text-davinci-gray hover:text-davinci-black hover:bg-davinci-gold/2'
                 }`}
             >
               Acesso Staff
@@ -323,7 +317,7 @@ export default function LoginPage() {
                   className="space-y-5"
                 >
                   <p className="text-xs text-davinci-gray leading-relaxed text-center font-semibold">
-                    Acesse utilizando seu nome e telefone para agendar serviços premium e acompanhar seu histórico.
+                    Acesse com seu nome e telefone para agendar serviços e acompanhar seu histórico de atendimento.
                   </p>
 
                   <div className="space-y-4">
@@ -405,7 +399,7 @@ export default function LoginPage() {
                   className="space-y-5"
                 >
                   <p className="text-xs text-davinci-gray leading-relaxed text-center font-semibold">
-                    Acesso corporativo para administradores, atendentes e profissionais da barbearia Da Vinci.
+                    Acesso da equipe para administradores, recepção e profissionais do estabelecimento.
                   </p>
 
                   <div className="space-y-4">
@@ -420,7 +414,7 @@ export default function LoginPage() {
                           required
                           value={staffEmail}
                           onChange={(e) => setStaffEmail(e.target.value)}
-                          placeholder="profissional@davinci.com"
+                          placeholder="atendente1@salao.com"
                           className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
                       </div>

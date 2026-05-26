@@ -493,7 +493,7 @@ export default function ServicesProductsManager() {
                     {activeSubTab === 'services' ? 'Serviço' : 'Produto'}
                   </h3>
                   <p className="text-[10px] text-davinci-gold uppercase font-bold tracking-wider mt-0.5">
-                    Premium White & Gold Layout
+                    Cadastro de item
                   </p>
                 </div>
                 <button
@@ -515,7 +515,7 @@ export default function ServicesProductsManager() {
                     type="text"
                     required
                     placeholder={
-                      activeSubTab === 'services' ? 'Ex: Corte Degradê / Barboterapia' : 'Ex: Pomada Efeito Matte 120g'
+                      activeSubTab === 'services' ? 'Ex: Corte feminino, barba, hidratação' : 'Ex: Pomada modeladora 120g'
                     }
                     value={formData.nome}
                     onChange={(e) => setFormData({ ...formData, nome: e.target.value })}

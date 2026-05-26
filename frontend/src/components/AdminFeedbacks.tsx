@@ -73,7 +73,7 @@ export default function AdminFeedbacks() {
 
         <div className="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-sm flex flex-col justify-between">
           <div>
-            <span className="text-[10px] text-davinci-gray uppercase tracking-widest font-bold">Ambiente e Luxo</span>
+            <span className="text-[10px] text-davinci-gray uppercase tracking-widest font-bold">Ambiente e Atendimento</span>
             <h3 className="text-2xl font-bold text-davinci-black mt-1">{avgEnv.toFixed(2)} / 5.00</h3>
           </div>
           <div className="w-full bg-background h-2 rounded-full mt-4 overflow-hidden border border-zinc-200">
@@ -131,7 +131,7 @@ export default function AdminFeedbacks() {
                     <strong className="text-davinci-black">{f.ratingBarber}/5</strong>
                   </div>
                   <div className="flex justify-between">
-                    <span>Espaço Da Vinci:</span>
+                    <span>Ambiente do estabelecimento:</span>
                     <strong className="text-davinci-black">{f.ratingEnv}/5</strong>
                   </div>
                 </div>

@@ -3,8 +3,8 @@ import './globals.css';
 import Providers from '@/components/Providers';
 
 export const metadata: Metadata = {
-  title: 'Da Vinci | Salão, Estética & Barbearia - CRM Premium',
-  description: 'Sistema Concierge de CRM, Agenda Inteligente e Performance Interna.',
+  title: 'Plataforma para Salões e Barbearias',
+  description: 'Gestão de clientes, agenda, catálogo e atendimento para negócios de beleza.',
 };
 
 export default function RootLayout({

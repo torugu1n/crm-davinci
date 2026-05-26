@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class BarbersService {
@@ -14,7 +15,13 @@ export class BarbersService {
             nome: true,
             email: true,
             role: true,
+            roles: true,
           },
+        },
+      },
+      orderBy: {
+        user: {
+          nome: 'asc',
         },
       },
     });
@@ -30,12 +37,110 @@ export class BarbersService {
             nome: true,
             email: true,
             role: true,
+            roles: true,
           },
         },
       },
     });
     if (!barber) throw new NotFoundException('Barbeiro não encontrado');
     return barber;
+  }
+
+  async create(data: any) {
+    if (!data.nome || !data.email || !data.senha || !data.especialidade) {
+      throw new BadRequestException('Nome, e-mail, senha e especialidade são obrigatórios');
+    }
+
+    const senhaHash = await bcrypt.hash(data.senha, 10);
+
+    return this.prisma.barber.create({
+      data: {
+        categoria: data.categoria || 'BARBER',
+        especialidade: data.especialidade,
+        fotoUrl: data.fotoUrl || null,
+        commissionRate: data.commissionRate ?? 50,
+        user: {
+          create: {
+            nome: data.nome,
+            email: data.email,
+            senha: senhaHash,
+            role: 'BARBER',
+            roles: ['BARBER'],
+          },
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+            role: true,
+            roles: true,
+          },
+        },
+      },
+    });
+  }
+
+  async update(id: string, data: any) {
+    const existing = await this.prisma.barber.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Profissional não encontrado');
+    }
+
+    const userData: Record<string, any> = {
+      nome: data.nome,
+      email: data.email,
+    };
+
+    if (data.senha) {
+      userData.senha = await bcrypt.hash(data.senha, 10);
+    }
+
+    return this.prisma.barber.update({
+      where: { id },
+      data: {
+        categoria: data.categoria,
+        especialidade: data.especialidade,
+        fotoUrl: data.fotoUrl !== undefined ? data.fotoUrl || null : undefined,
+        commissionRate: data.commissionRate,
+        user: {
+          update: userData,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+            role: true,
+            roles: true,
+          },
+        },
+      },
+    });
+  }
+
+  async delete(id: string) {
+    const existing = await this.prisma.barber.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Profissional não encontrado');
+    }
+
+    await this.prisma.user.delete({
+      where: { id: existing.userId },
+    });
+
+    return { success: true };
   }
 
   async getBarberDashboard(id: string) {
@@ -87,7 +192,10 @@ export class BarbersService {
       barber: {
         id: barber.id,
         nome: barber.user.nome,
+        categoria: barber.categoria,
         especialidade: barber.especialidade,
+        fotoUrl: barber.fotoUrl,
+        commissionRate: barber.commissionRate,
         notaMedia: barber.notaMedia,
       },
       todayAppointments: agendaHoje,
@@ -95,7 +203,8 @@ export class BarbersService {
         totalAppointments: totalCortes,
         totalBilling: faturamentoTotal,
         returnRate: parseFloat(taxaRetorno.toFixed(1)),
-        commissionEarned: faturamentoTotal * 0.5, // 50% commission
+        commissionRate: barber.commissionRate,
+        commissionEarned: faturamentoTotal * (barber.commissionRate / 100),
       },
     };
   }

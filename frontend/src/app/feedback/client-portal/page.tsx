@@ -202,7 +202,7 @@ export default function ClientPortalPage() {
           <div>
             <h2 className="text-md font-bold text-davinci-black">Olá, {client.nome}</h2>
             <p className="text-[10px] text-davinci-gray font-light uppercase tracking-wider flex flex-wrap items-center gap-1.5 mt-0.5">
-              <span>Portal do Cliente Da Vinci</span>
+              <span>Portal do Cliente</span>
               <span>•</span>
               <span>Tel: {client.telefone}</span>
               {client.aniversario && (
@@ -303,7 +303,7 @@ export default function ClientPortalPage() {
               <Calendar className="h-5 w-5 text-davinci-gold" />
               Agendar Novo Atendimento
             </h3>
-            <p className="text-[10px] text-davinci-gray mt-1">Escolha seu serviço e reserve seu horário premium.</p>
+            <p className="text-[10px] text-davinci-gray mt-1">Escolha seu serviço e reserve seu horário.</p>
           </div>
 
           {bookingSuccess && (
@@ -324,7 +324,7 @@ export default function ClientPortalPage() {
                 onChange={(e) => setSelectedService(e.target.value)}
                 className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-xs shadow-sm"
               >
-                <option value="" disabled>-- Serviços Premium --</option>
+                <option value="" disabled>-- Selecione um serviço --</option>
                 {services.map((s: any) => (
                   <option key={s.id} value={s.id}>{s.nome} - R$ {s.preco.toFixed(2)} ({s.duracao} min)</option>
                 ))}
@@ -344,7 +344,7 @@ export default function ClientPortalPage() {
                 }}
                 className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-xs shadow-sm"
               >
-                <option value="" disabled>-- Profissionais Da Vinci --</option>
+                <option value="" disabled>-- Selecione um profissional --</option>
                 {barbers.map((b: any) => (
                   <option key={b.id} value={b.id}>{b.user.nome} (⭐ {b.notaMedia})</option>
                 ))}

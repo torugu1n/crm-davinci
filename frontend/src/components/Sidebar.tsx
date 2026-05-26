@@ -1,9 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Calendar, Users, DollarSign, MessageSquare, Star, Scissors, LogOut } from 'lucide-react';
+import { Calendar, Users, DollarSign, MessageSquare, Star, Scissors, LogOut, UserCog, ShieldCheck } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
+import { canAccessDashboardTab, getPrimaryRoleLabel, isAdminUser } from '@/lib/auth';
+import BrandLogo from '@/components/BrandLogo';
 
 interface SidebarProps {
   activeTab: string;
@@ -17,18 +19,17 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const mobileMenuOpen = useStore((state) => state.mobileMenuOpen);
   const setMobileMenuOpen = useStore((state) => state.setMobileMenuOpen);
 
-  const menuItems = [
-    { id: 'calendar', label: 'Agenda Inteligente', icon: Calendar },
-    { id: 'crm', label: 'CRM Clientes', icon: Users },
-    { id: 'whatsapp', label: 'Mensagens Concierge', icon: MessageSquare },
+  const allMenuItems = [
+    { id: 'calendar', label: 'Agenda', icon: Calendar },
+    { id: 'crm', label: 'Meus Clientes', icon: Users },
+    { id: 'whatsapp', label: 'Mensagens WhatsApp', icon: MessageSquare },
     { id: 'services', label: 'Serviços & Produtos', icon: Scissors },
-    { id: 'finance', label: 'Painel Financeiro', icon: DollarSign },
+    { id: 'finance', label: 'Financeiro', icon: DollarSign },
+    { id: 'users', label: 'Usuários & Permissões', icon: ShieldCheck },
+    { id: 'employees', label: 'Equipe', icon: UserCog },
+    { id: 'feedbacks', label: 'Feedbacks & Ratings', icon: Star },
   ];
-
-  // Apenas Admin visualiza feedbacks de acordo com a regra de negócio
-  if (user?.role === 'ADMIN') {
-    menuItems.push({ id: 'feedbacks', label: 'Feedbacks & Ratings', icon: Star });
-  }
+  const menuItems = allMenuItems.filter((item) => canAccessDashboardTab(user, item.id));
 
   const handleLogout = () => {
     logout();
@@ -47,23 +48,16 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       )}
 
       <aside
-        className={`w-64 bg-white border-r border-zinc-200/80 flex flex-col h-screen fixed left-0 top-0 z-40 lg:z-20 transition-transform duration-300 ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        className={`w-64 bg-white border-r border-zinc-200/80 flex flex-col h-screen fixed left-0 top-0 z-40 lg:z-20 transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
       >
         {/* Brand Logo */}
-        <div className="p-6 border-b border-zinc-200/80 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-background border border-davinci-gold/20">
-            <Scissors className="h-5 w-5 text-davinci-gold" />
-          </div>
-          <div>
-            <h2 className="text-md font-bold text-davinci-black uppercase tracking-wider text-glow">
-              Da Vinci
-            </h2>
-            <p className="text-[8px] text-davinci-gold uppercase tracking-[0.05em] font-semibold">
-              Salão & Estética | Barbearia
-            </p>
-          </div>
+        <div className="p-6 border-b border-zinc-200/80">
+          <BrandLogo
+            subtitle="Salões, barbearias e estética"
+            iconSize="md"
+            textSize="md"
+          />
         </div>
 
         {/* Nav List */}
@@ -78,11 +72,10 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                   setActiveTab(item.id);
                   setMobileMenuOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all cursor-pointer ${
-                  isActive
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all cursor-pointer ${isActive
                     ? 'bg-davinci-gold/10 text-davinci-gold border-l-2 border-davinci-gold pl-3 font-semibold'
                     : 'text-davinci-gray hover:text-davinci-black hover:bg-davinci-gold/5'
-                }`}
+                  }`}
               >
                 <Icon className={`h-4.5 w-4.5 ${isActive ? 'text-davinci-gold' : 'text-davinci-gray'}`} />
                 {item.label}
@@ -100,11 +93,10 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
             <div className="overflow-hidden">
               <h4 className="text-xs font-semibold text-davinci-black truncate">{user?.nome}</h4>
               <span className="text-[9px] text-davinci-gold uppercase font-semibold tracking-wider">
-                {user?.role === 'ADMIN' ? 'Administrador' : 'Atendente'}
+                {getPrimaryRoleLabel(user)}
               </span>
             </div>
           </div>
-
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/5 transition-colors text-xs font-medium cursor-pointer"

@@ -126,7 +126,7 @@ export class AppointmentsService {
     // 4. Enviar mensagem de feedback simulada via WhatsApp com atraso (delay)
     setTimeout(async () => {
       try {
-        const messageContent = `Olá, ${appointment.client.nome}! Como foi sua experiência no salão Da Vinci hoje? Deixe sua avaliação em: http://localhost:3000/feedback/${appointment.id}`;
+        const messageContent = `Olá, ${appointment.client.nome}! Como foi sua experiência hoje? Deixe sua avaliação em: http://localhost:3000/feedback/${appointment.id}`;
         
         await this.whatsappService.sendOperatorMessage(clientId, messageContent);
 

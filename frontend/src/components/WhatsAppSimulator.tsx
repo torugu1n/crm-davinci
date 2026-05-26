@@ -59,10 +59,6 @@ export default function WhatsAppSimulator() {
   useEffect(() => {
     const socket = io((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'));
 
-    socket.on('connect', () => {
-      console.log('Simulador conectado ao WebSocket backend');
-    });
-
     socket.on('new-message', (data: { clientId: string; message: any }) => {
       if (data.clientId === selectedClientId) {
         // Se a mensagem é enviada pelo bot, simular digitação
@@ -153,9 +149,9 @@ export default function WhatsAppSimulator() {
           <div>
             <h3 className="text-sm font-bold text-davinci-black uppercase tracking-wider flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              Atendimento Concierge
+              Atendimento WhatsApp
             </h3>
-            <p className="text-[10px] text-davinci-gray mt-0.5">Operador: Sofia Alencar (Recepção)</p>
+            <p className="text-[10px] text-davinci-gray mt-0.5">Operador: recepção</p>
           </div>
         </div>
 
@@ -288,7 +284,7 @@ export default function WhatsAppSimulator() {
                 </div>
                 <div>
                   <h4 className="text-[11px] font-bold text-davinci-black flex items-center gap-1">
-                    Da Vinci Concierge
+                    Atendimento do Estabelecimento
                     <Sparkles className="h-3 w-3 text-davinci-gold fill-davinci-gold" />
                   </h4>
                   <span className="text-[8px] text-emerald-600 font-light flex items-center gap-1">
