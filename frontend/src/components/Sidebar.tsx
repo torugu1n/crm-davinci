@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Calendar, Users, DollarSign, MessageSquare, Star, Scissors, LogOut } from 'lucide-react';
+import { Calendar, Users, DollarSign, MessageSquare, Star, Scissors, LogOut, UserCog, ShieldCheck } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
+import { canAccessDashboardTab, getPrimaryRoleLabel } from '@/lib/auth';
 
 interface SidebarProps {
   activeTab: string;
@@ -17,18 +18,18 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const mobileMenuOpen = useStore((state) => state.mobileMenuOpen);
   const setMobileMenuOpen = useStore((state) => state.setMobileMenuOpen);
 
-  const menuItems = [
+  const allMenuItems = [
     { id: 'calendar', label: 'Agenda', icon: Calendar },
     { id: 'crm', label: 'Meus Clientes', icon: Users },
     { id: 'whatsapp', label: 'Mensagens WhatsApp', icon: MessageSquare },
     { id: 'services', label: 'Serviços & Produtos', icon: Scissors },
     { id: 'finance', label: 'Financeiro', icon: DollarSign },
+    { id: 'users', label: 'Usuários & Permissões', icon: ShieldCheck },
+    { id: 'employees', label: 'Equipe', icon: UserCog },
+    { id: 'feedbacks', label: 'Feedbacks & Ratings', icon: Star },
   ];
 
-  // Apenas Admin visualiza feedbacks de acordo com a regra de negócio
-  if (user?.role === 'ADMIN') {
-    menuItems.push({ id: 'feedbacks', label: 'Feedbacks & Ratings', icon: Star });
-  }
+  const menuItems = allMenuItems.filter((item) => canAccessDashboardTab(user, item.id));
 
   const handleLogout = () => {
     logout();
@@ -98,7 +99,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
             <div className="overflow-hidden">
               <h4 className="text-xs font-semibold text-davinci-black truncate">{user?.nome}</h4>
               <span className="text-[9px] text-davinci-gold uppercase font-semibold tracking-wider">
-                {user?.role === 'ADMIN' ? 'Administrador' : 'Atendente'}
+                {getPrimaryRoleLabel(user)}
               </span>
             </div>
           </div>
