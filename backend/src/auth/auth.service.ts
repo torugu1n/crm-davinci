@@ -54,6 +54,11 @@ export class AuthService {
       throw new BadRequestException('Nome e telefone são obrigatórios');
     }
 
+    const normalizedName = nome.trim();
+    if (normalizedName.length < 2) {
+      throw new BadRequestException('Informe seu nome completo');
+    }
+
     const formattedPhone = normalizePhone(telefone);
     const cleanedPhone = extractPhoneDigits(formattedPhone);
     const normalizedBirthday = normalizeBirthday(aniversario);
@@ -68,18 +73,23 @@ export class AuthService {
     if (!client) {
       client = await this.prisma.client.create({
         data: {
-          nome,
+          nome: normalizedName,
           telefone: formattedPhone,
           aniversario: normalizedBirthday,
           observacoes: 'Cliente cadastrado via portal simplificado.',
         },
       });
-    } else if (client.telefone !== formattedPhone || (normalizedBirthday && !client.aniversario)) {
+    } else if (
+      client.nome !== normalizedName ||
+      client.telefone !== formattedPhone ||
+      (normalizedBirthday && client.aniversario !== normalizedBirthday)
+    ) {
       client = await this.prisma.client.update({
         where: { id: client.id },
         data: {
+          nome: normalizedName,
           telefone: formattedPhone,
-          aniversario: client.aniversario || normalizedBirthday,
+          aniversario: normalizedBirthday ?? client.aniversario,
         },
       });
     }

@@ -26,6 +26,7 @@ model Barber {
   userId        String        @unique @map("user_id")
   categoria     String        @default("BARBER")
   especialidade String
+  miniBio       String?       @map("mini_bio")
   commissionRate Float        @default(50) @map("commission_rate")
   notaMedia     Float         @default(5.0) @map("nota_media")
   fotoUrl       String?       @map("foto_url")

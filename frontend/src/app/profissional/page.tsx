@@ -49,6 +49,7 @@ type DashboardData = {
     nome: string;
     categoria?: string | null;
     especialidade?: string | null;
+    miniBio?: string | null;
     fotoUrl?: string | null;
   };
   todayAppointments: AppointmentLike[];
@@ -374,7 +375,7 @@ export default function ProfessionalPage() {
       <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
         <Header
           title={getPageTitle(activeTab)}
-          subtitle={professional.especialidade || professional.categoria || 'Atendimento e acompanhamento do dia'}
+          subtitle={professional.miniBio || professional.especialidade || professional.categoria || 'Atendimento e acompanhamento do dia'}
           avatarUrl={professional.fotoUrl}
           rightSlot={(
             <div className="text-right hidden sm:block">

@@ -78,6 +78,7 @@ export class UsersService {
           userId: user.id,
           categoria: this.buildProfessionalCategory(roles),
           especialidade: data.especialidade || 'Especialidade a definir',
+          miniBio: data.miniBio || null,
           fotoUrl: data.fotoUrl || null,
           commissionRate: data.commissionRate ?? 50,
         },
@@ -124,6 +125,7 @@ export class UsersService {
           data: {
             categoria: this.buildProfessionalCategory(roles),
             especialidade: data.especialidade ?? existing.barber.especialidade,
+            miniBio: data.miniBio !== undefined ? data.miniBio || null : existing.barber.miniBio,
             fotoUrl: data.fotoUrl !== undefined ? data.fotoUrl || null : existing.barber.fotoUrl,
             commissionRate: data.commissionRate ?? existing.barber.commissionRate,
           },
@@ -134,6 +136,7 @@ export class UsersService {
             userId: id,
             categoria: this.buildProfessionalCategory(roles),
             especialidade: data.especialidade || 'Especialidade a definir',
+            miniBio: data.miniBio || null,
             fotoUrl: data.fotoUrl || null,
             commissionRate: data.commissionRate ?? 50,
           },

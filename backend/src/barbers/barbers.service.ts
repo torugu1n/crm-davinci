@@ -54,11 +54,12 @@ export class BarbersService {
     const senhaHash = await bcrypt.hash(data.senha, 10);
 
     return this.prisma.barber.create({
-      data: {
-        categoria: data.categoria || 'BARBER',
-        especialidade: data.especialidade,
-        fotoUrl: data.fotoUrl || null,
-        commissionRate: data.commissionRate ?? 50,
+        data: {
+          categoria: data.categoria || 'BARBER',
+          especialidade: data.especialidade,
+          miniBio: data.miniBio || null,
+          fotoUrl: data.fotoUrl || null,
+          commissionRate: data.commissionRate ?? 50,
         user: {
           create: {
             nome: data.nome,
@@ -107,6 +108,7 @@ export class BarbersService {
       data: {
         categoria: data.categoria,
         especialidade: data.especialidade,
+        miniBio: data.miniBio !== undefined ? data.miniBio || null : undefined,
         fotoUrl: data.fotoUrl !== undefined ? data.fotoUrl || null : undefined,
         commissionRate: data.commissionRate,
         user: {
@@ -194,6 +196,7 @@ export class BarbersService {
         nome: barber.user.nome,
         categoria: barber.categoria,
         especialidade: barber.especialidade,
+        miniBio: barber.miniBio,
         fotoUrl: barber.fotoUrl,
         commissionRate: barber.commissionRate,
         notaMedia: barber.notaMedia,

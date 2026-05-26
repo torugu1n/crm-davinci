@@ -29,6 +29,7 @@ export default function EmployeesManager() {
     senha: '',
     categoria: 'BARBER',
     especialidade: '',
+    miniBio: '',
     fotoUrl: '',
     commissionRate: '50',
   });
@@ -53,6 +54,7 @@ export default function EmployeesManager() {
       senha: '',
       categoria: 'BARBER',
       especialidade: '',
+      miniBio: '',
       fotoUrl: '',
       commissionRate: '50',
     });
@@ -165,6 +167,7 @@ export default function EmployeesManager() {
       senha: '',
       categoria: 'BARBER',
       especialidade: '',
+      miniBio: '',
       fotoUrl: '',
       commissionRate: '50',
     });
@@ -179,6 +182,7 @@ export default function EmployeesManager() {
       senha: '',
       categoria: employee.categoria || 'BARBER',
       especialidade: employee.especialidade || '',
+      miniBio: employee.miniBio || '',
       fotoUrl: employee.fotoUrl || '',
       commissionRate: String(employee.commissionRate ?? 50),
     });
@@ -212,6 +216,7 @@ export default function EmployeesManager() {
       senha: formData.senha || undefined,
       categoria: formData.categoria,
       especialidade: formData.especialidade,
+      miniBio: formData.miniBio || undefined,
       fotoUrl: formData.fotoUrl || undefined,
       commissionRate: Number(formData.commissionRate || 50),
     };
@@ -325,6 +330,12 @@ export default function EmployeesManager() {
                   <span>{employee.especialidade}</span>
                 </div>
 
+                {employee.miniBio ? (
+                  <div className="rounded-xl border border-davinci-gold/15 bg-davinci-gold/5 px-3 py-2 text-[11px] leading-relaxed text-davinci-gray">
+                    {employee.miniBio}
+                  </div>
+                ) : null}
+
                 <div className="flex items-start gap-2 text-davinci-gray">
                   <Percent className="h-4 w-4 text-davinci-gold mt-0.5" />
                   <span>Comissão: {Number(employee.commissionRate ?? 50).toFixed(0)}%</span>
@@ -424,6 +435,19 @@ export default function EmployeesManager() {
                   value={formData.especialidade}
                   onChange={(event) => setFormData({ ...formData, especialidade: event.target.value })}
                   placeholder="Ex: cortes femininos, química capilar, barba, esmaltação em gel..."
+                  className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-xs resize-none focus:outline-none focus:border-davinci-gold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider font-bold text-davinci-gray mb-1.5">
+                  Mini bio
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.miniBio}
+                  onChange={(event) => setFormData({ ...formData, miniBio: event.target.value })}
+                  placeholder="Ex: especialista em cortes clássicos e atendimento consultivo, com foco em acabamento preciso e experiência acolhedora."
                   className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-xs resize-none focus:outline-none focus:border-davinci-gold"
                 />
               </div>

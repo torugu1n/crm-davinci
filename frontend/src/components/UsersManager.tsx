@@ -42,6 +42,7 @@ export default function UsersManager() {
     role: 'ATTENDANT' as StaffRole,
     isActive: true,
     especialidade: '',
+    miniBio: '',
     fotoUrl: '',
     commissionRate: '50',
   });
@@ -72,6 +73,7 @@ export default function UsersManager() {
       role: 'ATTENDANT',
       isActive: true,
       especialidade: '',
+      miniBio: '',
       fotoUrl: '',
       commissionRate: '50',
     });
@@ -222,6 +224,7 @@ export default function UsersManager() {
       role: 'ATTENDANT',
       isActive: true,
       especialidade: '',
+      miniBio: '',
       fotoUrl: '',
       commissionRate: '50',
     });
@@ -239,6 +242,7 @@ export default function UsersManager() {
       role: normalizePrimaryRole(roles, user.role),
       isActive: user.isActive !== false,
       especialidade: user.barber?.especialidade || '',
+      miniBio: user.barber?.miniBio || '',
       fotoUrl: user.barber?.fotoUrl || '',
       commissionRate: String(user.barber?.commissionRate ?? 50),
     });
@@ -305,6 +309,7 @@ export default function UsersManager() {
       roles: formData.roles,
       isActive: formData.isActive,
       especialidade: hasProfessionalRole(formData.roles) ? formData.especialidade : undefined,
+      miniBio: hasProfessionalRole(formData.roles) ? formData.miniBio || undefined : undefined,
       fotoUrl: hasProfessionalRole(formData.roles) ? formData.fotoUrl || undefined : undefined,
       commissionRate: hasProfessionalRole(formData.roles) ? Number(formData.commissionRate || 50) : undefined,
     };
@@ -440,6 +445,11 @@ export default function UsersManager() {
                         <BadgeCheck className="h-4 w-4 text-davinci-gold mt-0.5" />
                         <span>{user.barber.especialidade}</span>
                       </div>
+                      {user.barber.miniBio ? (
+                        <div className="rounded-xl border border-davinci-gold/15 bg-davinci-gold/5 px-3 py-2 text-[11px] leading-relaxed text-davinci-gray">
+                          {user.barber.miniBio}
+                        </div>
+                      ) : null}
                       {user.barber.fotoUrl && (
                         <div className="flex items-start gap-2 text-davinci-gray">
                           <Mail className="h-4 w-4 text-davinci-gold mt-0.5" />
@@ -598,6 +608,19 @@ export default function UsersManager() {
                       value={formData.especialidade}
                       onChange={(event) => setFormData({ ...formData, especialidade: event.target.value })}
                       placeholder="Ex: barba clássica, cortes femininos, esmaltação em gel..."
+                      className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-xs resize-none focus:outline-none focus:border-davinci-gold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider font-bold text-davinci-gray mb-1.5">
+                      Mini bio
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formData.miniBio}
+                      onChange={(event) => setFormData({ ...formData, miniBio: event.target.value })}
+                      placeholder="Ex: profissional com atendimento acolhedor, precisão técnica e foco em resultado consistente."
                       className="w-full px-3 py-2 border border-zinc-200 rounded-lg text-xs resize-none focus:outline-none focus:border-davinci-gold"
                     />
                   </div>

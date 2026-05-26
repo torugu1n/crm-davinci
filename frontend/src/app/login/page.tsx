@@ -429,7 +429,7 @@ export default function LoginPage() {
                           required
                           value={staffLogin}
                           onChange={(e) => setStaffLogin(e.target.value)}
-                          placeholder="atendente1"
+                          placeholder="usuario"
                           className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
                       </div>
@@ -446,7 +446,7 @@ export default function LoginPage() {
                           required
                           value={staffSenha}
                           onChange={(e) => setStaffSenha(e.target.value)}
-                          placeholder="••••••••"
+                          placeholder="****"
                           className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
                       </div>
