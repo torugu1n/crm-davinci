@@ -12,6 +12,8 @@ interface UserSession {
   barberId?: string | null;
 }
 
+export type DemoPersona = 'admin' | 'attendant' | 'professional' | 'client';
+
 interface ToastNotification {
   id: string;
   title: string;
@@ -23,12 +25,19 @@ interface ToastNotification {
 interface StoreState {
   token: string | null;
   user: UserSession | null;
+  demoMode: boolean;
+  demoPersona: DemoPersona | null;
   activeClientForSimulator: { id: string; nome: string; telefone: string } | null;
   whatsappSimulatorOpen: boolean;
   mobileMenuOpen: boolean;
   notifications: ToastNotification[];
+  tourActive: boolean;
+  tourStep: number;
   setSession: (token: string, user: UserSession) => void;
   logout: () => void;
+  setDemoMode: (enabled: boolean, persona?: DemoPersona | null) => void;
+  setTourActive: (active: boolean) => void;
+  setTourStep: (step: number) => void;
   setActiveClientForSimulator: (client: { id: string; nome: string; telefone: string } | null) => void;
   setWhatsappSimulatorOpen: (open: boolean) => void;
   setMobileMenuOpen: (open: boolean) => void;
@@ -42,10 +51,14 @@ export const useStore = create<StoreState>((set) => ({
     const stored = localStorage.getItem('davinci_user');
     return stored ? JSON.parse(stored) : null;
   })() : null,
+  demoMode: typeof window !== 'undefined' ? localStorage.getItem('davinci_demo_mode') === 'true' : false,
+  demoPersona: typeof window !== 'undefined' ? (localStorage.getItem('davinci_demo_persona') as DemoPersona | null) : null,
   activeClientForSimulator: null,
   whatsappSimulatorOpen: false,
   mobileMenuOpen: false,
   notifications: [],
+  tourActive: typeof window !== 'undefined' ? localStorage.getItem('davinci_tour_active') === 'true' : false,
+  tourStep: typeof window !== 'undefined' ? parseInt(localStorage.getItem('davinci_tour_step') || '0', 10) : 0,
   setSession: (token, user) => {
     localStorage.setItem('davinci_token', token);
     localStorage.setItem('davinci_user', JSON.stringify(user));
@@ -54,7 +67,57 @@ export const useStore = create<StoreState>((set) => ({
   logout: () => {
     localStorage.removeItem('davinci_token');
     localStorage.removeItem('davinci_user');
-    set({ token: null, user: null, activeClientForSimulator: null });
+    localStorage.removeItem('davinci_demo_mode');
+    localStorage.removeItem('davinci_demo_persona');
+    localStorage.removeItem('davinci_tour_active');
+    localStorage.removeItem('davinci_tour_step');
+    set({
+      token: null,
+      user: null,
+      demoMode: false,
+      demoPersona: null,
+      activeClientForSimulator: null,
+      tourActive: false,
+      tourStep: 0,
+    });
+  },
+  setDemoMode: (enabled, persona = null) => {
+    if (enabled) {
+      localStorage.setItem('davinci_demo_mode', 'true');
+      if (persona) {
+        localStorage.setItem('davinci_demo_persona', persona);
+        localStorage.setItem('davinci_tour_active', 'true');
+        localStorage.setItem('davinci_tour_step', '0');
+      } else {
+        localStorage.removeItem('davinci_demo_persona');
+        localStorage.removeItem('davinci_tour_active');
+        localStorage.removeItem('davinci_tour_step');
+      }
+    } else {
+      localStorage.removeItem('davinci_demo_mode');
+      localStorage.removeItem('davinci_demo_persona');
+      localStorage.removeItem('davinci_tour_active');
+      localStorage.removeItem('davinci_tour_step');
+    }
+
+    set({
+      demoMode: enabled,
+      demoPersona: enabled ? persona : null,
+      tourActive: enabled && !!persona,
+      tourStep: 0,
+    });
+  },
+  setTourActive: (active) => {
+    if (active) {
+      localStorage.setItem('davinci_tour_active', 'true');
+    } else {
+      localStorage.removeItem('davinci_tour_active');
+    }
+    set({ tourActive: active });
+  },
+  setTourStep: (step) => {
+    localStorage.setItem('davinci_tour_step', step.toString());
+    set({ tourStep: step });
   },
   setActiveClientForSimulator: (client) => set({ activeClientForSimulator: client }),
   setWhatsappSimulatorOpen: (open) => set({ whatsappSimulatorOpen: open }),

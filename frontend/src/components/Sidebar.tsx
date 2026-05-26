@@ -1,10 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Calendar, Users, DollarSign, MessageSquare, Star, Scissors, UserCog, ShieldCheck } from 'lucide-react';
+import { Calendar, Users, DollarSign, MessageSquare, Star, Scissors, LogOut } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { canAccessDashboardTab } from '@/lib/auth';
-import BrandLogo from '@/components/BrandLogo';
+import { useRouter } from 'next/navigation';
 
 interface SidebarProps {
   activeTab: string;
@@ -12,21 +11,30 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
+  const router = useRouter();
   const user = useStore((state) => state.user);
+  const logout = useStore((state) => state.logout);
   const mobileMenuOpen = useStore((state) => state.mobileMenuOpen);
   const setMobileMenuOpen = useStore((state) => state.setMobileMenuOpen);
 
-  const allMenuItems = [
+  const menuItems = [
     { id: 'calendar', label: 'Agenda', icon: Calendar },
     { id: 'crm', label: 'Meus Clientes', icon: Users },
     { id: 'whatsapp', label: 'Mensagens WhatsApp', icon: MessageSquare },
     { id: 'services', label: 'Serviços & Produtos', icon: Scissors },
     { id: 'finance', label: 'Financeiro', icon: DollarSign },
-    { id: 'users', label: 'Usuários & Permissões', icon: ShieldCheck },
-    { id: 'employees', label: 'Equipe', icon: UserCog },
-    { id: 'feedbacks', label: 'Feedbacks & Ratings', icon: Star },
   ];
-  const menuItems = allMenuItems.filter((item) => canAccessDashboardTab(user, item.id));
+
+  // Apenas Admin visualiza feedbacks de acordo com a regra de negócio
+  if (user?.role === 'ADMIN') {
+    menuItems.push({ id: 'feedbacks', label: 'Feedbacks & Ratings', icon: Star });
+  }
+
+  const handleLogout = () => {
+    logout();
+    setMobileMenuOpen(false);
+    router.push('/login');
+  };
 
   return (
     <>
@@ -43,12 +51,18 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           }`}
       >
         {/* Brand Logo */}
-        <div className="p-6 border-b border-zinc-200/80">
-          <BrandLogo
-            subtitle="Salões, barbearias e estética"
-            iconSize="md"
-            textSize="md"
-          />
+        <div className="p-6 border-b border-zinc-200/80 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-background border border-davinci-gold/20">
+            <Scissors className="h-5 w-5 text-davinci-gold" />
+          </div>
+          <div>
+            <h2 className="text-md font-bold text-davinci-black uppercase tracking-wider text-glow">
+              Beauty CRM
+            </h2>
+            <p className="text-[8px] text-davinci-gold uppercase tracking-[0.05em] font-semibold">
+              Salões, barbearias e estética
+            </p>
+          </div>
         </div>
 
         {/* Nav List */}
@@ -64,8 +78,8 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
                   setMobileMenuOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all cursor-pointer ${isActive
-                    ? 'bg-davinci-gold/10 text-davinci-gold border-l-2 border-davinci-gold pl-3 font-semibold'
-                    : 'text-davinci-gray hover:text-davinci-black hover:bg-davinci-gold/5'
+                  ? 'bg-davinci-gold/10 text-davinci-gold border-l-2 border-davinci-gold pl-3 font-semibold'
+                  : 'text-davinci-gray hover:text-davinci-black hover:bg-davinci-gold/5'
                   }`}
               >
                 <Icon className={`h-4.5 w-4.5 ${isActive ? 'text-davinci-gold' : 'text-davinci-gray'}`} />
@@ -74,6 +88,29 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
             );
           })}
         </nav>
+
+        {/* User Info & Logout */}
+        <div className="p-4 border-t border-zinc-200/80 bg-background/50">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-davinci-gold/10 border border-davinci-gold/20 flex items-center justify-center font-bold text-davinci-gold">
+              {user?.nome ? user.nome.charAt(0).toUpperCase() : 'U'}
+            </div>
+            <div className="overflow-hidden">
+              <h4 className="text-xs font-semibold text-davinci-black truncate">{user?.nome}</h4>
+              <span className="text-[9px] text-davinci-gold uppercase font-semibold tracking-wider">
+                {user?.role === 'ADMIN' ? 'Administrador' : 'Atendente'}
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/5 transition-colors text-xs font-medium cursor-pointer"
+          >
+            <LogOut className="h-4.5 w-4.5" />
+            Sair do Sistema
+          </button>
+        </div>
       </aside>
     </>
   );

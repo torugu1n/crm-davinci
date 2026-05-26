@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Calendar,
@@ -12,13 +12,16 @@ import {
   Menu,
   Scissors,
   Users,
+  Settings,
+  Camera,
+  Check,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { isProfessionalUser } from '@/lib/auth';
 import BrandLogo from '@/components/BrandLogo';
 import Header from '@/components/Header';
 
-type ProfessionalTab = 'overview' | 'schedule' | 'clients';
+type ProfessionalTab = 'overview' | 'schedule' | 'clients' | 'settings';
 
 type StatusKey =
   | 'SCHEDULED'
@@ -77,6 +80,7 @@ const PROFESSIONAL_TABS: Array<{
   { id: 'overview', label: 'Operação do Dia', icon: ClipboardList },
   { id: 'schedule', label: 'Agenda', icon: Calendar },
   { id: 'clients', label: 'Clientes do Dia', icon: Users },
+  { id: 'settings', label: 'Configurações', icon: Settings },
 ];
 
 const STATUS_LABELS: Record<StatusKey, string> = {
@@ -151,6 +155,8 @@ function getPageTitle(activeTab: ProfessionalTab) {
       return 'Agenda do Dia';
     case 'clients':
       return 'Clientes do Dia';
+    case 'settings':
+      return 'Meu Perfil & Configurações';
     default:
       return 'Painel do Profissional';
   }
@@ -158,6 +164,7 @@ function getPageTitle(activeTab: ProfessionalTab) {
 
 export default function ProfessionalPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const token = useStore((state) => state.token);
   const user = useStore((state) => state.user);
@@ -169,6 +176,8 @@ export default function ProfessionalPage() {
   const [clientPreferencesText, setClientPreferencesText] = useState('');
   const [clientObservationsText, setClientObservationsText] = useState('');
 
+  const requestedTab = searchParams.get('tab');
+
   useEffect(() => {
     if (!token || !user) {
       router.push('/login');
@@ -179,6 +188,16 @@ export default function ProfessionalPage() {
       router.push('/dashboard');
     }
   }, [token, user, router]);
+
+  useEffect(() => {
+    if (
+      requestedTab &&
+      ['overview', 'schedule', 'clients', 'settings'].includes(requestedTab) &&
+      requestedTab !== activeTab
+    ) {
+      setActiveTab(requestedTab as ProfessionalTab);
+    }
+  }, [requestedTab, activeTab]);
 
   const professionalId = user?.barberId;
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
@@ -243,6 +262,60 @@ export default function ProfessionalPage() {
   };
 
   const professional = dashboard?.barber;
+
+  const [especialidadeInput, setEspecialidadeInput] = useState('');
+  const [miniBioInput, setMiniBioInput] = useState('');
+  const [fotoUrlInput, setFotoUrlInput] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (professional) {
+      setEspecialidadeInput(professional.especialidade || '');
+      setMiniBioInput(professional.miniBio || '');
+      setFotoUrlInput(professional.fotoUrl || '');
+    }
+  }, [professional]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: (updatedData: { especialidade: string; miniBio: string; fotoUrl: string }) =>
+      fetch(`${apiUrl}/barbers/${professionalId}/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updatedData),
+      }).then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erro ao atualizar perfil');
+        return data;
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['professionalDashboard', professionalId] });
+      queryClient.invalidateQueries({ queryKey: ['barbers'] });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    },
+  });
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('A imagem é muito grande. Escolha uma foto de até 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setFotoUrlInput(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const sortedAppointments = useMemo(
     () =>
       [...(dashboard?.todayAppointments || [])].sort(
@@ -387,7 +460,12 @@ export default function ProfessionalPage() {
 
         <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
           {activeTab === 'overview' && (
-            <div className="space-y-6">
+            <div
+              id="professional-tab-content-overview"
+              className="space-y-6"
+              data-demo-title="Painel operacional do profissional"
+              data-demo-description="Esta visão concentra o que o profissional precisa no dia: fila de atendimentos, resumo operacional, comissão prevista e acesso rápido à ficha do cliente."
+            >
               <section className="bg-white rounded-2xl border border-zinc-200/80 p-6 shadow-sm">
                 <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
                   <div className="space-y-3">
@@ -629,7 +707,12 @@ export default function ProfessionalPage() {
           )}
 
           {activeTab === 'schedule' && (
-            <div className="space-y-4">
+            <div
+              id="professional-tab-content-schedule"
+              className="space-y-4"
+              data-demo-title="Agenda do profissional"
+              data-demo-description="Aqui o profissional acompanha os horários do dia, status dos atendimentos e preferências de cada cliente sem depender da recepção."
+            >
               {sortedAppointments.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-zinc-200/80 p-10 text-center shadow-sm">
                   <h3 className="text-sm font-bold text-davinci-black">Agenda vazia</h3>
@@ -724,7 +807,12 @@ export default function ProfessionalPage() {
           )}
 
           {activeTab === 'clients' && (
-            <div className="space-y-4">
+            <div
+              id="professional-tab-content-clients"
+              className="space-y-4"
+              data-demo-title="Clientes do dia"
+              data-demo-description="Nesta área o profissional consulta a ficha do cliente, registra observações e mantém o atendimento mais contextualizado."
+            >
               {dailyClients.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-zinc-200/80 p-10 text-center shadow-sm">
                   <h3 className="text-sm font-bold text-davinci-black">Nenhum cliente no dia</h3>
@@ -829,6 +917,130 @@ export default function ProfessionalPage() {
                   </div>
                 ))
               )}
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="bg-white rounded-2xl border border-zinc-200/80 p-6 shadow-sm max-w-2xl mx-auto space-y-6">
+              <div>
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-davinci-gold/10 border border-davinci-gold/20 text-davinci-gold text-[10px] font-bold uppercase tracking-widest">
+                  Meu Perfil Público
+                </span>
+                <h2 className="text-xl font-bold text-davinci-black mt-2">CONFIGURAÇÃO DE EXIBIÇÃO</h2>
+                <p className="text-xs text-davinci-gray mt-1">
+                  Personalize as informações que os clientes visualizam no portal de agendamentos online.
+                </p>
+              </div>
+
+              {saveSuccess && (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2 font-bold">
+                  <Check className="h-4 w-4 text-emerald-600" />
+                  Perfil atualizado com sucesso! Suas alterações já estão ativas para os clientes.
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-zinc-100">
+                <div className="relative group">
+                  {fotoUrlInput ? (
+                    <img
+                      src={fotoUrlInput}
+                      alt="Foto do Perfil"
+                      className="h-24 w-24 rounded-2xl object-cover border-2 border-davinci-gold/30 shadow-md animate-fade-in"
+                    />
+                  ) : (
+                    <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50 text-xs text-zinc-400 font-semibold">
+                      Sem Foto
+                    </div>
+                  )}
+                  <label
+                    htmlFor="photo-upload"
+                    className="absolute -bottom-2 -right-2 p-1.5 rounded-xl bg-davinci-gold text-white hover:bg-davinci-gold/90 transition-colors shadow-md cursor-pointer flex items-center justify-center hover:scale-105 active:scale-95"
+                  >
+                    <Camera className="h-4 w-4" />
+                    <input
+                      type="file"
+                      id="photo-upload"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                <div className="text-center sm:text-left space-y-1">
+                  <h3 className="font-bold text-davinci-black">{professional.nome}</h3>
+                  <p className="text-xs text-davinci-gold font-bold uppercase tracking-wider">
+                    {professional.categoria === 'BARBER' ? 'Barbeiro' : 'Profissional'}
+                  </p>
+                  <p className="text-[10px] text-davinci-gray">Formatos aceitos: JPG, PNG. Tamanho máximo: 2MB.</p>
+                  {fotoUrlInput && (
+                    <button
+                      onClick={() => setFotoUrlInput('')}
+                      className="text-[10px] font-bold text-red-500 hover:text-red-700 block transition-colors mt-2 mx-auto sm:mx-0"
+                    >
+                      Remover foto
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider font-bold text-davinci-black mb-1.5">
+                    Minha Especialidade
+                  </label>
+                  <input
+                    type="text"
+                    value={especialidadeInput}
+                    onChange={(e) => setEspecialidadeInput(e.target.value)}
+                    placeholder="Ex: Cortes unissex clássicos, colorimetria avançada, manicure artística..."
+                    className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-xs text-davinci-black focus:outline-none focus:border-davinci-gold shadow-sm"
+                  />
+                  <span className="text-[9px] text-davinci-gray block mt-1">Breve resumo de suas principais competências de atendimento.</span>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider font-bold text-davinci-black mb-1.5">
+                    Biografia Curta (Mini Bio)
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={miniBioInput}
+                    onChange={(e) => setMiniBioInput(e.target.value)}
+                    placeholder="Conte um pouco sobre sua trajetória profissional, estilo de atendimento ou especializações para os clientes..."
+                    className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-xs text-davinci-black focus:outline-none focus:border-davinci-gold shadow-sm resize-none"
+                  />
+                  <span className="text-[9px] text-davinci-gray block mt-1">Este texto aparecerá no card de escolha do profissional no portal do cliente.</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100">
+                <button
+                  onClick={() => {
+                    setEspecialidadeInput(professional.especialidade || '');
+                    setMiniBioInput(professional.miniBio || '');
+                    setFotoUrlInput(professional.fotoUrl || '');
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-zinc-200 text-xs font-bold text-davinci-gray hover:text-davinci-black transition-colors cursor-pointer"
+                >
+                  Descartar
+                </button>
+                <button
+                  onClick={() =>
+                    updateProfileMutation.mutate({
+                      especialidade: especialidadeInput,
+                      miniBio: miniBioInput,
+                      fotoUrl: fotoUrlInput,
+                    })
+                  }
+                  disabled={updateProfileMutation.isPending}
+                  className="px-4 py-2.5 rounded-xl bg-gold-gradient text-davinci-black text-xs font-bold transition-all shadow-[0_4px_14px_rgba(197,168,128,0.2)] hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center gap-1.5"
+                >
+                  {updateProfileMutation.isPending && (
+                    <div className="h-3 w-3 border-2 border-davinci-black border-t-transparent rounded-full animate-spin" />
+                  )}
+                  Salvar Alterações
+                </button>
+              </div>
             </div>
           )}
         </main>

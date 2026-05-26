@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
 import { BarbersService } from './barbers.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -30,6 +30,25 @@ export class BarbersController {
   @Roles('ADMIN')
   async update(@Param('id') id: string, @Body() body: any) {
     return this.barbersService.update(id, body);
+  }
+
+  @Put(':id/profile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'BARBER')
+  async updateProfile(
+    @Param('id') id: string,
+    @Body() body: { miniBio?: string; fotoUrl?: string; especialidade?: string },
+    @Request() req: any
+  ) {
+    const user = req.user;
+    const isAdmin = user.role === 'ADMIN' || user.roles?.includes('ADMIN');
+    if (!isAdmin) {
+      const barber = await this.barbersService.findOne(id);
+      if (barber.userId !== user.id) {
+        throw new ForbiddenException('Você não tem permissão para alterar o perfil de outro profissional.');
+      }
+    }
+    return this.barbersService.updateProfile(id, body);
   }
 
   @Delete(':id')

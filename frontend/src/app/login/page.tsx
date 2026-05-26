@@ -26,6 +26,7 @@ function formatBirthdayInput(value: string) {
 export default function LoginPage() {
   const router = useRouter();
   const setSession = useStore((state) => state.setSession);
+  const setDemoMode = useStore((state) => state.setDemoMode);
 
   const [activeTab, setActiveTab] = useState<'client' | 'staff'>('client');
   const [error, setError] = useState('');
@@ -162,6 +163,9 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.message || 'Credenciais inválidas');
 
       setSession(data.access_token, data.user);
+      const normalizedLogin = staffLogin.trim().toLowerCase();
+      const isDemoAccount = normalizedLogin === 'demo1' || normalizedLogin === 'demo1@salao.com';
+      setDemoMode(isDemoAccount, isDemoAccount ? 'admin' : null);
 
       if (canAccessDashboard(data.user)) {
         router.push(`/dashboard`);
@@ -203,6 +207,8 @@ export default function LoginPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
             className="space-y-4"
+            data-demo-title="Posicionamento da plataforma"
+            data-demo-description="Este bloco resume a proposta do sistema e ajuda a conduzir a apresentação comercial antes do usuário entrar na aplicação."
           >
             <span className="px-3 py-1 rounded-full bg-davinci-gold/10 border border-davinci-gold/30 text-davinci-gold text-[10px] font-bold uppercase tracking-widest inline-block">
               Gestão Profissional
@@ -299,6 +305,8 @@ export default function LoginPage() {
                 setActiveTab('client');
                 setError('');
               }}
+              data-demo-title="Acesso do cliente"
+              data-demo-description="Clique aqui para demonstrar o portal do cliente, com agendamento, escolha de profissional e histórico de atendimento."
               className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${activeTab === 'client'
                 ? 'text-davinci-gold border-b-2 border-davinci-gold bg-davinci-gold/5'
                 : 'text-davinci-gray hover:text-davinci-black hover:bg-davinci-gold/2'
@@ -311,6 +319,8 @@ export default function LoginPage() {
                 setActiveTab('staff');
                 setError('');
               }}
+              data-demo-title="Acesso da equipe"
+              data-demo-description="Clique aqui para apresentar o fluxo interno de recepção, administração e profissionais do estabelecimento."
               className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${activeTab === 'staff'
                 ? 'text-davinci-gold border-b-2 border-davinci-gold bg-davinci-gold/5'
                 : 'text-davinci-gray hover:text-davinci-black hover:bg-davinci-gold/2'
@@ -330,6 +340,8 @@ export default function LoginPage() {
                   exit={{ opacity: 0, x: 12 }}
                   onSubmit={handleClientLogin}
                   className="space-y-5"
+                  data-demo-title="Formulário do portal do cliente"
+                  data-demo-description="Este formulário abre o portal premium do cliente e já prepara o cadastro com nome, telefone e aniversário."
                 >
                   <p className="text-xs text-davinci-gray leading-relaxed text-center font-semibold">
                     Acesse com seu nome e telefone para agendar serviços e acompanhar seu histórico de atendimento.
@@ -364,7 +376,7 @@ export default function LoginPage() {
                           required
                           value={clientTelefone}
                           onChange={(e) => setClientTelefone(formatPhoneInput(e.target.value))}
-                          placeholder="Ex: (11) 98888-7777"
+                          placeholder="Ex: (86) 98888-7777"
                           className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
                       </div>
@@ -412,6 +424,8 @@ export default function LoginPage() {
                   exit={{ opacity: 0, x: -12 }}
                   onSubmit={handleStaffLogin}
                   className="space-y-5"
+                  data-demo-title="Formulário da equipe"
+                  data-demo-description="Este acesso leva cada perfil para o ambiente correto: dashboard administrativo, recepção ou painel do profissional."
                 >
                   <p className="text-xs text-davinci-gray leading-relaxed text-center font-semibold">
                     Acesso da equipe para administradores, recepção e profissionais do estabelecimento.
@@ -446,7 +460,7 @@ export default function LoginPage() {
                           required
                           value={staffSenha}
                           onChange={(e) => setStaffSenha(e.target.value)}
-                          placeholder="****"
+                          placeholder="Sua Senha"
                           className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
                       </div>
@@ -470,9 +484,6 @@ export default function LoginPage() {
                     )}
                   </button>
 
-                  <div className="text-center text-[9px] text-davinci-gray font-bold uppercase tracking-wider mt-4">
-                    Consulte as credenciais padrão no manual do sistema.
-                  </div>
                 </motion.form>
               )}
             </AnimatePresence>

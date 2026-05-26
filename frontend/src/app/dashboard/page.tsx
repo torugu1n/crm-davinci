@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { io } from 'socket.io-client';
 import { useStore } from '@/store/useStore';
@@ -20,6 +20,7 @@ import { canAccessDashboard, canAccessDashboardTab, getAllowedDashboardTabs, isA
 
 export default function DashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const token = useStore((state) => state.token);
   const user = useStore((state) => state.user);
   const addNotification = useStore((state) => state.addNotification);
@@ -28,6 +29,8 @@ export default function DashboardPage() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [crmSearch, setCrmSearch] = useState('');
   const [isMounted, setIsMounted] = useState(false);
+
+  const requestedTab = searchParams.get('tab');
 
   useEffect(() => {
     setIsMounted(true);
@@ -40,6 +43,13 @@ export default function DashboardPage() {
       setActiveTab(allowedTabs[0]);
     }
   }, [activeTab, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (requestedTab && canAccessDashboardTab(user, requestedTab) && requestedTab !== activeTab) {
+      setActiveTab(requestedTab);
+    }
+  }, [requestedTab, activeTab, user]);
 
   // Redirecionamento se não autenticado ou papel incorreto
   useEffect(() => {
@@ -123,10 +133,23 @@ export default function DashboardPage() {
 
         {/* Dynamic View Tab */}
         <main className="flex-1 p-8 overflow-y-auto">
-          {activeTab === 'calendar' && <DashboardCalendar />}
+          {activeTab === 'calendar' && (
+            <div
+              id="dashboard-tab-content-calendar"
+              data-demo-title="Agenda inteligente"
+              data-demo-description="Esta área centraliza os agendamentos do dia, a ocupação dos profissionais e o andamento dos atendimentos."
+            >
+              <DashboardCalendar />
+            </div>
+          )}
 
           {activeTab === 'crm' && (
-            <div className="space-y-6">
+            <div
+              id="dashboard-tab-content-crm"
+              className="space-y-6"
+              data-demo-title="CRM de clientes"
+              data-demo-description="Aqui a operação consulta cadastro, preferências, aniversário e histórico para personalizar o atendimento."
+            >
               {/* Toolbar */}
               <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-zinc-200/85 shadow-sm">
                 <div className="relative w-72">
@@ -163,7 +186,7 @@ export default function DashboardPage() {
                         <tr className="border-b border-zinc-200 text-davinci-gray uppercase tracking-wider text-[10px] bg-background">
                           <th className="py-4 px-6">Nome Completo</th>
                           <th className="py-4 px-6">WhatsApp</th>
-                          <th className="py-4 px-6 text-center">Niver</th>
+                          <th className="py-4 px-6 text-center">Aniversário</th>
                           <th className="py-4 px-6 text-center">Visitas</th>
                           <th className="py-4 px-6 text-right">Ticket Médio</th>
                           <th className="py-4 px-6 text-right">Preferencia</th>
@@ -199,17 +222,65 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab === 'whatsapp' && canAccessDashboardTab(user, 'whatsapp') && <WhatsAppSimulator />}
+          {activeTab === 'whatsapp' && canAccessDashboardTab(user, 'whatsapp') && (
+            <div
+              id="dashboard-tab-content-whatsapp"
+              data-demo-title="Mensagens WhatsApp"
+              data-demo-description="Este módulo demonstra atendimento digital, confirmação de horários e continuidade da comunicação com os clientes."
+            >
+              <WhatsAppSimulator />
+            </div>
+          )}
 
-          {activeTab === 'users' && isAdminUser(user) && <UsersManager />}
+          {activeTab === 'users' && isAdminUser(user) && (
+            <div
+              id="dashboard-tab-content-users"
+              data-demo-title="Usuários e permissões"
+              data-demo-description="Nesta área o administrador cadastra contas, define papéis, ativa ou desativa acessos e controla permissões."
+            >
+              <UsersManager />
+            </div>
+          )}
 
-          {activeTab === 'services' && isAdminUser(user) && <ServicesProductsManager />}
+          {activeTab === 'services' && isAdminUser(user) && (
+            <div
+              id="dashboard-tab-content-services"
+              data-demo-title="Serviços e produtos"
+              data-demo-description="Aqui ficam o catálogo comercial, preços, duração e os itens usados para compor a operação da casa."
+            >
+              <ServicesProductsManager />
+            </div>
+          )}
 
-          {activeTab === 'employees' && isAdminUser(user) && <EmployeesManager />}
+          {activeTab === 'employees' && isAdminUser(user) && (
+            <div
+              id="dashboard-tab-content-employees"
+              data-demo-title="Equipe do estabelecimento"
+              data-demo-description="Este módulo apresenta os profissionais, comissões, especialidades, mini bio e identidade visual de cada perfil."
+            >
+              <EmployeesManager />
+            </div>
+          )}
 
-          {activeTab === 'finance' && isAdminUser(user) && <FinanceSummary />}
+          {activeTab === 'finance' && isAdminUser(user) && (
+            <div
+              id="dashboard-tab-content-finance"
+              data-demo-title="Financeiro"
+              data-demo-description="Nesta visão o administrador acompanha faturamento, indicadores e leitura gerencial da performance do negócio."
+            >
+              <FinanceSummary />
+            </div>
+          )}
 
-          {activeTab === 'feedbacks' && isAdminUser(user) && <AdminFeedbacks />}
+          {activeTab === 'feedbacks' && isAdminUser(user) && (
+            <div
+              id="dashboard-tab-content-feedbacks"
+              data-demo-title="Feedbacks e avaliações"
+              data-demo-description="Aqui a gestão acompanha percepção do cliente e sinais de qualidade do atendimento entregue pela equipe."
+            >
+              <AdminFeedbacks />
+            </div>
+          )}
         </main>
       </div>
 

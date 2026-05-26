@@ -129,6 +129,25 @@ export class BarbersService {
     });
   }
 
+  async updateProfile(id: string, data: { miniBio?: string; fotoUrl?: string; especialidade?: string }) {
+    const existing = await this.prisma.barber.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Profissional não encontrado');
+    }
+
+    return this.prisma.barber.update({
+      where: { id },
+      data: {
+        miniBio: data.miniBio !== undefined ? data.miniBio || null : undefined,
+        fotoUrl: data.fotoUrl !== undefined ? data.fotoUrl || null : undefined,
+        especialidade: data.especialidade !== undefined ? data.especialidade : undefined,
+      },
+    });
+  }
+
   async delete(id: string) {
     const existing = await this.prisma.barber.findUnique({
       where: { id },

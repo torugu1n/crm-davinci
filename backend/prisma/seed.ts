@@ -67,8 +67,9 @@ async function main() {
 
   // Senhas hash
   const adminSenha = await bcrypt.hash('admin1', 10);
+  const demoSenha = await bcrypt.hash('demo1', 10);
   const atendenteSenha = await bcrypt.hash('atendente1', 10);
-  const barber1Senha = await bcrypt.hash('barbeiro1', 10);
+  const barber1Senha = await bcrypt.hash('profissional1', 10);
   const hairdresser1Senha = await bcrypt.hash('cabeleireira1', 10);
   const manicure2Senha = await bcrypt.hash('manicure2', 10);
 
@@ -91,10 +92,20 @@ async function main() {
     },
   });
 
+  await prisma.user.create({
+    data: {
+      nome: 'Conta Demo',
+      email: 'demo1@salao.com',
+      senha: demoSenha,
+      role: 'ADMIN',
+      roles: ['ADMIN'],
+    },
+  });
+
   const userAlessandro = await prisma.user.create({
     data: {
-      nome: 'Barbeiro 1',
-      email: 'barbeiro1@salao.com',
+      nome: 'Profissional 1',
+      email: 'profissional1@salao.com',
       senha: barber1Senha,
       role: 'BARBER',
       roles: ['BARBER'],

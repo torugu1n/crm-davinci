@@ -94,7 +94,7 @@ export default function CRMDrawer({ clientId, onClose }: CRMDrawerProps) {
               {client.aniversario && (
                 <p className="text-[10px] text-davinci-gold font-bold uppercase tracking-wider flex items-center gap-1">
                   <Gift className="h-3 w-3 text-davinci-gold" />
-                  Niver: {client.aniversario}
+                  Aniversário: {client.aniversario}
                 </p>
               )}
             </div>

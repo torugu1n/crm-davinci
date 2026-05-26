@@ -257,7 +257,11 @@ export default function ClientPortalPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(197,168,128,0.10),transparent_30%),linear-gradient(180deg,#fcfaf6_0%,#f7f1e7_100%)] text-davinci-black">
       <div className="max-w-6xl mx-auto px-6 py-8 lg:py-10 space-y-8">
-        <section className="relative overflow-hidden rounded-[28px] border border-davinci-gold/20 bg-white/90 shadow-[0_24px_80px_rgba(28,26,23,0.08)]">
+        <section
+          className="relative overflow-hidden rounded-[28px] border border-davinci-gold/20 bg-white/90 shadow-[0_24px_80px_rgba(28,26,23,0.08)]"
+          data-demo-title="Portal premium do cliente"
+          data-demo-description="Este topo resume a experiência do cliente, reforça a marca do estabelecimento e apresenta dados principais de relacionamento."
+        >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(197,168,128,0.12),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(28,26,23,0.04),transparent_35%)]" />
           <div className="relative p-6 lg:p-8 flex flex-col gap-8">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -334,7 +338,12 @@ export default function ClientPortalPage() {
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8">
-          <section className="bg-white p-6 rounded-[24px] border border-zinc-200/80 shadow-[0_18px_50px_rgba(28,26,23,0.06)] space-y-6">
+          <section
+            id="booking"
+            className="bg-white p-6 rounded-[24px] border border-zinc-200/80 shadow-[0_18px_50px_rgba(28,26,23,0.06)] space-y-6"
+            data-demo-title="Reserva de atendimento"
+            data-demo-description="Aqui o cliente escolhe serviço, profissional, data e horário em um fluxo de autoatendimento pensado para conversão."
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-sm font-black text-davinci-black uppercase tracking-[0.16em] flex items-center gap-2">
@@ -400,6 +409,8 @@ export default function ClientPortalPage() {
                             setSelectedBarber(barber.id);
                             setSelectedHour('');
                           }}
+                          data-demo-title={`Profissional: ${barber.user.nome}`}
+                          data-demo-description={`Este card apresenta ${barber.user.nome}, sua função e mini bio, ajudando o cliente a escolher o profissional com mais confiança.`}
                           className={`group relative overflow-hidden rounded-[22px] border p-3.5 text-left transition-all duration-300 ${
                             isSelected
                               ? 'border-davinci-gold bg-[linear-gradient(135deg,rgba(197,168,128,0.18),rgba(255,255,255,0.96))] shadow-[0_18px_45px_rgba(197,168,128,0.18)]'
@@ -577,7 +588,11 @@ export default function ClientPortalPage() {
           </section>
 
           <section className="space-y-6">
-            <div className="bg-white p-6 rounded-[24px] border border-zinc-200/80 shadow-[0_18px_50px_rgba(28,26,23,0.06)] space-y-5">
+            <div
+              className="bg-white p-6 rounded-[24px] border border-zinc-200/80 shadow-[0_18px_50px_rgba(28,26,23,0.06)] space-y-5"
+              data-demo-title="Dados do cliente"
+              data-demo-description="Este bloco concentra informações de relacionamento, como telefone, aniversário e preferências, para facilitar recorrência e personalização."
+            >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-sm font-black text-davinci-black uppercase tracking-[0.16em] flex items-center gap-2">
@@ -653,7 +668,11 @@ export default function ClientPortalPage() {
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-[24px] border border-zinc-200/80 shadow-[0_18px_50px_rgba(28,26,23,0.06)] space-y-4">
+            <div
+              className="bg-white p-6 rounded-[24px] border border-zinc-200/80 shadow-[0_18px_50px_rgba(28,26,23,0.06)] space-y-4"
+              data-demo-title="Histórico do cliente"
+              data-demo-description="Esta área mostra os atendimentos anteriores do cliente e reforça a percepção de acompanhamento e continuidade do serviço."
+            >
               <h3 className="text-sm font-black text-davinci-black uppercase tracking-[0.16em] flex items-center gap-2">
                 <Clock3 className="h-4.5 w-4.5 text-davinci-gold" />
                 Seu Historico
