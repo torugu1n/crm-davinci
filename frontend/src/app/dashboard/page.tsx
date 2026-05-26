@@ -102,7 +102,7 @@ export default function DashboardPage() {
 
   const filteredClients = clients.filter((c: any) =>
     c.nome.toLowerCase().includes(crmSearch.toLowerCase()) ||
-    c.telefone.includes(crmSearch)
+    c.telefone.replace(/\D/g, '').includes(crmSearch.replace(/\D/g, ''))
   );
 
   if (!isMounted) return null;

@@ -8,6 +8,21 @@ import { useStore } from '@/store/useStore';
 import { canAccessDashboard, isProfessionalUser } from '@/lib/auth';
 import BrandLogo from '@/components/BrandLogo';
 
+function formatPhoneInput(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+function formatBirthdayInput(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 4);
+
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const setSession = useStore((state) => state.setSession);
@@ -20,7 +35,7 @@ export default function LoginPage() {
   const [clientNome, setClientNome] = useState('');
   const [clientTelefone, setClientTelefone] = useState('');
   const [clientAniversario, setClientAniversario] = useState('');
-  const [staffEmail, setStaffEmail] = useState('');
+  const [staffLogin, setStaffLogin] = useState('');
   const [staffSenha, setStaffSenha] = useState('');
 
   // Canvas ref for floating particles
@@ -140,7 +155,7 @@ export default function LoginPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001')}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: staffEmail, senha: staffSenha }),
+        body: JSON.stringify({ email: staffLogin, senha: staffSenha }),
       });
 
       const data = await res.json();
@@ -348,8 +363,8 @@ export default function LoginPage() {
                           type="tel"
                           required
                           value={clientTelefone}
-                          onChange={(e) => setClientTelefone(e.target.value)}
-                          placeholder="Ex: 11 98888-7777"
+                          onChange={(e) => setClientTelefone(formatPhoneInput(e.target.value))}
+                          placeholder="Ex: (11) 98888-7777"
                           className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
                       </div>
@@ -364,7 +379,7 @@ export default function LoginPage() {
                         <input
                           type="text"
                           value={clientAniversario}
-                          onChange={(e) => setClientAniversario(e.target.value)}
+                          onChange={(e) => setClientAniversario(formatBirthdayInput(e.target.value))}
                           placeholder="Ex: 15/09 (Opcional)"
                           className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
@@ -405,16 +420,16 @@ export default function LoginPage() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-[10px] font-bold text-davinci-black uppercase tracking-wider mb-2">
-                        E-mail Corporativo
+                        Usuário de Acesso
                       </label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-davinci-gray" />
                         <input
-                          type="email"
+                          type="text"
                           required
-                          value={staffEmail}
-                          onChange={(e) => setStaffEmail(e.target.value)}
-                          placeholder="atendente1@salao.com"
+                          value={staffLogin}
+                          onChange={(e) => setStaffLogin(e.target.value)}
+                          placeholder="atendente1"
                           className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold transition-colors text-xs"
                         />
                       </div>

@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcryptjs';
+import { extractPhoneDigits, normalizeBirthday, normalizePhone } from '../clients/client-formatters';
 
 @Injectable()
 export class AuthService {
@@ -10,9 +11,19 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  private normalizeStaffIdentifier(identifier: string) {
+    const normalized = identifier.trim().toLowerCase();
+    if (!normalized) {
+      return normalized;
+    }
+
+    return normalized.includes('@') ? normalized : `${normalized}@salao.com`;
+  }
+
   async validateStaff(email: string, pass: string): Promise<any> {
+    const normalizedEmail = this.normalizeStaffIdentifier(email);
     const user = await this.prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       include: { barber: true },
     });
     if (user && user.isActive && (await bcrypt.compare(pass, user.senha))) {
@@ -43,17 +54,14 @@ export class AuthService {
       throw new BadRequestException('Nome e telefone são obrigatórios');
     }
 
-    // Limpar o telefone para manter padrão de busca (apenas números)
-    const cleanedPhone = telefone.replace(/\D/g, '');
-    if (cleanedPhone.length < 8) {
-      throw new BadRequestException('Telefone inválido');
-    }
+    const formattedPhone = normalizePhone(telefone);
+    const cleanedPhone = extractPhoneDigits(formattedPhone);
+    const normalizedBirthday = normalizeBirthday(aniversario);
 
-    // Busca flexível comparando os últimos 8 dígitos (evita duplicar registros do WhatsApp Webhook)
     const last8 = cleanedPhone.substring(cleanedPhone.length - 8);
     const clients = await this.prisma.client.findMany();
     let client = clients.find((c) => {
-      const cPhoneCleaned = c.telefone.replace(/\D/g, '');
+      const cPhoneCleaned = extractPhoneDigits(c.telefone);
       return cPhoneCleaned.endsWith(last8);
     });
 
@@ -61,16 +69,18 @@ export class AuthService {
       client = await this.prisma.client.create({
         data: {
           nome,
-          telefone: cleanedPhone,
-          aniversario: aniversario || null,
+          telefone: formattedPhone,
+          aniversario: normalizedBirthday,
           observacoes: 'Cliente cadastrado via portal simplificado.',
         },
       });
-    } else if (aniversario && !client.aniversario) {
-      // Atualizar aniversário caso o cliente já exista mas não tenha o dado salvo
+    } else if (client.telefone !== formattedPhone || (normalizedBirthday && !client.aniversario)) {
       client = await this.prisma.client.update({
         where: { id: client.id },
-        data: { aniversario },
+        data: {
+          telefone: formattedPhone,
+          aniversario: client.aniversario || normalizedBirthday,
+        },
       });
     }
 

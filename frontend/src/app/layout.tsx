@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Providers from '@/components/Providers';
+import ChunkErrorRecovery from '@/components/ChunkErrorRecovery';
 
 export const metadata: Metadata = {
   title: 'Plataforma para Salões e Barbearias',
@@ -16,6 +17,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body>
         <Providers>{children}</Providers>
+        <ChunkErrorRecovery />
       </body>
     </html>
   );

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { normalizeBirthday, normalizePhone } from './client-formatters';
 
 @Injectable()
 export class ClientsService {
@@ -37,12 +38,11 @@ export class ClientsService {
   }
 
   async create(data: any) {
-    const cleanedPhone = data.telefone.replace(/\D/g, '');
     return this.prisma.client.create({
       data: {
         nome: data.nome,
-        telefone: cleanedPhone,
-        aniversario: data.aniversario,
+        telefone: normalizePhone(data.telefone),
+        aniversario: normalizeBirthday(data.aniversario),
         observacoes: data.observacoes,
         preferences: data.preferences,
       },
@@ -50,13 +50,12 @@ export class ClientsService {
   }
 
   async update(id: string, data: any) {
-    const cleanedPhone = data.telefone ? data.telefone.replace(/\D/g, '') : undefined;
     return this.prisma.client.update({
       where: { id },
       data: {
         nome: data.nome,
-        telefone: cleanedPhone,
-        aniversario: data.aniversario,
+        telefone: data.telefone ? normalizePhone(data.telefone) : undefined,
+        aniversario: data.aniversario !== undefined ? normalizeBirthday(data.aniversario) : undefined,
         observacoes: data.observacoes,
         preferences: data.preferences,
         frequency: data.frequency,
