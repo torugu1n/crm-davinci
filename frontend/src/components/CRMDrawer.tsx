@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, User, Phone, Calendar, Heart, MessageSquare, Clipboard, DollarSign, Award, Edit2, Save, Gift } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useStore } from '@/store/useStore';
 
 interface CRMDrawerProps {
   clientId: string;
@@ -12,12 +13,17 @@ interface CRMDrawerProps {
 
 export default function CRMDrawer({ clientId, onClose }: CRMDrawerProps) {
   const queryClient = useQueryClient();
+  const token = useStore((state) => state.token);
 
   // Buscar detalhes do cliente
   const { data: client, isLoading, error } = useQuery({
     queryKey: ['client', clientId],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${clientId}`).then((res) => { if (!res.ok) throw new Error('Failed to fetch client'); return res.json(); }),
-    enabled: !!clientId,
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${clientId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }).then((res) => { if (!res.ok) throw new Error('Failed to fetch client'); return res.json(); }),
+    enabled: !!clientId && !!token,
   });
 
   // Estados para edição
@@ -44,7 +50,10 @@ export default function CRMDrawer({ clientId, onClose }: CRMDrawerProps) {
     mutationFn: (updatedData: any) =>
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${clientId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(updatedData),
       }).then((res) => res.json()),
     onSuccess: () => {

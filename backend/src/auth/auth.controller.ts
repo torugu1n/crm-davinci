@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, Query, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -17,5 +17,22 @@ export class AuthController {
   @Post('client')
   async clientLogin(@Body() body: any) {
     return this.authService.clientLogin(body.nome, body.telefone, body.aniversario);
+  }
+
+  @Post('seed-demo')
+  async seedDemo(@Query('key') key: string) {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const seedKey = process.env.DEMO_SEED_KEY;
+
+    if (isProduction && !seedKey) {
+      throw new UnauthorizedException('Semeadura desativada em produção sem uma chave definida.');
+    }
+
+    const expectedKey = seedKey || 'davinciseed';
+
+    if (key !== expectedKey) {
+      throw new UnauthorizedException('Chave de segurança inválida para semeadura.');
+    }
+    return this.authService.seedDemoData();
   }
 }

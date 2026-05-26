@@ -1,31 +1,36 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('appointments')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AppointmentsController {
   constructor(private appointmentsService: AppointmentsService) {}
 
   @Get()
-  async findAll() {
-    return this.appointmentsService.findAll();
+  async findAll(@Request() req: any) {
+    return this.appointmentsService.findAll(req.user);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.appointmentsService.findOne(id);
+  async findOne(@Param('id') id: string, @Request() req: any) {
+    return this.appointmentsService.findOne(id, req.user);
   }
 
   @Post()
-  async create(@Body() body: any) {
-    return this.appointmentsService.create(body);
+  async create(@Body() body: any, @Request() req: any) {
+    return this.appointmentsService.create(body, req.user);
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: any) {
-    return this.appointmentsService.update(id, body);
+  async update(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    return this.appointmentsService.update(id, body, req.user);
   }
 
   @Delete(':id')
+  @Roles('ADMIN', 'ATTENDANT', 'BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE')
   async delete(@Param('id') id: string) {
     return this.appointmentsService.delete(id);
   }

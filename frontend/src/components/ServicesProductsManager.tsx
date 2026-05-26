@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function ServicesProductsManager() {
   const queryClient = useQueryClient();
   const addNotification = useStore((state) => state.addNotification);
+  const token = useStore((state) => state.token);
   const [activeSubTab, setActiveSubTab] = useState<'services' | 'products'>('services');
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -62,7 +63,10 @@ export default function ServicesProductsManager() {
     mutationFn: (newService: any) =>
       fetch(`${apiUrl}/services`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(newService),
       }).then((res) => {
         if (!res.ok) throw new Error('Erro ao criar serviço');
@@ -90,7 +94,10 @@ export default function ServicesProductsManager() {
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       fetch(`${apiUrl}/services/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(data),
       }).then((res) => {
         if (!res.ok) throw new Error('Erro ao atualizar serviço');
@@ -118,6 +125,9 @@ export default function ServicesProductsManager() {
     mutationFn: (id: string) =>
       fetch(`${apiUrl}/services/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       }).then((res) => {
         if (!res.ok) throw new Error('Erro ao excluir serviço');
         return res.json();
@@ -146,7 +156,10 @@ export default function ServicesProductsManager() {
     mutationFn: (newProduct: any) =>
       fetch(`${apiUrl}/products`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(newProduct),
       }).then((res) => {
         if (!res.ok) throw new Error('Erro ao criar produto');
@@ -174,7 +187,10 @@ export default function ServicesProductsManager() {
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       fetch(`${apiUrl}/products/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(data),
       }).then((res) => {
         if (!res.ok) throw new Error('Erro ao atualizar produto');
@@ -202,6 +218,9 @@ export default function ServicesProductsManager() {
     mutationFn: (id: string) =>
       fetch(`${apiUrl}/products/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       }).then((res) => {
         if (!res.ok) throw new Error('Erro ao excluir produto');
         return res.json();

@@ -94,11 +94,15 @@ export default function ClientPortalPage() {
   const { data: client, isLoading } = useQuery({
     queryKey: ['clientPortalProfile', clientId],
     queryFn: () =>
-      fetch(`${apiUrl}/clients/${clientId}`).then((res) => {
+      fetch(`${apiUrl}/clients/${clientId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }).then((res) => {
         if (!res.ok) throw new Error('Failed to fetch client');
         return res.json();
       }),
-    enabled: !!clientId,
+    enabled: !!clientId && !!token,
   });
 
   useEffect(() => {
@@ -111,7 +115,10 @@ export default function ClientPortalPage() {
     mutationFn: (newAniv: string) =>
       fetch(`${apiUrl}/clients/${clientId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           nome: client?.nome,
           telefone: client?.telefone,
@@ -131,7 +138,9 @@ export default function ClientPortalPage() {
   const { data: barbers = [] } = useQuery({
     queryKey: ['barbers'],
     queryFn: () =>
-      fetch(`${apiUrl}/barbers`).then((res) => {
+      fetch(`${apiUrl}/barbers`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      }).then((res) => {
         if (!res.ok) throw new Error('Failed to fetch barbers');
         return res.json();
       }),
@@ -140,7 +149,9 @@ export default function ClientPortalPage() {
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
     queryFn: () =>
-      fetch(`${apiUrl}/services`).then((res) => {
+      fetch(`${apiUrl}/services`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      }).then((res) => {
         if (!res.ok) throw new Error('Failed to fetch services');
         return res.json();
       }),
@@ -149,17 +160,25 @@ export default function ClientPortalPage() {
   const { data: appointments = [] } = useQuery({
     queryKey: ['appointments'],
     queryFn: () =>
-      fetch(`${apiUrl}/appointments`).then((res) => {
+      fetch(`${apiUrl}/appointments`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }).then((res) => {
         if (!res.ok) throw new Error('Failed to fetch appointments');
         return res.json();
       }),
+    enabled: !!token,
   });
 
   const createAppointmentMutation = useMutation({
     mutationFn: (newApp: any) =>
       fetch(`${apiUrl}/appointments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(newApp),
       }).then(async (res) => {
         const data = await res.json();

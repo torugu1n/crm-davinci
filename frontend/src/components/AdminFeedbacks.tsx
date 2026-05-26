@@ -3,11 +3,19 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Star, ShieldAlert, Heart, Calendar, Smile } from 'lucide-react';
+import { useStore } from '@/store/useStore';
 
 export default function AdminFeedbacks() {
+  const token = useStore((state) => state.token);
+
   const { data: feedbacks = [], isLoading, error } = useQuery({
     queryKey: ['adminFeedbacks'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/feedbacks`).then((res) => { if (!res.ok) throw new Error('Failed to fetch feedbacks'); return res.json(); }),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/feedbacks`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }).then((res) => { if (!res.ok) throw new Error('Failed to fetch feedbacks'); return res.json(); }),
+    enabled: !!token,
   });
 
   if (isLoading) {

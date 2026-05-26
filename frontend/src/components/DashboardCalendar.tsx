@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, User, Tag, Clock, Plus, CheckCircle, Play, Smile, XCircle } from 'lucide-react';
+import { useStore } from '@/store/useStore';
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 9); // 09h às 20h
 
@@ -86,6 +87,7 @@ const DatePickerPopover = ({ selectedDate, onChange, onClose }: { selectedDate: 
 
 export default function DashboardCalendar() {
   const queryClient = useQueryClient();
+  const token = useStore((state) => state.token);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
@@ -111,22 +113,30 @@ export default function DashboardCalendar() {
   // Fetch Barbers, Clients, Services, Appointments
   const { data: barbers = [] } = useQuery({
     queryKey: ['barbers'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/barbers`).then((res) => { if (!res.ok) throw new Error('Failed to fetch barbers'); return res.json(); }),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/barbers`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    }).then((res) => { if (!res.ok) throw new Error('Failed to fetch barbers'); return res.json(); }),
   });
 
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`).then((res) => { if (!res.ok) throw new Error('Failed to fetch clients'); return res.json(); }),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    }).then((res) => { if (!res.ok) throw new Error('Failed to fetch clients'); return res.json(); }),
   });
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/services`).then((res) => { if (!res.ok) throw new Error('Failed to fetch services'); return res.json(); }),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/services`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    }).then((res) => { if (!res.ok) throw new Error('Failed to fetch services'); return res.json(); }),
   });
 
   const { data: appointments = [] } = useQuery({
     queryKey: ['appointments'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments`).then((res) => { if (!res.ok) throw new Error('Failed to fetch appointments'); return res.json(); }),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    }).then((res) => { if (!res.ok) throw new Error('Failed to fetch appointments'); return res.json(); }),
   });
 
   // Mutations
@@ -134,7 +144,10 @@ export default function DashboardCalendar() {
     mutationFn: (newApp: any) =>
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(newApp),
       }).then((res) => res.json()),
     onSuccess: () => {
@@ -148,7 +161,10 @@ export default function DashboardCalendar() {
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ status }),
       }).then((res) => res.json()),
     onSuccess: () => {

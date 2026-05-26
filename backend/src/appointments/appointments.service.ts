@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
@@ -11,19 +11,42 @@ export class AppointmentsService {
     private whatsappService: WhatsappService,
   ) {}
 
-  async findAll() {
-    return this.prisma.appointment.findMany({
+  async findAll(currentUser: any) {
+    const isClient = currentUser.role === 'CLIENT';
+    const appointments = await this.prisma.appointment.findMany({
       include: {
-        client: true,
+        client: !isClient,
         barber: { include: { user: true } },
         service: true,
-        feedback: true,
+        feedback: !isClient,
       },
       orderBy: { data: 'asc' },
     });
+
+    if (isClient) {
+      return appointments.map((app) => {
+        if (app.clientId === currentUser.id) {
+          return app;
+        }
+        return {
+          id: app.id,
+          clientId: '',
+          barberId: app.barberId,
+          serviceId: app.serviceId,
+          data: app.data,
+          status: app.status,
+          valor: 0,
+          createdAt: app.createdAt,
+          barber: app.barber,
+          service: app.service,
+        };
+      });
+    }
+
+    return appointments;
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, currentUser: any) {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id },
       include: {
@@ -34,21 +57,34 @@ export class AppointmentsService {
       },
     });
     if (!appointment) throw new NotFoundException('Agendamento não encontrado');
+
+    const isClient = currentUser.role === 'CLIENT';
+    if (isClient && appointment.clientId !== currentUser.id) {
+      throw new ForbiddenException('Você não tem permissão para visualizar o agendamento de outro cliente.');
+    }
+
     return appointment;
   }
 
-  async create(data: any) {
+  async create(data: any, currentUser: any) {
+    const isClient = currentUser.role === 'CLIENT';
+    const clientId = isClient ? currentUser.id : data.clientId;
+    if (!clientId) throw new BadRequestException('ID do cliente é obrigatório');
+
     const service = await this.prisma.service.findUnique({ where: { id: data.serviceId } });
     if (!service) throw new NotFoundException('Serviço não encontrado');
 
+    const isAdmin = currentUser.role === 'ADMIN' || currentUser.roles?.includes('ADMIN');
+    const valor = (isAdmin && data.valor !== undefined) ? parseFloat(data.valor) : service.preco;
+
     const appointment = await this.prisma.appointment.create({
       data: {
-        clientId: data.clientId,
+        clientId,
         barberId: data.barberId,
         serviceId: data.serviceId,
         data: new Date(data.data),
         status: data.status || 'SCHEDULED',
-        valor: service.preco,
+        valor,
       },
       include: {
         client: true,
@@ -61,9 +97,36 @@ export class AppointmentsService {
     return appointment;
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: any, currentUser: any) {
     const existing = await this.prisma.appointment.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Agendamento não encontrado');
+
+    const isClient = currentUser.role === 'CLIENT';
+    const isAdmin = currentUser.role === 'ADMIN' || currentUser.roles?.includes('ADMIN');
+
+    if (isClient && existing.clientId !== currentUser.id) {
+      throw new ForbiddenException('Você não tem permissão para alterar o agendamento de outro cliente.');
+    }
+
+    let finalStatus = data.status;
+    if (isClient && data.status && data.status !== 'CANCELLED' && data.status !== existing.status) {
+      throw new ForbiddenException('Clientes só podem alterar o status de agendamento para CANCELLED.');
+    }
+
+    let finalValor = existing.valor;
+    if (data.serviceId && data.serviceId !== existing.serviceId) {
+      const newService = await this.prisma.service.findUnique({ where: { id: data.serviceId } });
+      if (!newService) throw new NotFoundException('Novo serviço não encontrado');
+      finalValor = newService.preco;
+    }
+
+    if (data.valor !== undefined && parseFloat(data.valor) !== finalValor) {
+      if (!isAdmin) {
+        throw new ForbiddenException('Apenas administradores podem definir valores customizados de pagamento.');
+      } else {
+        finalValor = parseFloat(data.valor);
+      }
+    }
 
     const updated = await this.prisma.appointment.update({
       where: { id },
@@ -71,8 +134,8 @@ export class AppointmentsService {
         barberId: data.barberId,
         serviceId: data.serviceId,
         data: data.data ? new Date(data.data) : undefined,
-        status: data.status,
-        valor: data.valor,
+        status: finalStatus,
+        valor: finalValor,
       },
       include: {
         client: true,

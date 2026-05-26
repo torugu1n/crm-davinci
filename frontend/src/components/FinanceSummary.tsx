@@ -3,12 +3,20 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DollarSign, Calendar, TrendingUp, Users, Award, ShieldAlert } from 'lucide-react';
+import { useStore } from '@/store/useStore';
 
 export default function FinanceSummary() {
+  const token = useStore((state) => state.token);
+
   const { data: summary, isLoading, error } = useQuery({
     queryKey: ['financeSummary'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/finance/summary`).then((res) => { if (!res.ok) throw new Error('Failed to fetch finance summary'); return res.json(); }),
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/finance/summary`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }).then((res) => { if (!res.ok) throw new Error('Failed to fetch finance summary'); return res.json(); }),
     refetchInterval: 10000, // auto refresh a cada 10s
+    enabled: !!token,
   });
 
   if (isLoading) {

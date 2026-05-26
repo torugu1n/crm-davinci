@@ -6,9 +6,9 @@
     "install:all": "pnpm --dir backend install && pnpm --dir frontend install",
     "dev:backend": "pnpm --dir backend run start:dev",
     "dev:frontend": "pnpm --dir frontend run dev",
-    "dev": "concurrently -n \"backend,frontend\" -c \"yellow,blue\" \"pnpm run dev:backend\" \"pnpm run dev:frontend\""
+    "dev": "pnpm --parallel --stream --filter crm-davinci-backend --filter crm-davinci-frontend run dev"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^9.2.1"
   }
 }

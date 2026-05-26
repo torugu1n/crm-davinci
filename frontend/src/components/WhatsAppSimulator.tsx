@@ -4,9 +4,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { io } from 'socket.io-client';
 import { Send, Phone, Video, MoreVertical, Search, Smartphone, ShieldCheck, Sparkles, CheckCheck } from 'lucide-react';
+import { useStore } from '@/store/useStore';
 
 export default function WhatsAppSimulator() {
   const queryClient = useQueryClient();
+  const token = useStore((state) => state.token);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [operatorText, setOperatorText] = useState('');
   const [customerText, setCustomerText] = useState('');
@@ -22,10 +24,15 @@ export default function WhatsAppSimulator() {
   const { data: clients = [] } = useQuery({
     queryKey: ['clients'],
     queryFn: () =>
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`).then((res) => {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }).then((res) => {
         if (!res.ok) throw new Error('Falha ao carregar clientes');
         return res.json();
       }),
+    enabled: !!token,
   });
 
   // Fetch chat history for selected client
@@ -33,12 +40,16 @@ export default function WhatsAppSimulator() {
     queryKey: ['chatHistory', selectedClientId],
     queryFn: () =>
       selectedClientId
-        ? fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/whatsapp/history/${selectedClientId}`).then((res) => {
+        ? fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/whatsapp/history/${selectedClientId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }).then((res) => {
             if (!res.ok) throw new Error('Falha ao carregar histórico');
             return res.json();
           })
         : Promise.resolve([]),
-    enabled: !!selectedClientId,
+    enabled: !!selectedClientId && !!token,
   });
 
   useEffect(() => {
@@ -94,7 +105,10 @@ export default function WhatsAppSimulator() {
     mutationFn: (msg: any) =>
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/whatsapp/customer`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(msg),
       }).then((res) => res.json()),
     onSuccess: () => {
@@ -107,7 +121,10 @@ export default function WhatsAppSimulator() {
     mutationFn: (msg: any) =>
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/whatsapp/operator`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(msg),
       }).then((res) => res.json()),
     onSuccess: () => {

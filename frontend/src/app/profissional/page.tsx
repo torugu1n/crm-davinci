@@ -205,18 +205,25 @@ export default function ProfessionalPage() {
   const { data: dashboard, isLoading } = useQuery<DashboardData>({
     queryKey: ['professionalDashboard', professionalId],
     queryFn: () =>
-      fetch(`${apiUrl}/barbers/${professionalId}/dashboard`).then((res) => {
+      fetch(`${apiUrl}/barbers/${professionalId}/dashboard`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }).then((res) => {
         if (!res.ok) throw new Error('Falha ao carregar painel do profissional');
         return res.json();
       }),
-    enabled: !!professionalId,
+    enabled: !!professionalId && !!token,
   });
 
   const updateClientMutation = useMutation({
     mutationFn: ({ id, preferences, observacoes }: { id: string; preferences: string; observacoes: string }) =>
       fetch(`${apiUrl}/clients/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ preferences, observacoes }),
       }).then(async (res) => {
         const data = await res.json();
@@ -233,7 +240,10 @@ export default function ProfessionalPage() {
     mutationFn: ({ id, status }: { id: string; status: StatusKey }) =>
       fetch(`${apiUrl}/appointments/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ status }),
       }).then(async (res) => {
         const data = await res.json();

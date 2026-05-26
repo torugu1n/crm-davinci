@@ -83,8 +83,12 @@ export default function DashboardPage() {
   // Buscar clientes para o CRM
   const { data: clients = [], isLoading, error } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`).then((res) => { if (!res.ok) throw new Error('Failed to fetch clients'); return res.json(); }),
-    enabled: activeTab === 'crm',
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }).then((res) => { if (!res.ok) throw new Error('Failed to fetch clients'); return res.json(); }),
+    enabled: activeTab === 'crm' && !!token,
   });
 
   const getTitle = () => {

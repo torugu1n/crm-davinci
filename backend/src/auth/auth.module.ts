@@ -8,11 +8,21 @@ import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { RolesGuard } from './roles.guard';
 
+const isProduction = process.env.NODE_ENV === 'production';
+const jwtSecret = process.env.JWT_SECRET;
+const defaultSecret = 'davinci_gold_secret_key_2026_exclusive';
+
+if (isProduction && (!jwtSecret || jwtSecret === defaultSecret)) {
+  throw new Error('FATAL: A secure JWT_SECRET environment variable must be set in production!');
+}
+
+const secretKey = jwtSecret || defaultSecret;
+
 @Module({
   imports: [
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'davinci_gold_secret_key_2026_exclusive',
+      secret: secretKey,
       signOptions: { expiresIn: '7d' },
     }),
   ],
