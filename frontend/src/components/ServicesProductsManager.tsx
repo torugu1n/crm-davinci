@@ -20,14 +20,30 @@ export default function ServicesProductsManager() {
   const [deletingItem, setDeletingItem] = useState<any>(null);
 
   // Form states
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     nome: '',
     preco: '',
     duracao: '', // only for services
     descricao: '',
+    barberIds: [], // for services
+    commissionRate: '', // for products
+    customCommissions: {}, // for products, format: { [barberId]: string }
+    variedCommission: false, // for products
   });
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+
+  // Fetch Barbers for linking/custom commissions
+  const { data: barbers = [], isLoading: isLoadingBarbers } = useQuery({
+    queryKey: ['barbers'],
+    queryFn: () =>
+      fetch(`${apiUrl}/barbers`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      }).then((res) => {
+        if (!res.ok) throw new Error('Falha ao carregar profissionais');
+        return res.json();
+      }),
+  });
 
   useEffect(() => {
     queryClient.prefetchQuery({
@@ -252,17 +268,33 @@ export default function ServicesProductsManager() {
       preco: '',
       duracao: activeSubTab === 'services' ? '45' : '',
       descricao: '',
+      barberIds: [],
+      commissionRate: '10',
+      customCommissions: {},
+      variedCommission: false,
     });
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (item: any) => {
     setEditingItem(item);
+    
+    const customCommissionsObj: any = {};
+    if (item.customCommissions) {
+      item.customCommissions.forEach((cc: any) => {
+        customCommissionsObj[cc.barberId] = cc.commissionRate.toString();
+      });
+    }
+
     setFormData({
       nome: item.nome,
       preco: item.preco.toString(),
       duracao: item.duracao ? item.duracao.toString() : '',
       descricao: item.descricao || '',
+      barberIds: item.barbers ? item.barbers.map((b: any) => b.id) : [],
+      commissionRate: item.commissionRate !== undefined ? item.commissionRate.toString() : '10',
+      variedCommission: item.customCommissions && item.customCommissions.length > 0 ? true : false,
+      customCommissions: customCommissionsObj,
     });
     setIsModalOpen(true);
   };
@@ -291,12 +323,26 @@ export default function ServicesProductsManager() {
 
     if (activeSubTab === 'services') {
       payload.duracao = parseInt(formData.duracao || '30', 10);
+      payload.barberIds = formData.barberIds;
       if (editingItem) {
         updateServiceMutation.mutate({ id: editingItem.id, data: payload });
       } else {
         createServiceMutation.mutate(payload);
       }
     } else {
+      payload.commissionRate = parseFloat(formData.commissionRate || '0');
+      if (formData.variedCommission) {
+        const customCommissionsArray = Object.keys(formData.customCommissions)
+          .map((bId) => ({
+            barberId: bId,
+            commissionRate: parseFloat(formData.customCommissions[bId] || '0'),
+          }))
+          .filter((cc) => cc.commissionRate > 0);
+        payload.customCommissions = customCommissionsArray;
+      } else {
+        payload.customCommissions = [];
+      }
+
       if (editingItem) {
         updateProductMutation.mutate({ id: editingItem.id, data: payload });
       } else {
@@ -464,6 +510,49 @@ export default function ServicesProductsManager() {
                 <p className="text-xs text-davinci-gray line-clamp-2 min-h-[2rem] mb-4">
                   {item.descricao || 'Nenhuma descrição fornecida para este item.'}
                 </p>
+
+                {activeSubTab === 'services' && item.barbers && item.barbers.length > 0 && (
+                  <div className="mb-4 bg-zinc-50 border border-zinc-200/50 rounded-xl p-2.5 text-[10px] text-davinci-gray">
+                    <span className="font-bold text-davinci-black uppercase tracking-wider block mb-1.5">
+                      Profissionais:
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {item.barbers.map((b: any) => (
+                        <span key={b.id} className="bg-white border border-zinc-200 px-1.5 py-0.5 rounded-md font-semibold text-davinci-black">
+                          {b.user?.nome}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeSubTab === 'products' && (
+                  <div className="mb-4 bg-zinc-50 border border-zinc-200/50 rounded-xl p-2.5 text-[10px] text-davinci-gray">
+                    {item.customCommissions && item.customCommissions.length > 0 ? (
+                      <div>
+                        <span className="font-bold text-davinci-gold uppercase tracking-wider block mb-1.5">
+                          Comissão Variável:
+                        </span>
+                        <div className="flex flex-col gap-1">
+                          {item.customCommissions.map((cc: any) => {
+                            const b = barbers.find((barb: any) => barb.id === cc.barberId);
+                            return (
+                              <div key={cc.barberId} className="flex justify-between font-semibold text-davinci-black">
+                                <span>{b?.user?.nome || 'Profissional'}:</span>
+                                <span>{cc.commissionRate}%</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between font-semibold text-davinci-gray">
+                        <span>Comissão Geral:</span>
+                        <span className="text-davinci-black">{item.commissionRate ?? 0}%</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between border-t border-zinc-100 pt-3 mt-1">
@@ -591,6 +680,128 @@ export default function ServicesProductsManager() {
                     className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-xs resize-none"
                   />
                 </div>
+
+                {/* Profissionais que realizam este serviço (Apenas para Serviços) */}
+                {activeSubTab === 'services' && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-davinci-gray uppercase tracking-wider mb-2">
+                      Profissionais que realizam este serviço
+                    </label>
+                    {barbers.length === 0 ? (
+                      <p className="text-[10px] text-davinci-gray italic">Nenhum profissional cadastrado.</p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 max-h-[120px] overflow-y-auto border border-zinc-200 rounded-lg p-2.5 bg-zinc-50/50">
+                        {barbers.map((barber: any) => {
+                          const isChecked = formData.barberIds.includes(barber.id);
+                          return (
+                            <label key={barber.id} className="flex items-center gap-2 text-xs font-semibold text-davinci-black cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFormData({ ...formData, barberIds: [...formData.barberIds, barber.id] });
+                                  } else {
+                                    setFormData({ ...formData, barberIds: formData.barberIds.filter((id: string) => id !== barber.id) });
+                                  }
+                                }}
+                                className="rounded text-davinci-gold focus:ring-davinci-gold focus:border-davinci-gold border-zinc-300 cursor-pointer"
+                              />
+                              <span>{barber.user.nome}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Configurações de Comissão (Apenas para Produtos) */}
+                {activeSubTab === 'products' && (
+                  <div className="space-y-4">
+                    {/* Varied Commission Toggle */}
+                    <div className="flex items-start justify-between gap-3 bg-zinc-50/80 p-3 border border-zinc-200/50 rounded-xl">
+                      <div className="space-y-1">
+                        <span className="block text-[10px] font-bold text-davinci-black uppercase tracking-wider">
+                          Comissão Variável por Profissional
+                        </span>
+                        <p className="text-[9px] text-davinci-gray font-medium leading-relaxed max-w-[220px]">
+                          Ative esta opção se deseja configurar uma porcentagem de comissão diferente para cada profissional. Se desmarcada, a comissão padrão será igual para toda a equipe.
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer mt-1">
+                        <input
+                          type="checkbox"
+                          checked={formData.variedCommission}
+                          onChange={(e) => setFormData({ ...formData, variedCommission: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-davinci-gold"></div>
+                      </label>
+                    </div>
+
+                    {/* Default Commission Input */}
+                    {!formData.variedCommission ? (
+                      <div>
+                        <label className="block text-[10px] font-bold text-davinci-gray uppercase tracking-wider mb-1.5">
+                          Comissão Padrão do Produto (%)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="Ex: 10.0"
+                          value={formData.commissionRate}
+                          onChange={(e) => setFormData({ ...formData, commissionRate: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-xs"
+                        />
+                      </div>
+                    ) : (
+                      /* Custom Commission Inputs per Barber */
+                      <div className="space-y-2">
+                        <label className="block text-[10px] font-bold text-davinci-gray uppercase tracking-wider mb-1.5">
+                          Comissão de cada Profissional (%)
+                        </label>
+                        {barbers.length === 0 ? (
+                          <p className="text-[10px] text-davinci-gray italic">Nenhum profissional cadastrado.</p>
+                        ) : (
+                          <div className="space-y-2 max-h-[140px] overflow-y-auto border border-zinc-200 rounded-lg p-2.5 bg-zinc-50/50">
+                            {barbers.map((barber: any) => {
+                              const currentVal = formData.customCommissions[barber.id] || '';
+                              return (
+                                <div key={barber.id} className="flex items-center justify-between gap-3 text-xs">
+                                  <span className="font-semibold text-davinci-black truncate">{barber.user.nome}</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      step="0.1"
+                                      placeholder="Ex: 15.0"
+                                      value={currentVal}
+                                      onChange={(e) => {
+                                        setFormData({
+                                          ...formData,
+                                          customCommissions: {
+                                            ...formData.customCommissions,
+                                            [barber.id]: e.target.value,
+                                          },
+                                        });
+                                      }}
+                                      className="w-20 px-2 py-1 bg-white border border-zinc-200 rounded-lg text-davinci-black text-right text-xs focus:outline-none focus:border-davinci-gold"
+                                    />
+                                    <span className="text-davinci-gray font-bold">%</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Submit Actions */}
                 <div className="flex gap-3 justify-end pt-4 border-t border-zinc-100 mt-6">

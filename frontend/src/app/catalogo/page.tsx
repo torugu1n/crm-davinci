@@ -57,7 +57,7 @@ export default function CatalogoPublicoPage() {
   const items = activeTab === 'services' ? services : products;
 
   return (
-    <div className="min-h-screen bg-[#FDFBF9] text-[#1C1917] font-sans pb-16">
+    <div id="catalog-root" className="min-h-screen bg-[#FDFBF9] text-[#1C1917] font-sans pb-16">
 
       <div className="relative overflow-hidden bg-white border-b border-zinc-200/60 py-16 px-6 text-center">
         <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-davinci-gold/5 blur-[100px] rounded-full pointer-events-none" />

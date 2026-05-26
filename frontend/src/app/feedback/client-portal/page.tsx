@@ -244,6 +244,13 @@ export default function ClientPortalPage() {
 
   const slots = getSlotsStatus();
 
+  const filteredBarbers = selectedService
+    ? barbers.filter((barber: any) => {
+        const serviceData = services.find((s: any) => s.id === selectedService);
+        return serviceData?.barbers?.some((b: any) => b.id === barber.id);
+      })
+    : barbers;
+
   const handleBookingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBarber || !selectedService || !selectedHour || !selectedDate || !clientId) return;
@@ -274,7 +281,7 @@ export default function ClientPortalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(197,168,128,0.10),transparent_30%),linear-gradient(180deg,#fcfaf6_0%,#f7f1e7_100%)] text-davinci-black">
+    <div id="client-portal-root" className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(197,168,128,0.10),transparent_30%),linear-gradient(180deg,#fcfaf6_0%,#f7f1e7_100%)] text-davinci-black">
       <div className="max-w-6xl mx-auto px-6 py-8 lg:py-10 space-y-8">
         <section
           className="relative overflow-hidden rounded-[28px] border border-davinci-gold/20 bg-white/90 shadow-[0_24px_80px_rgba(28,26,23,0.08)]"
@@ -358,7 +365,7 @@ export default function ClientPortalPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8">
           <section
-            id="booking"
+            id="client-portal-booking"
             className="bg-white p-6 rounded-[24px] border border-zinc-200/80 shadow-[0_18px_50px_rgba(28,26,23,0.06)] space-y-6"
             data-demo-title="Reserva de atendimento"
             data-demo-description="Aqui o cliente escolhe serviço, profissional, data e horário em um fluxo de autoatendimento pensado para conversão."
@@ -408,13 +415,15 @@ export default function ClientPortalPage() {
                   Escolha seu Profissional
                 </label>
 
-                {barbers.length === 0 ? (
+                {filteredBarbers.length === 0 ? (
                   <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-xs text-davinci-gray font-medium">
-                    Nenhum profissional disponivel no momento.
+                    {selectedService
+                      ? 'Nenhum profissional cadastrado realiza este serviço no momento.'
+                      : 'Nenhum profissional disponível no momento.'}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {barbers.map((barber: any) => {
+                    {filteredBarbers.map((barber: any) => {
                       const isSelected = selectedBarber === barber.id;
                       const categoryLabel = getProfessionalCategoryLabel(barber);
                       const professionalBio =

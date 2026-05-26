@@ -139,6 +139,10 @@ export default function DashboardCalendar() {
     }).then((res) => { if (!res.ok) throw new Error('Failed to fetch appointments'); return res.json(); }),
   });
 
+  const allowedServices = selectedCell?.barberId
+    ? services.filter((s: any) => s.barbers?.some((b: any) => b.id === selectedCell.barberId))
+    : services;
+
   // Mutations
   const createMutation = useMutation({
     mutationFn: (newApp: any) =>
@@ -543,7 +547,7 @@ export default function DashboardCalendar() {
                         className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-sm cursor-pointer"
                       >
                         <option value="" disabled>-- Escolha o serviço --</option>
-                        {services.map((s: any) => (
+                        {allowedServices.map((s: any) => (
                           <option key={s.id} value={s.id}>{s.nome} - R$ {s.preco}</option>
                         ))}
                       </select>

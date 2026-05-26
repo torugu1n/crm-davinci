@@ -32,6 +32,8 @@ model Barber {
   fotoUrl       String?       @map("foto_url")
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   appointments  Appointment[]
+  services       Service[]     @relation("BarberServices")
+  productCommissions ProductCommission[]
 
   @@map("barbers")
 }
@@ -59,6 +61,7 @@ model Service {
   duracao      Int // em minutos
   descricao    String?
   appointments Appointment[]
+  barbers       Barber[]      @relation("BarberServices")
 
   @@map("services")
 }
@@ -68,9 +71,23 @@ model Product {
   nome      String
   preco     Float
   descricao String?
+  commissionRate Float    @default(0) @map("commission_rate")
+  customCommissions ProductCommission[]
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("products")
+}
+
+model ProductCommission {
+  id             String   @id @default(uuid())
+  productId      String   @map("product_id")
+  barberId       String   @map("barber_id")
+  commissionRate Float    @map("commission_rate")
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  barber         Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, barberId])
+  @@map("product_commissions")
 }
 
 model Appointment {

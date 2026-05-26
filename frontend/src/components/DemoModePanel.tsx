@@ -6,7 +6,7 @@ import { Sparkles, X, ChevronDown, ChevronUp, Compass, UserCheck } from 'lucide-
 import { useStore, type DemoPersona } from '@/store/useStore';
 import { authenticateDemoPersona, DEMO_PERSONAS } from '@/lib/demo';
 
-const PERSONA_ORDER: DemoPersona[] = ['admin', 'attendant', 'professional'];
+const PERSONA_ORDER: DemoPersona[] = ['admin', 'attendant', 'professional', 'client'];
 
 export default function DemoModePanel() {
   const router = useRouter();

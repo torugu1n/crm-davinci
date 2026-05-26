@@ -275,8 +275,8 @@ export default function InteractiveTour() {
           <p className="text-[9px] font-black uppercase tracking-[0.16em] text-davinci-gold">
             Alternar Roteiro / Conta Demo
           </p>
-          <div className="grid grid-cols-3 gap-1.5">
-            {(['admin', 'attendant', 'professional'] as DemoPersona[]).map((persona) => {
+          <div className="grid grid-cols-4 gap-1.5">
+            {(['admin', 'attendant', 'professional', 'client'] as DemoPersona[]).map((persona) => {
               const isActive = persona === activePersona;
               return (
                 <button

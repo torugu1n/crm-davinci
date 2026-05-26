@@ -7,6 +7,7 @@ async function main() {
   console.log('Iniciando o seeding do banco de dados com foco unissex e feminino...');
 
   // 1. Limpar banco de dados anterior
+  await prisma.productCommission.deleteMany({});
   await prisma.feedback.deleteMany({});
   await prisma.message.deleteMany({});
   await prisma.appointment.deleteMany({});
@@ -38,29 +39,40 @@ async function main() {
 
   console.log('Serviços criados com sucesso!');
 
-  await prisma.product.createMany({
-    data: [
-      {
-        nome: 'Shampoo Repair Da Vinci',
-        preco: 89.9,
-        descricao: 'Shampoo de tratamento para manutenção premium pós-coloração e hidratação.',
-      },
-      {
-        nome: 'Máscara Nutritiva Imperial',
-        preco: 129.9,
-        descricao: 'Máscara capilar de nutrição intensa para uso semanal.',
-      },
-      {
-        nome: 'Pomada Matte Signature',
-        preco: 59.9,
-        descricao: 'Pomada de fixação média com acabamento seco para penteados masculinos.',
-      },
-      {
-        nome: 'Óleo Finalizador Golden Touch',
-        preco: 74.9,
-        descricao: 'Óleo leve para brilho e controle de frizz sem pesar nos fios.',
-      },
-    ],
+  const prodShampoo = await prisma.product.create({
+    data: {
+      nome: 'Shampoo Repair Da Vinci',
+      preco: 89.9,
+      descricao: 'Shampoo de tratamento para manutenção premium pós-coloração e hidratação.',
+      commissionRate: 10.0,
+    },
+  });
+
+  const prodMascara = await prisma.product.create({
+    data: {
+      nome: 'Máscara Nutritiva Imperial',
+      preco: 129.9,
+      descricao: 'Máscara capilar de nutrição intensa para uso semanal.',
+      commissionRate: 12.0,
+    },
+  });
+
+  const prodPomada = await prisma.product.create({
+    data: {
+      nome: 'Pomada Matte Signature',
+      preco: 59.9,
+      descricao: 'Pomada de fixação média com acabamento seco para penteados masculinos.',
+      commissionRate: 8.0,
+    },
+  });
+
+  const prodOleo = await prisma.product.create({
+    data: {
+      nome: 'Óleo Finalizador Golden Touch',
+      preco: 74.9,
+      descricao: 'Óleo leve para brilho e controle de frizz sem pesar nos fios.',
+      commissionRate: 15.0,
+    },
   });
 
   console.log('Produtos criados com sucesso!');
@@ -140,6 +152,9 @@ async function main() {
       userId: userAlessandro.id,
       especialidade: 'Cortes masculinos premium, degradê baixo, visagismo e barboterapia.',
       notaMedia: 4.95,
+      services: {
+        connect: [{ id: corteMasculino.id }, { id: barba.id }],
+      },
     },
   });
 
@@ -148,6 +163,9 @@ async function main() {
       userId: userMarcus.id,
       especialidade: 'Cortes unissex clássicos, escovas de alta performance e modelagem.',
       notaMedia: 4.88,
+      services: {
+        connect: [{ id: corteFeminino.id }, { id: escova.id }, { id: corteMasculino.id }],
+      },
     },
   });
 
@@ -156,6 +174,26 @@ async function main() {
       userId: userMariana.id,
       especialidade: 'Estilista de mechas, coloração avançada, tratamentos capilares e cortes femininos.',
       notaMedia: 4.98,
+      services: {
+        connect: [{ id: coloracao.id }, { id: manicure.id }],
+      },
+    },
+  });
+
+  // Criar comissões customizadas de produtos
+  await prisma.productCommission.create({
+    data: {
+      productId: prodShampoo.id,
+      barberId: professional3.id,
+      commissionRate: 20.0,
+    },
+  });
+
+  await prisma.productCommission.create({
+    data: {
+      productId: prodPomada.id,
+      barberId: professional1.id,
+      commissionRate: 15.0,
     },
   });
 
