@@ -70,45 +70,54 @@ export class AppointmentsService {
     const isClient = currentUser.role === 'CLIENT';
     const clientId = isClient ? currentUser.id : data.clientId;
     if (!clientId) throw new BadRequestException('ID do cliente é obrigatório');
+    if (!data.barberId) throw new BadRequestException('ID do profissional é obrigatório');
+    if (!data.serviceId) throw new BadRequestException('ID do serviço é obrigatório');
 
-    const service = await this.prisma.service.findUnique({ where: { id: data.serviceId } });
+    const [service, barber] = await Promise.all([
+      this.prisma.service.findUnique({ where: { id: data.serviceId } }),
+      this.prisma.barber.findUnique({ where: { id: data.barberId } }),
+    ]);
     if (!service) throw new NotFoundException('Serviço não encontrado');
+    if (!barber) throw new NotFoundException('Profissional não encontrado');
 
     const isAdmin = currentUser.role === 'ADMIN' || currentUser.roles?.includes('ADMIN');
     const valor = (isAdmin && data.valor !== undefined) ? parseFloat(data.valor) : service.preco;
 
-    const appointment = await this.prisma.appointment.create({
-      data: {
-        clientId,
-        barberId: data.barberId,
-        serviceId: data.serviceId,
-        data: new Date(data.data),
-        status: data.status || 'SCHEDULED',
-        valor,
-      },
-      include: {
-        client: true,
-        barber: { include: { user: true } },
-        service: true,
-      },
-    });
+    const appointment = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.appointment.create({
+        data: {
+          clientId,
+          barberId: data.barberId,
+          serviceId: data.serviceId,
+          data: new Date(data.data),
+          status: data.status || 'SCHEDULED',
+          valor,
+        },
+        include: {
+          client: true,
+          barber: { include: { user: true } },
+          service: true,
+        },
+      });
 
-    // Ensure the service is linked to the professional and the client is linked to the professional
-    try {
-      await this.prisma.barber.update({
+      await tx.barber.update({
         where: { id: data.barberId },
         data: {
           services: {
             connect: { id: data.serviceId },
           },
-          assignedClients: {
-            connect: { id: clientId },
-          },
         },
       });
-    } catch (err) {
-      console.error('Failed to link service or client to barber:', err);
-    }
+
+      await tx.client.update({
+        where: { id: clientId },
+        data: {
+          assignedBarberId: data.barberId,
+        },
+      });
+
+      return created;
+    });
 
     this.wsGateway.broadcast('appointment-created', appointment);
     return appointment;

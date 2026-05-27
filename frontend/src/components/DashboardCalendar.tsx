@@ -88,6 +88,7 @@ const DatePickerPopover = ({ selectedDate, onChange, onClose }: { selectedDate: 
 export default function DashboardCalendar() {
   const queryClient = useQueryClient();
   const token = useStore((state) => state.token);
+  const addNotification = useStore((state) => state.addNotification);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
@@ -177,13 +178,32 @@ export default function DashboardCalendar() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(newApp),
-      }).then((res) => res.json()),
+      }).then(async (res) => {
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          throw new Error(data?.message || 'Não foi possível criar o agendamento.');
+        }
+        return data;
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['barbers'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['services'] });
+      addNotification({
+        title: 'Agendamento criado',
+        description: 'O cliente, profissional e serviço foram vinculados com sucesso.',
+        type: 'success',
+      });
       setIsNewModalOpen(false);
       resetForm();
+    },
+    onError: (err: any) => {
+      addNotification({
+        title: 'Erro ao criar agendamento',
+        description: err.message || 'Verifique os dados e tente novamente.',
+        type: 'error',
+      });
     },
   });
 
