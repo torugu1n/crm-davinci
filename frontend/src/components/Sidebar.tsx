@@ -52,7 +52,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
           }`}
       >
         {/* Brand Logo */}
-        <div className="p-6 border-b border-zinc-200/80 flex items-center gap-3">
+        <div className="p-6 border-b border-zinc-200/80 flex items-center gap-3 shrink-0">
           <div className="p-2 rounded-lg bg-background border border-davinci-gold/20">
             <Scissors className="h-5 w-5 text-davinci-gold" />
           </div>
@@ -67,7 +67,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         </div>
 
         {/* Nav List */}
-        <nav className="flex-1 px-4 py-6 space-y-2">
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -91,7 +91,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         </nav>
 
         {/* User Info & Logout */}
-        <div className="p-4 border-t border-zinc-200/80 bg-background/50">
+        <div className="p-4 border-t border-zinc-200/80 bg-background/50 shrink-0">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-davinci-gold/10 border border-davinci-gold/20 flex items-center justify-center font-bold text-davinci-gold">
               {user?.nome ? user.nome.charAt(0).toUpperCase() : 'U'}
