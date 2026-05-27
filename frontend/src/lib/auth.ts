@@ -15,11 +15,12 @@ export interface SessionUserLike {
 const PROFESSIONAL_ROLES: StaffRole[] = ['BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE'];
 const DASHBOARD_ROLES: StaffRole[] = ['ADMIN', 'ATTENDANT'];
 export const ADMIN_ONLY_DASHBOARD_TABS = ['services', 'finance', 'users', 'employees', 'feedbacks'] as const;
-export const ATTENDANT_DASHBOARD_TABS = ['calendar', 'crm', 'whatsapp'] as const;
+export const ATTENDANT_DASHBOARD_TABS = ['calendar', 'crm', 'whatsapp', 'quick-replies'] as const;
 export const ADMIN_DASHBOARD_TABS = [
   'calendar',
   'crm',
   'whatsapp',
+  'quick-replies',
   'services',
   'finance',
   'users',

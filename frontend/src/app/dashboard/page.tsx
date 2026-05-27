@@ -16,6 +16,7 @@ import CRMDrawer from '@/components/CRMDrawer';
 import ServicesProductsManager from '@/components/ServicesProductsManager';
 import EmployeesManager from '@/components/EmployeesManager';
 import UsersManager from '@/components/UsersManager';
+import QuickRepliesManager from '@/components/QuickRepliesManager';
 import { canAccessDashboard, canAccessDashboardTab, getAllowedDashboardTabs, isAdminUser, isClientUser, isProfessionalUser } from '@/lib/auth';
 
 export default function DashboardPage() {
@@ -99,6 +100,8 @@ export default function DashboardPage() {
         return 'Gestão de Clientes';
       case 'whatsapp':
         return 'WhatsApp e Atendimento';
+      case 'quick-replies':
+        return 'Respostas Rápidas';
       case 'services':
         return 'Serviços & Produtos';
       case 'employees':
@@ -233,6 +236,16 @@ export default function DashboardPage() {
               data-demo-description="Este módulo demonstra atendimento digital, confirmação de horários e continuidade da comunicação com os clientes."
             >
               <WhatsAppSimulator />
+            </div>
+          )}
+
+          {activeTab === 'quick-replies' && canAccessDashboardTab(user, 'quick-replies') && (
+            <div
+              id="dashboard-tab-content-quick-replies"
+              data-demo-title="Respostas rápidas"
+              data-demo-description="Aqui o atendente ou administrador gerencia modelos de mensagens rápidas para agilizar o atendimento."
+            >
+              <QuickRepliesManager />
             </div>
           )}
 

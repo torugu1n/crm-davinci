@@ -37,24 +37,29 @@ model Barber {
   serviceCommissions ServiceCommission[]
   workSchedules WorkSchedule[]
   agendaBlocks AgendaBlock[]
+  assignedClients Client[] @relation("AssignedBarber")
 
   @@map("barbers")
 }
 
 model Client {
-  id          String        @id @default(uuid())
-  nome        String
-  telefone    String        @unique
-  aniversario String?
-  observacoes String?
-  preferences String?
-  frequency   Int           @default(0)
-  ticketMedio Float         @default(0.0) @map("ticket_medio")
-  chatStatus  String        @default("NEW") @map("chat_status")
-  origem      String?
-  createdAt   DateTime      @default(now()) @map("created_at")
-  appointments Appointment[]
-  messages    Message[]
+  id               String        @id @default(uuid())
+  nome             String
+  telefone         String        @unique
+  email            String?
+  aniversario      String?
+  observacoes      String?
+  preferences      String?
+  frequency        Int           @default(0)
+  ticketMedio      Float         @default(0.0) @map("ticket_medio")
+  chatStatus       String        @default("NEW") @map("chat_status")
+  origem           String?
+  tags             String[]      @default([])
+  assignedBarberId String?       @map("assigned_barber_id")
+  assignedBarber   Barber?       @relation("AssignedBarber", fields: [assignedBarberId], references: [id], onDelete: SetNull)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  appointments     Appointment[]
+  messages         Message[]
 
   @@map("clients")
 }

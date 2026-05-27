@@ -507,4 +507,14 @@ export class WhatsappService {
       where: { id },
     });
   }
+
+  async updateQuickReply(id: string, body: { titulo: string; conteudo: string }) {
+    return this.prisma.quickReply.update({
+      where: { id },
+      data: {
+        titulo: body.titulo,
+        conteudo: body.conteudo,
+      },
+    });
+  }
 }

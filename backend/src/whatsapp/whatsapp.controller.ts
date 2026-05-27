@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { WhatsappService } from './whatsapp.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -64,5 +64,12 @@ export class WhatsappController {
   @Roles('ADMIN', 'ATTENDANT')
   async deleteQuickReply(@Param('id') id: string) {
     return this.whatsappService.deleteQuickReply(id);
+  }
+
+  @Put('quick-replies/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'ATTENDANT')
+  async updateQuickReply(@Param('id') id: string, @Body() body: { titulo: string; conteudo: string }) {
+    return this.whatsappService.updateQuickReply(id, body);
   }
 }

@@ -21,6 +21,7 @@ import {
   Smile,
   UserCheck,
   Tags,
+  Save,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 
@@ -67,11 +68,25 @@ export default function WhatsAppSimulator() {
   // Quick reply toggle
   const [showQuickReplies, setShowQuickReplies] = useState(false);
 
+  // Emoji picker & File upload states
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Edit Client States
+  const [editNome, setEditNome] = useState('');
+  const [editTelefone, setEditTelefone] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPreferences, setEditPreferences] = useState('');
+  const [editObservacoes, setEditObservacoes] = useState('');
+  const [editAssignedBarberId, setEditAssignedBarberId] = useState('');
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [newTagText, setNewTagText] = useState('');
+
   const chatEndRefOperator = useRef<HTMLDivElement | null>(null);
   const chatEndRefCustomer = useRef<HTMLDivElement | null>(null);
 
   // Fetch clients
-  const { data: clients = [] } = useQuery({
+  const { data: rawClients } = useQuery({
     queryKey: ['clients'],
     queryFn: () =>
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`, {
@@ -82,9 +97,10 @@ export default function WhatsAppSimulator() {
       }),
     enabled: !!token,
   });
+  const clients = rawClients || [];
 
   // Fetch chat history for selected client
-  const { data: history = [] } = useQuery({
+  const { data: rawHistory } = useQuery({
     queryKey: ['chatHistory', selectedClientId],
     queryFn: () =>
       selectedClientId
@@ -97,6 +113,7 @@ export default function WhatsAppSimulator() {
         : Promise.resolve([]),
     enabled: !!selectedClientId && !!token,
   });
+  const history = rawHistory || [];
 
   // Fetch Barbers for quick booking
   const { data: barbers = [] } = useQuery({
@@ -126,19 +143,35 @@ export default function WhatsAppSimulator() {
     enabled: !!token,
   });
 
+  const clientList = Array.isArray(clients) ? clients : [];
+  const selectedClient = clientList.find((c: any) => c.id === selectedClientId);
+
   useEffect(() => {
-    if (Array.isArray(history)) {
-      setChats(history);
+    if (Array.isArray(rawHistory)) {
+      setChats(rawHistory);
     }
-  }, [history]);
+  }, [rawHistory]);
 
   // Set default selected client
   useEffect(() => {
-    const clientList = Array.isArray(clients) ? clients : [];
+    const clientList = Array.isArray(rawClients) ? rawClients : [];
     if (clientList.length > 0 && !selectedClientId) {
       setSelectedClientId(clientList[0].id);
     }
-  }, [clients, selectedClientId]);
+  }, [rawClients, selectedClientId]);
+
+  // Sync client details fields for editing
+  useEffect(() => {
+    if (selectedClient) {
+      setEditNome(selectedClient.nome || '');
+      setEditTelefone(selectedClient.telefone || '');
+      setEditEmail(selectedClient.email || '');
+      setEditPreferences(selectedClient.preferences || '');
+      setEditObservacoes(selectedClient.observacoes || '');
+      setEditAssignedBarberId(selectedClient.assignedBarberId || '');
+      setEditTags(selectedClient.tags || []);
+    }
+  }, [selectedClientId, selectedClient]);
 
   // WebSockets listener
   useEffect(() => {
@@ -205,18 +238,24 @@ export default function WhatsAppSimulator() {
   });
 
   const updateClientMutation = useMutation({
-    mutationFn: ({ id, chatStatus }: { id: string; chatStatus: string }) =>
+    mutationFn: ({ id, payload }: { id: string; payload: any }) =>
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ chatStatus }),
-      }).then((res) => res.json()),
+        body: JSON.stringify(payload),
+      }).then((res) => {
+        if (!res.ok) throw new Error('Erro ao atualizar cliente');
+        return res.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
     },
+    onError: (err: any) => {
+      alert(err.message || 'Erro ao salvar alterações.');
+    }
   });
 
   const quickBookMutation = useMutation({
@@ -287,8 +326,72 @@ export default function WhatsAppSimulator() {
     setShowQuickReplies(false);
   };
 
-  const clientList = Array.isArray(clients) ? clients : [];
-  const selectedClient = clientList.find((c: any) => c.id === selectedClientId);
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedClientId) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Data = event.target?.result as string;
+      const isImage = file.type.startsWith('image/');
+      
+      let formattedMsg = '';
+      if (isImage) {
+        formattedMsg = `[IMAGE:${base64Data}|${file.name}]`;
+      } else {
+        formattedMsg = `[FILE:${file.name}|${file.size}|${file.type}]`;
+      }
+
+      operatorSendMutation.mutate({
+        clientId: selectedClientId,
+        mensagem: formattedMsg,
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const renderMessageContent = (text: string) => {
+    if (text.startsWith('[IMAGE:') && text.includes('|')) {
+      const match = text.match(/^\[IMAGE:(.+)\|(.+)\]$/);
+      if (match) {
+        const [_, base64, filename] = match;
+        return (
+          <div className="space-y-1">
+            <img src={base64} alt={filename} className="max-w-full rounded-md max-h-48 object-cover border border-zinc-200/50" />
+            <span className="block text-[8px] text-zinc-500 italic truncate">{filename}</span>
+          </div>
+        );
+      }
+    }
+
+    if (text.startsWith('[FILE:') && text.includes('|')) {
+      const match = text.match(/^\[FILE:(.+)\|(.+)\|(.+)\]$/);
+      if (match) {
+        const [_, filename, sizeStr, mimeType] = match;
+        const size = parseInt(sizeStr, 10);
+        const formattedSize = size > 1024 * 1024 
+          ? `${(size / (1024 * 1024)).toFixed(1)} MB` 
+          : `${(size / 1024).toFixed(0)} KB`;
+        
+        return (
+          <div className="flex items-center gap-2.5 p-2 bg-zinc-50/80 rounded-lg border border-zinc-200/50 min-w-[180px]">
+            <div className="p-2 bg-davinci-gold/15 text-davinci-gold rounded-lg shrink-0">
+              <Paperclip className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1 leading-normal">
+              <p className="font-semibold truncate text-[10px] text-davinci-black">{filename}</p>
+              <span className="text-[8px] text-zinc-400 block">{formattedSize} • {mimeType.split('/')[1]?.toUpperCase() || 'Arquivo'}</span>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    return <p>{text}</p>;
+  };
+
+
 
   const filteredClients = clientList.filter((c: any) => {
     const matchesSearch = (c.nome || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -400,7 +503,7 @@ export default function WhatsAppSimulator() {
           </div>
 
           {/* Area do Chat com Wallpaper e Ficha CRM Lateral */}
-          <div className={`flex bg-white overflow-hidden h-full ${mobileView === 'chat' ? 'flex' : 'hidden md:flex'}`}>
+          <div className={`flex bg-white overflow-hidden h-full ${mobileView === 'chat' ? 'flex' : 'hidden md:flex'} relative`}>
             
             {/* Bloco Chat Central */}
             <div className="flex-1 flex flex-col h-full bg-[#efeae2] relative overflow-hidden">
@@ -465,7 +568,7 @@ export default function WhatsAppSimulator() {
                               : 'bg-white text-davinci-black mr-auto rounded-tl-none border border-zinc-200/60'
                           }`}
                         >
-                          <p>{msg.mensagem}</p>
+                          {renderMessageContent(msg.mensagem)}
                           <div className="flex justify-end items-center gap-1 mt-1 text-[8px] text-davinci-gray select-none">
                             <span>{new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                             {isOperator && <CheckCheck className="h-3 w-3 text-sky-500 inline" />}
@@ -516,11 +619,44 @@ export default function WhatsAppSimulator() {
                     </div>
                   )}
 
+                  {/* Emoji Picker Popover */}
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-16 left-4 bg-white border border-zinc-200 rounded-xl p-3 shadow-2xl z-20 w-56 grid grid-cols-6 gap-2">
+                      {['😀', '😂', '😍', '👍', '🙏', '🎉', '👏', '🔥', '❤️', '🤔', '😎', '😜'].map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => {
+                            setOperatorText((prev) => prev + emoji);
+                            setShowEmojiPicker(false);
+                          }}
+                          className="text-lg hover:scale-125 transition-transform p-1 cursor-pointer hover:bg-zinc-50 rounded"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Hidden File Input */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+
                   {/* Barra de Digitação */}
                   <form onSubmit={handleOperatorSend} className="p-2.5 bg-[#f0f2f5] border-t border-zinc-200 flex gap-2 items-center h-14 shrink-0 z-10">
                     <div className="flex gap-2 text-zinc-500">
-                      <Smile className="h-5 w-5 cursor-pointer hover:text-davinci-black transition-colors" />
-                      <Paperclip className="h-5 w-5 cursor-pointer hover:text-davinci-black transition-colors" />
+                      <Smile
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        className={`h-5 w-5 cursor-pointer hover:text-davinci-black transition-colors ${showEmojiPicker ? 'text-davinci-gold' : ''}`}
+                      />
+                      <Paperclip
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-5 w-5 cursor-pointer hover:text-davinci-black transition-colors"
+                      />
                       <button
                         type="button"
                         onClick={() => setShowQuickReplies(!showQuickReplies)}
@@ -536,7 +672,7 @@ export default function WhatsAppSimulator() {
                       value={operatorText}
                       onChange={(e) => setOperatorText(e.target.value)}
                       placeholder="Mensagem..."
-                      className="flex-1 bg-white border border-zinc-200 rounded-full px-4 py-2 text-xs text-davinci-black focus:outline-none focus:border-davinci-gold shadow-sm"
+                      className="flex-1 min-w-0 bg-white border border-zinc-200 rounded-full px-4 py-2 text-xs text-davinci-black focus:outline-none focus:border-davinci-gold shadow-sm"
                     />
                     <button
                       type="submit"
@@ -555,7 +691,7 @@ export default function WhatsAppSimulator() {
 
             {/* Ficha CRM Rápida Integrada (Whatsapp Web Contact Info) */}
             {selectedClient && showInfoSidebar && (
-              <div className="w-[280px] border-l border-zinc-200 bg-white flex flex-col h-full overflow-hidden shrink-0 animate-slide-in">
+              <div className="absolute right-0 top-0 h-full w-[280px] border-l border-zinc-200 bg-white flex flex-col overflow-hidden shrink-0 shadow-2xl z-20 animate-slide-in">
                 
                 {/* Header info */}
                 <div className="p-3 bg-[#f0f2f5] border-b border-zinc-200 flex justify-between items-center h-14 shrink-0">
@@ -570,24 +706,112 @@ export default function WhatsAppSimulator() {
                   {/* Perfil card */}
                   <div className="flex flex-col items-center text-center pb-4 border-b border-zinc-100">
                     <div className="w-14 h-14 rounded-full bg-davinci-gold/10 border-2 border-davinci-gold/30 flex items-center justify-center font-bold text-lg text-davinci-gold mb-2 shadow-inner">
-                      {selectedClient.nome.charAt(0).toUpperCase()}
+                      {editNome ? editNome.charAt(0).toUpperCase() : 'C'}
                     </div>
-                    <span className="font-bold text-davinci-black text-sm">{selectedClient.nome}</span>
-                    <span className="text-[10px] text-davinci-gray mt-1 block">{selectedClient.telefone}</span>
+                    <span className="font-bold text-davinci-black text-sm">{editNome || selectedClient.nome}</span>
+                    <span className="text-[10px] text-davinci-gray mt-1 block">{editTelefone || selectedClient.telefone}</span>
                   </div>
 
                   {/* Status Dropdown */}
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label className="text-[10px] uppercase tracking-wider font-bold text-davinci-gray block">Status da Conversa</label>
                     <select
                       value={selectedClient.chatStatus}
-                      onChange={(e) => updateClientMutation.mutate({ id: selectedClient.id, chatStatus: e.target.value })}
+                      onChange={(e) => updateClientMutation.mutate({ id: selectedClient.id, payload: { chatStatus: e.target.value } })}
                       className="w-full px-2.5 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-davinci-black focus:outline-none focus:border-davinci-gold font-semibold cursor-pointer"
                     >
                       {STATUS_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
+                  </div>
+
+                  {/* Operator dropdown */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] uppercase tracking-wider font-bold text-davinci-gray block">Contato atribuído a</label>
+                    <select
+                      value={editAssignedBarberId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditAssignedBarberId(val);
+                        updateClientMutation.mutate({ id: selectedClient.id, payload: { assignedBarberId: val || null } });
+                      }}
+                      className="w-full px-2.5 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-davinci-black focus:outline-none focus:border-davinci-gold font-semibold cursor-pointer"
+                    >
+                      <option value="">Ninguém</option>
+                      {barbers.map((b: any) => (
+                        <option key={b.id} value={b.id}>{b.user.nome}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-wider font-bold text-davinci-gray block flex items-center gap-1">
+                      <Tags className="h-3.5 w-3.5 text-davinci-gold" />
+                      Etiquetas
+                    </label>
+                    <div className="flex flex-wrap gap-1">
+                      {editTags.length === 0 ? (
+                        <span className="text-[9px] text-zinc-400 italic">Sem etiquetas</span>
+                      ) : (
+                        editTags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-davinci-gold/10 text-davinci-gold font-bold text-[9px] uppercase border border-davinci-gold/20"
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newTags = editTags.filter((t) => t !== tag);
+                                setEditTags(newTags);
+                                updateClientMutation.mutate({ id: selectedClient.id, payload: { tags: newTags } });
+                              }}
+                              className="hover:text-red-500 font-bold ml-0.5 cursor-pointer text-[10px]"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))
+                      )}
+                    </div>
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        placeholder="Adicionar etiqueta..."
+                        value={newTagText}
+                        onChange={(e) => setNewTagText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (!newTagText.trim()) return;
+                            const cleanTag = newTagText.trim();
+                            if (editTags.includes(cleanTag)) return;
+                            const newTags = [...editTags, cleanTag];
+                            setEditTags(newTags);
+                            setNewTagText('');
+                            updateClientMutation.mutate({ id: selectedClient.id, payload: { tags: newTags } });
+                          }
+                        }}
+                        className="flex-1 px-2 py-1 bg-white border border-zinc-200 rounded text-[10px] focus:outline-none focus:border-davinci-gold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!newTagText.trim()) return;
+                          const cleanTag = newTagText.trim();
+                          if (editTags.includes(cleanTag)) return;
+                          const newTags = [...editTags, cleanTag];
+                          setEditTags(newTags);
+                          setNewTagText('');
+                          updateClientMutation.mutate({ id: selectedClient.id, payload: { tags: newTags } });
+                        }}
+                        className="px-2 py-1 bg-davinci-gold text-white rounded text-[10px] font-bold hover:bg-davinci-gold-hover cursor-pointer"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
 
                   {/* Indicadores rápidos */}
@@ -602,20 +826,81 @@ export default function WhatsAppSimulator() {
                     </div>
                   </div>
 
-                  {/* Preferencias / Observações */}
-                  <div className="space-y-3 pb-3 border-b border-zinc-100">
-                    {selectedClient.preferences && (
-                      <div>
-                        <span className="text-[9px] uppercase tracking-wider font-bold text-davinci-gray block">Preferências</span>
-                        <p className="mt-1 text-davinci-black leading-relaxed text-[11px] font-medium">{selectedClient.preferences}</p>
-                      </div>
-                    )}
-                    {selectedClient.observacoes && (
-                      <div>
-                        <span className="text-[9px] uppercase tracking-wider font-bold text-davinci-gray block">Observações</span>
-                        <p className="mt-1 text-davinci-black leading-relaxed text-[11px] font-medium">{selectedClient.observacoes}</p>
-                      </div>
-                    )}
+                  {/* Dados Cadastrais editáveis */}
+                  <div className="space-y-3.5 pt-3 border-t border-zinc-100">
+                    <h5 className="font-bold text-[10px] uppercase text-davinci-gray tracking-wider">Dados do Cadastro</h5>
+                    
+                    <div>
+                      <label className="block text-[9px] uppercase font-bold text-davinci-gray mb-1">Nome Exibição</label>
+                      <input
+                        type="text"
+                        value={editNome}
+                        onChange={(e) => setEditNome(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-davinci-black focus:outline-none focus:border-davinci-gold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] uppercase font-bold text-davinci-gray mb-1">Telefone</label>
+                      <input
+                        type="text"
+                        value={editTelefone}
+                        onChange={(e) => setEditTelefone(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-davinci-black focus:outline-none focus:border-davinci-gold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] uppercase font-bold text-davinci-gray mb-1">E-mail</label>
+                      <input
+                        type="email"
+                        placeholder="email@exemplo.com"
+                        value={editEmail}
+                        onChange={(e) => setEditEmail(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-davinci-black focus:outline-none focus:border-davinci-gold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] uppercase font-bold text-davinci-gray mb-1">Preferências</label>
+                      <textarea
+                        rows={2}
+                        value={editPreferences}
+                        onChange={(e) => setEditPreferences(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-davinci-black focus:outline-none focus:border-davinci-gold resize-none leading-relaxed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[9px] uppercase font-bold text-davinci-gray mb-1">Observações</label>
+                      <textarea
+                        rows={2}
+                        value={editObservacoes}
+                        onChange={(e) => setEditObservacoes(e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-white border border-zinc-200 rounded-lg text-xs text-davinci-black focus:outline-none focus:border-davinci-gold resize-none leading-relaxed"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateClientMutation.mutate({
+                          id: selectedClient.id,
+                          payload: {
+                            nome: editNome,
+                            telefone: editTelefone,
+                            email: editEmail || null,
+                            preferences: editPreferences,
+                            observacoes: editObservacoes,
+                          }
+                        });
+                      }}
+                      disabled={updateClientMutation.isPending}
+                      className="w-full py-2 bg-gold-gradient rounded-lg text-xs text-davinci-black font-bold hover:scale-[1.01] active:scale-[0.99] transition-transform cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
+                    >
+                      <Save className="h-3.5 w-3.5 text-davinci-black" />
+                      {updateClientMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+                    </button>
                   </div>
 
                   {/* Agendamento Rápido em 1-Clique */}
@@ -756,7 +1041,7 @@ export default function WhatsAppSimulator() {
                         : 'bg-white text-davinci-black mr-auto rounded-tl-none border border-zinc-200/60'
                     }`}
                   >
-                    {msg.mensagem}
+                    {renderMessageContent(msg.mensagem)}
                     <div className="flex justify-end items-center gap-0.5 mt-1 text-[7px] text-davinci-gray select-none leading-none">
                       <span>{new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                       {isCustomer && <CheckCheck className="h-2.5 w-2.5 text-sky-500 inline" />}
@@ -786,7 +1071,7 @@ export default function WhatsAppSimulator() {
                 value={customerText}
                 onChange={(e) => setCustomerText(e.target.value)}
                 placeholder="Mensagem do cliente..."
-                className="flex-1 bg-white border border-zinc-200 rounded-full px-4 py-2 text-[11px] text-davinci-black focus:outline-none focus:border-davinci-gold shadow-sm"
+                className="flex-1 min-w-0 bg-white border border-zinc-200 rounded-full px-4 py-2 text-[11px] text-davinci-black focus:outline-none focus:border-davinci-gold shadow-sm"
               />
               <button
                 type="submit"

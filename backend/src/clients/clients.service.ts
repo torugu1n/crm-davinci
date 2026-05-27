@@ -8,6 +8,13 @@ export class ClientsService {
 
   async findAll() {
     return this.prisma.client.findMany({
+      include: {
+        assignedBarber: {
+          include: {
+            user: true,
+          },
+        },
+      },
       orderBy: { nome: 'asc' },
     });
   }
@@ -16,6 +23,11 @@ export class ClientsService {
     const client = await this.prisma.client.findUnique({
       where: { id },
       include: {
+        assignedBarber: {
+          include: {
+            user: true,
+          },
+        },
         appointments: {
           include: {
             service: true,
@@ -42,9 +54,12 @@ export class ClientsService {
       data: {
         nome: data.nome,
         telefone: normalizePhone(data.telefone),
-        aniversario: normalizeBirthday(data.aniversario),
+        email: data.email || null,
+        aniversario: data.aniversario ? normalizeBirthday(data.aniversario) : null,
         observacoes: data.observacoes,
         preferences: data.preferences,
+        tags: data.tags || [],
+        assignedBarberId: data.assignedBarberId || null,
       },
     });
   }
@@ -55,13 +70,16 @@ export class ClientsService {
       data: {
         nome: data.nome,
         telefone: data.telefone ? normalizePhone(data.telefone) : undefined,
-        aniversario: data.aniversario !== undefined ? normalizeBirthday(data.aniversario) : undefined,
-        observacoes: data.observacoes,
-        preferences: data.preferences,
-        frequency: data.frequency,
-        ticketMedio: data.ticketMedio,
-        chatStatus: data.chatStatus,
-        origem: data.origem,
+        email: data.email !== undefined ? data.email : undefined,
+        aniversario: data.aniversario !== undefined ? (data.aniversario ? normalizeBirthday(data.aniversario) : null) : undefined,
+        observacoes: data.observacoes !== undefined ? data.observacoes : undefined,
+        preferences: data.preferences !== undefined ? data.preferences : undefined,
+        frequency: data.frequency !== undefined ? data.frequency : undefined,
+        ticketMedio: data.ticketMedio !== undefined ? data.ticketMedio : undefined,
+        chatStatus: data.chatStatus !== undefined ? data.chatStatus : undefined,
+        origem: data.origem !== undefined ? data.origem : undefined,
+        tags: data.tags !== undefined ? data.tags : undefined,
+        assignedBarberId: data.assignedBarberId !== undefined ? data.assignedBarberId : undefined,
       },
     });
   }
