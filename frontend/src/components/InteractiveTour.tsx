@@ -168,14 +168,30 @@ export default function InteractiveTour() {
   };
 
   // Safe Tooltip Card styling: dynamically positioned to avoid blocking highlighted content.
-  // When the spotlight is on the left, it sits on the right side, and vice versa.
+  // Desktop: shifts horizontally (opposite side of the screen relative to spotlight).
+  // Mobile: shifts vertically (top vs bottom relative to spotlight) and occupies full-width margins.
   const getTooltipPosition = () => {
     if (isMobile) {
-      return {
+      const position: any = {
         left: '50%',
-        bottom: '24px',
         transform: 'translateX(-50%)',
       };
+
+      if (coords) {
+        const centerY = coords.top + coords.height / 2;
+        const screenHeight = window.innerHeight;
+        // If the spotlight is on the bottom half of the screen, place the card at the top
+        if (centerY > screenHeight / 2) {
+          position.top = '16px';
+          position.bottom = 'auto';
+          return position;
+        }
+      }
+
+      // Default mobile position (spotlight on top half or no coords)
+      position.bottom = '16px';
+      position.top = 'auto';
+      return position;
     }
 
     if (coords) {
@@ -186,6 +202,8 @@ export default function InteractiveTour() {
           right: '24px',
           left: 'auto',
           bottom: '24px',
+          top: 'auto',
+          transform: 'none',
         };
       }
     }
@@ -194,6 +212,8 @@ export default function InteractiveTour() {
       left: pathname.startsWith('/dashboard') || pathname.startsWith('/profissional') ? '280px' : '24px',
       right: 'auto',
       bottom: '24px',
+      top: 'auto',
+      transform: 'none',
     };
   };
 
@@ -202,6 +222,8 @@ export default function InteractiveTour() {
     zIndex: 99,
     width: isMobile ? 'calc(100% - 32px)' : '340px',
     maxWidth: '380px',
+    maxHeight: 'calc(100vh - 32px)',
+    overflowY: 'auto',
     transition: 'all 0.3s ease',
     ...getTooltipPosition(),
   };
