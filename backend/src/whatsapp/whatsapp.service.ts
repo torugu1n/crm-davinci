@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 
@@ -19,14 +19,26 @@ export class WhatsappService {
     private wsGateway: WebsocketGateway,
   ) {}
 
-  async getChatHistory(clientId: string) {
+  private async checkClientTenant(clientId: string, tenantId?: string) {
+    if (!tenantId) return;
+    const client = await this.prisma.client.findFirst({
+      where: { id: clientId, tenantId },
+    });
+    if (!client) {
+      throw new NotFoundException('Cliente não encontrado neste estabelecimento');
+    }
+  }
+
+  async getChatHistory(clientId: string, tenantId?: string) {
+    await this.checkClientTenant(clientId, tenantId);
     return this.prisma.message.findMany({
       where: { clientId },
       orderBy: { createdAt: 'asc' },
     });
   }
 
-  async receiveCustomerMessage(clientId: string, text: string, bypassChatbot = false) {
+  async receiveCustomerMessage(clientId: string, text: string, bypassChatbot = false, tenantId?: string) {
+    await this.checkClientTenant(clientId, tenantId);
     // 1. Salvar mensagem recebida do cliente
     const customerMsg = await this.prisma.message.create({
       data: {
@@ -50,7 +62,8 @@ export class WhatsappService {
     return customerMsg;
   }
 
-  async sendOperatorMessage(clientId: string, text: string) {
+  async sendOperatorMessage(clientId: string, text: string, tenantId?: string) {
+    await this.checkClientTenant(clientId, tenantId);
     // Envio manual pelo atendente do CRM
     const operatorMsg = await this.prisma.message.create({
       data: {
@@ -487,28 +500,48 @@ export class WhatsappService {
     }
   }
 
-  async getQuickReplies() {
+  async getQuickReplies(tenantId?: string) {
     return this.prisma.quickReply.findMany({
+      where: tenantId ? { tenantId } : undefined,
       orderBy: { titulo: 'asc' },
     });
   }
 
-  async createQuickReply(body: { titulo: string; conteudo: string }) {
+  async createQuickReply(body: { titulo: string; conteudo: string }, tenantId?: string) {
     return this.prisma.quickReply.create({
       data: {
         titulo: body.titulo,
         conteudo: body.conteudo,
+        tenantId: tenantId || null,
       },
     });
   }
 
-  async deleteQuickReply(id: string) {
+  async deleteQuickReply(id: string, tenantId?: string) {
+    const existing = await this.prisma.quickReply.findFirst({
+      where: {
+        id,
+        tenantId: tenantId ? tenantId : undefined,
+      },
+    });
+    if (!existing) {
+      throw new NotFoundException('Resposta rápida não encontrada neste estabelecimento');
+    }
     return this.prisma.quickReply.delete({
       where: { id },
     });
   }
 
-  async updateQuickReply(id: string, body: { titulo: string; conteudo: string }) {
+  async updateQuickReply(id: string, body: { titulo: string; conteudo: string }, tenantId?: string) {
+    const existing = await this.prisma.quickReply.findFirst({
+      where: {
+        id,
+        tenantId: tenantId ? tenantId : undefined,
+      },
+    });
+    if (!existing) {
+      throw new NotFoundException('Resposta rápida não encontrada neste estabelecimento');
+    }
     return this.prisma.quickReply.update({
       where: { id },
       data: {

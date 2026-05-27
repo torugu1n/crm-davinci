@@ -11,9 +11,10 @@ export class AppointmentsService {
     private whatsappService: WhatsappService,
   ) {}
 
-  async findAll(currentUser: any) {
+  async findAll(currentUser: any, tenantId?: string) {
     const isClient = currentUser.role === 'CLIENT';
     const appointments = await this.prisma.appointment.findMany({
+      where: tenantId ? { tenantId } : undefined,
       include: {
         client: !isClient,
         barber: { include: { user: true } },
@@ -46,9 +47,12 @@ export class AppointmentsService {
     return appointments;
   }
 
-  async findOne(id: string, currentUser: any) {
-    const appointment = await this.prisma.appointment.findUnique({
-      where: { id },
+  async findOne(id: string, currentUser: any, tenantId?: string) {
+    const appointment = await this.prisma.appointment.findFirst({
+      where: { 
+        id,
+        tenantId: tenantId ? tenantId : undefined,
+      },
       include: {
         client: true,
         barber: { include: { user: true } },
@@ -66,7 +70,7 @@ export class AppointmentsService {
     return appointment;
   }
 
-  async create(data: any, currentUser: any) {
+  async create(data: any, currentUser: any, tenantId?: string) {
     const isClient = currentUser.role === 'CLIENT';
     const clientId = isClient ? currentUser.id : data.clientId;
     if (!clientId) throw new BadRequestException('ID do cliente é obrigatório');
@@ -74,14 +78,24 @@ export class AppointmentsService {
     if (!data.serviceId) throw new BadRequestException('ID do serviço é obrigatório');
 
     const [service, barber] = await Promise.all([
-      this.prisma.service.findUnique({ where: { id: data.serviceId } }),
-      this.prisma.barber.findUnique({ where: { id: data.barberId } }),
+      this.prisma.service.findFirst({ 
+        where: { 
+          id: data.serviceId,
+          tenantId: tenantId ? tenantId : undefined,
+        } 
+      }),
+      this.prisma.barber.findFirst({ 
+        where: { 
+          id: data.barberId,
+          user: tenantId ? { tenantId } : undefined,
+        } 
+      }),
     ]);
     if (!service) throw new NotFoundException('Serviço não encontrado');
     if (!barber) throw new NotFoundException('Profissional não encontrado');
 
-    const isAdmin = currentUser.role === 'ADMIN' || currentUser.roles?.includes('ADMIN');
-    const valor = (isAdmin && data.valor !== undefined) ? parseFloat(data.valor) : service.preco;
+    const isAdminOrSuper = currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN' || currentUser.roles?.includes('ADMIN') || currentUser.roles?.includes('SUPER_ADMIN');
+    const valor = (isAdminOrSuper && data.valor !== undefined) ? parseFloat(data.valor) : service.preco;
 
     const appointment = await this.prisma.$transaction(async (tx) => {
       const created = await tx.appointment.create({
@@ -92,6 +106,7 @@ export class AppointmentsService {
           data: new Date(data.data),
           status: data.status || 'SCHEDULED',
           valor,
+          tenantId: tenantId || null,
         },
         include: {
           client: true,
@@ -123,9 +138,12 @@ export class AppointmentsService {
     return appointment;
   }
 
-  async update(id: string, data: any, currentUser: any) {
-    const existing = await this.prisma.appointment.findUnique({
-      where: { id },
+  async update(id: string, data: any, currentUser: any, tenantId?: string) {
+    const existing = await this.prisma.appointment.findFirst({
+      where: {
+        id,
+        tenantId: tenantId ? tenantId : undefined,
+      },
       include: {
         client: true,
         service: true,
@@ -135,7 +153,7 @@ export class AppointmentsService {
     if (!existing) throw new NotFoundException('Agendamento não encontrado');
 
     const isClient = currentUser.role === 'CLIENT';
-    const isAdmin = currentUser.role === 'ADMIN' || currentUser.roles?.includes('ADMIN');
+    const isAdminOrSuper = currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN' || currentUser.roles?.includes('ADMIN') || currentUser.roles?.includes('SUPER_ADMIN');
 
     if (isClient && existing.clientId !== currentUser.id) {
       throw new ForbiddenException('Você não tem permissão para alterar o agendamento de outro cliente.');
@@ -148,13 +166,18 @@ export class AppointmentsService {
 
     let finalValor = existing.valor;
     if (data.serviceId && data.serviceId !== existing.serviceId) {
-      const newService = await this.prisma.service.findUnique({ where: { id: data.serviceId } });
+      const newService = await this.prisma.service.findFirst({ 
+        where: { 
+          id: data.serviceId,
+          tenantId: tenantId ? tenantId : undefined,
+        } 
+      });
       if (!newService) throw new NotFoundException('Novo serviço não encontrado');
       finalValor = newService.preco;
     }
 
     if (data.valor !== undefined && parseFloat(data.valor) !== finalValor) {
-      if (!isAdmin) {
+      if (!isAdminOrSuper) {
         throw new ForbiddenException('Apenas administradores podem definir valores customizados de pagamento.');
       } else {
         finalValor = parseFloat(data.valor);
@@ -168,6 +191,7 @@ export class AppointmentsService {
           usuario: currentUser.nome || currentUser.email || 'Sistema',
           acao: 'CHANGE_APPOINTMENT_PRICE',
           detalhes: `Valor do agendamento de ${existing.client.nome} (${existing.service.nome}) em ${new Date(existing.data).toLocaleString('pt-BR')} alterado de R$ ${existing.valor} para R$ ${finalValor}.`,
+          tenantId: tenantId || null,
         },
       });
     }
@@ -179,6 +203,7 @@ export class AppointmentsService {
           usuario: currentUser.nome || currentUser.email || 'Sistema',
           acao: 'CANCEL_APPOINTMENT',
           detalhes: `Agendamento do cliente ${existing.client.nome} com o profissional ${existing.barber.user.nome} em ${new Date(existing.data).toLocaleString('pt-BR')} foi cancelado.`,
+          tenantId: tenantId || null,
         },
       });
     }
@@ -202,19 +227,19 @@ export class AppointmentsService {
 
     // Se o status mudou para COMPLETED, processa estatísticas e envia feedback simulado
     if (data.status === 'COMPLETED' && existing.status !== 'COMPLETED') {
-      await this.processCompletion(updated);
+      await this.processCompletion(updated, tenantId);
     }
 
     this.wsGateway.broadcast('appointment-updated', updated);
     return updated;
   }
 
-  private async processCompletion(appointment: any) {
+  private async processCompletion(appointment: any, tenantId?: string) {
     const clientId = appointment.clientId;
 
     // 1. Obter todos agendamentos finalizados do cliente
     const completed = await this.prisma.appointment.findMany({
-      where: { clientId, status: 'COMPLETED' },
+      where: { clientId, status: 'COMPLETED', tenantId: tenantId || undefined },
     });
 
     const frequency = completed.length;
@@ -261,24 +286,29 @@ export class AppointmentsService {
     }, delayMs);
   }
 
-  async delete(id: string, currentUser?: any) {
-    const existing = await this.prisma.appointment.findUnique({
-      where: { id },
+  async delete(id: string, currentUser?: any, tenantId?: string) {
+    const existing = await this.prisma.appointment.findFirst({
+      where: {
+        id,
+        tenantId: tenantId ? tenantId : undefined,
+      },
       include: {
         client: true,
         service: true,
         barber: { include: { user: true } },
       },
     });
-    if (existing) {
-      await this.prisma.auditLog.create({
-        data: {
-          usuario: currentUser?.nome || currentUser?.email || 'Sistema',
-          acao: 'DELETE_APPOINTMENT',
-          detalhes: `Agendamento de ${existing.client.nome} (${existing.service.nome}) com ${existing.barber.user.nome} marcado para ${new Date(existing.data).toLocaleString('pt-BR')} foi excluído.`,
-        },
-      });
-    }
+    if (!existing) throw new NotFoundException('Agendamento não encontrado');
+
+    await this.prisma.auditLog.create({
+      data: {
+        usuario: currentUser?.nome || currentUser?.email || 'Sistema',
+        acao: 'DELETE_APPOINTMENT',
+        detalhes: `Agendamento de ${existing.client.nome} (${existing.service.nome}) com ${existing.barber.user.nome} marcado para ${new Date(existing.data).toLocaleString('pt-BR')} foi excluído.`,
+        tenantId: tenantId || null,
+      },
+    });
+
     const deleted = await this.prisma.appointment.delete({ where: { id } });
     this.wsGateway.broadcast('appointment-deleted', { id });
     return deleted;

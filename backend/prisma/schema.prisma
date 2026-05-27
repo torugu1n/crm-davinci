@@ -7,16 +7,42 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model Tenant {
+  id             String        @id @default(uuid())
+  name           String
+  subdomain      String        @unique
+  customDomain   String?       @unique @map("custom_domain")
+  logoUrl        String?       @map("logo_url")
+  primaryColor   String        @default("#C5A880") @map("primary_color")
+  secondaryColor String        @default("#18181b") @map("secondary_color")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  users          User[]
+  clients        Client[]
+  services       Service[]
+  products       Product[]
+  appointments   Appointment[]
+  quickReplies   QuickReply[]
+  goals          Goal[]
+  auditLogs      AuditLog[]
+
+  @@map("tenants")
+}
+
 model User {
   id        String   @id @default(uuid())
   nome      String
   email     String   @unique
   senha     String
-  role      String   @default("BARBER") // "ADMIN" | "ATTENDANT" | "BARBER"
+  role      String   @default("BARBER") // "SUPER_ADMIN" | "ADMIN" | "ATTENDANT" | "BARBER"
   roles     String[] @default([])
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   barber    Barber?
+
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("users")
 }
@@ -61,6 +87,9 @@ model Client {
   appointments     Appointment[]
   messages         Message[]
 
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@map("clients")
 }
 
@@ -74,6 +103,9 @@ model Service {
   barbers           Barber[]            @relation("BarberServices")
   customCommissions ServiceCommission[]
 
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@map("services")
 }
 
@@ -85,6 +117,9 @@ model Product {
   commissionRate Float    @default(0) @map("commission_rate")
   customCommissions ProductCommission[]
   createdAt DateTime @default(now()) @map("created_at")
+
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("products")
 }
@@ -114,6 +149,9 @@ model Appointment {
   barber     Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
   service    Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   feedback   Feedback?
+
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("appointments")
 }
@@ -175,6 +213,9 @@ model QuickReply {
   conteudo  String
   createdAt DateTime @default(now()) @map("created_at")
 
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@map("quick_replies")
 }
 
@@ -187,6 +228,9 @@ model Goal {
   dataInicio  DateTime @map("data_inicio")
   dataFim     DateTime @map("data_fim")
 
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@map("goals")
 }
 
@@ -196,6 +240,9 @@ model AuditLog {
   acao      String
   detalhes  String?
   createdAt DateTime @default(now()) @map("created_at")
+
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("audit_logs")
 }
@@ -211,4 +258,3 @@ model ServiceCommission {
   @@unique([serviceId, barberId])
   @@map("service_commissions")
 }
-

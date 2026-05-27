@@ -1,13 +1,13 @@
 <claude-mem-context>
 # Memory Context
 
-# [crm-davinci] recent context, 2026-05-26 7:03pm GMT-3
+# [crm-davinci] recent context, 2026-05-27 4:58pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 14 obs (3,463t read) | 57,975t work | 94% savings
+Stats: 22 obs (6,588t read) | 205,251t work | 97% savings
 
 ### May 23, 2026
 413 2:12p 🔵 crm-davinci — not a git repository, has .env files
@@ -24,6 +24,15 @@ Stats: 14 obs (3,463t read) | 57,975t work | 94% savings
 434 " 🔵 crm-davinci — staging verified clean; 65 files staged, all sensitive files ignored
 436 " ✅ crm-davinci — initial commit created; push to GitHub in progress
 439 2:15p ✅ crm-davinci — successfully pushed to GitHub origin/main
+### May 27, 2026
+561 12:10p 🔵 crm-davinci git push queue — 6 commits ahead of origin/main
+562 12:11p ✅ crm-davinci — 6 commits pushed to GitHub origin/main
+565 " 🔵 crm-davinci demo mode architecture fully mapped
+566 12:14p 🟣 crm-davinci demo tour expanded — admin roteiro grows from 8 to 13 steps with deep-link sub-tab routing
+567 " 🟣 crm-davinci seedDemoData() in auth.service.ts upgraded to match full seed.ts schema
+569 12:15p 🟣 crm-davinci seedDemoData() completed — work schedules, quick replies, goals, and audit logs added; seed.ts synced with service commissions
+572 12:16p 🔵 crm-davinci build verification started — backend Prisma client generated successfully
+576 12:18p 🔵 crm-davinci frontend production build fails with Turbopack OS error 1 — sandbox port binding restriction
 
-Access 58k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 205k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

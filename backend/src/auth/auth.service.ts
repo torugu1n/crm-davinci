@@ -43,7 +43,14 @@ export class AuthService {
   }
 
   async staffLogin(user: any) {
-    const payload = { sub: user.id, email: user.email, role: user.role, roles: user.roles, isActive: user.isActive };
+    const payload = { 
+      sub: user.id, 
+      email: user.email, 
+      role: user.role, 
+      roles: user.roles, 
+      isActive: user.isActive,
+      tenantId: user.tenantId,
+    };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -54,11 +61,12 @@ export class AuthService {
         roles: user.roles,
         isActive: user.isActive,
         barberId: user.barber?.id || null,
+        tenantId: user.tenantId,
       },
     };
   }
 
-  async clientLogin(nome: string, telefone: string, aniversario?: string) {
+  async clientLogin(nome: string, telefone: string, aniversario?: string, tenantId?: string) {
     if (!nome || !telefone) {
       throw new BadRequestException('Nome e telefone são obrigatórios');
     }
@@ -72,8 +80,19 @@ export class AuthService {
     const cleanedPhone = extractPhoneDigits(formattedPhone);
     const normalizedBirthday = normalizeBirthday(aniversario);
 
+    // Resolve tenant ID if not provided, try to find default "davinci" tenant
+    let resolvedTenantId = tenantId;
+    if (!resolvedTenantId) {
+      const defaultTenant = await this.prisma.tenant.findFirst({
+        where: { subdomain: 'davinci' }
+      });
+      resolvedTenantId = defaultTenant?.id || undefined;
+    }
+
     const last8 = cleanedPhone.substring(cleanedPhone.length - 8);
-    const clients = await this.prisma.client.findMany();
+    const clients = await this.prisma.client.findMany({
+      where: { tenantId: resolvedTenantId }
+    });
     let client = clients.find((c) => {
       const cPhoneCleaned = extractPhoneDigits(c.telefone);
       return cPhoneCleaned.endsWith(last8);
@@ -86,6 +105,7 @@ export class AuthService {
           telefone: formattedPhone,
           aniversario: normalizedBirthday,
           observacoes: 'Cliente cadastrado via portal simplificado.',
+          tenantId: resolvedTenantId,
         },
       });
     } else {
@@ -106,7 +126,7 @@ export class AuthService {
       }
     }
 
-    const payload = { sub: client.id, phone: client.telefone, role: 'CLIENT' };
+    const payload = { sub: client.id, phone: client.telefone, role: 'CLIENT', tenantId: client.tenantId };
     return {
       access_token: this.jwtService.sign(payload),
       client: {
@@ -114,6 +134,7 @@ export class AuthService {
         nome: client.nome,
         telefone: client.telefone,
         role: 'CLIENT',
+        tenantId: client.tenantId,
       },
     };
   }

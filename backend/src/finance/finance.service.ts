@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma.service';
 export class FinanceService {
   constructor(private prisma: PrismaService) {}
 
-  async getFinanceSummary() {
+  async getFinanceSummary(tenantId?: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -19,6 +19,7 @@ export class FinanceService {
       where: {
         status: 'COMPLETED',
         data: { gte: today },
+        tenantId: tenantId ? tenantId : undefined,
       },
     });
     const faturamentoDiario = dailyAppointments.reduce((sum, a) => sum + a.valor, 0);
@@ -28,6 +29,7 @@ export class FinanceService {
       where: {
         status: 'COMPLETED',
         data: { gte: startOfWeek },
+        tenantId: tenantId ? tenantId : undefined,
       },
     });
     const faturamentoSemanal = weeklyAppointments.reduce((sum, a) => sum + a.valor, 0);
@@ -37,6 +39,7 @@ export class FinanceService {
       where: {
         status: 'COMPLETED',
         data: { gte: startOfMonth },
+        tenantId: tenantId ? tenantId : undefined,
       },
       include: {
         barber: {
@@ -63,6 +66,7 @@ export class FinanceService {
         tipo: 'BILLING',
         dataInicio: { lte: today },
         dataFim: { gte: today },
+        tenantId: tenantId ? tenantId : undefined,
       },
     });
     const metaMensal = activeGoal ? activeGoal.valorAlvo : 15000.0;
@@ -70,7 +74,10 @@ export class FinanceService {
 
     // 6. Ranking de Barbeiros mais lucrativos (comissões e faturamento)
     const completedAppointments = await this.prisma.appointment.findMany({
-      where: { status: 'COMPLETED' },
+      where: { 
+        status: 'COMPLETED',
+        tenantId: tenantId ? tenantId : undefined,
+      },
       include: {
         barber: {
           include: {
@@ -113,8 +120,9 @@ export class FinanceService {
     };
   }
 
-  async getGoals() {
+  async getGoals(tenantId?: string) {
     const goals = await this.prisma.goal.findMany({
+      where: tenantId ? { tenantId } : undefined,
       orderBy: { dataInicio: 'desc' },
     });
 
@@ -123,6 +131,7 @@ export class FinanceService {
         const appointments = await this.prisma.appointment.findMany({
           where: {
             status: 'COMPLETED',
+            tenantId: tenantId ? tenantId : undefined,
             data: {
               gte: goal.dataInicio,
               lte: goal.dataFim,
@@ -147,7 +156,7 @@ export class FinanceService {
     return updatedGoals;
   }
 
-  async createGoal(data: any) {
+  async createGoal(data: any, tenantId?: string) {
     return this.prisma.goal.create({
       data: {
         titulo: data.titulo,
@@ -155,11 +164,22 @@ export class FinanceService {
         valorAlvo: parseFloat(data.valorAlvo),
         dataInicio: new Date(data.dataInicio),
         dataFim: new Date(data.dataFim),
+        tenantId: tenantId || null,
       },
     });
   }
 
-  async updateGoal(id: string, data: any) {
+  async updateGoal(id: string, data: any, tenantId?: string) {
+    const goal = await this.prisma.goal.findFirst({
+      where: {
+        id,
+        tenantId: tenantId ? tenantId : undefined,
+      },
+    });
+    if (!goal) {
+      throw new Error('Meta não encontrada neste estabelecimento');
+    }
+
     return this.prisma.goal.update({
       where: { id },
       data: {
@@ -172,14 +192,25 @@ export class FinanceService {
     });
   }
 
-  async deleteGoal(id: string) {
+  async deleteGoal(id: string, tenantId?: string) {
+    const goal = await this.prisma.goal.findFirst({
+      where: {
+        id,
+        tenantId: tenantId ? tenantId : undefined,
+      },
+    });
+    if (!goal) {
+      throw new Error('Meta não encontrada neste estabelecimento');
+    }
+
     return this.prisma.goal.delete({
       where: { id },
     });
   }
 
-  async getAuditLogs() {
+  async getAuditLogs(tenantId?: string) {
     return this.prisma.auditLog.findMany({
+      where: tenantId ? { tenantId } : undefined,
       orderBy: { createdAt: 'desc' },
       take: 100,
     });

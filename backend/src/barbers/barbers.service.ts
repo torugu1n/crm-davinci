@@ -6,8 +6,22 @@ import * as bcrypt from 'bcryptjs';
 export class BarbersService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
+  private async checkBarberTenant(id: string, tenantId?: string) {
+    if (!tenantId) return;
+    const barber = await this.prisma.barber.findFirst({
+      where: {
+        id,
+        user: { tenantId }
+      }
+    });
+    if (!barber) {
+      throw new NotFoundException('Profissional não encontrado neste estabelecimento');
+    }
+  }
+
+  async findAll(tenantId?: string) {
     return this.prisma.barber.findMany({
+      where: tenantId ? { user: { tenantId } } : undefined,
       include: {
         user: {
           select: {
@@ -16,6 +30,7 @@ export class BarbersService {
             email: true,
             role: true,
             roles: true,
+            tenantId: true,
           },
         },
       },
@@ -27,9 +42,12 @@ export class BarbersService {
     });
   }
 
-  async findOne(id: string) {
-    const barber = await this.prisma.barber.findUnique({
-      where: { id },
+  async findOne(id: string, tenantId?: string) {
+    const barber = await this.prisma.barber.findFirst({
+      where: {
+        id,
+        user: tenantId ? { tenantId } : undefined,
+      },
       include: {
         user: {
           select: {
@@ -38,6 +56,7 @@ export class BarbersService {
             email: true,
             role: true,
             roles: true,
+            tenantId: true,
           },
         },
       },
@@ -46,7 +65,7 @@ export class BarbersService {
     return barber;
   }
 
-  async create(data: any) {
+  async create(data: any, tenantId?: string) {
     if (!data.nome || !data.email || !data.senha || !data.especialidade) {
       throw new BadRequestException('Nome, e-mail, senha e especialidade são obrigatórios');
     }
@@ -54,12 +73,12 @@ export class BarbersService {
     const senhaHash = await bcrypt.hash(data.senha, 10);
 
     return this.prisma.barber.create({
-        data: {
-          categoria: data.categoria || 'BARBER',
-          especialidade: data.especialidade,
-          miniBio: data.miniBio || null,
-          fotoUrl: data.fotoUrl || null,
-          commissionRate: data.commissionRate ?? 50,
+      data: {
+        categoria: data.categoria || 'BARBER',
+        especialidade: data.especialidade,
+        miniBio: data.miniBio || null,
+        fotoUrl: data.fotoUrl || null,
+        commissionRate: data.commissionRate ?? 50,
         user: {
           create: {
             nome: data.nome,
@@ -67,6 +86,7 @@ export class BarbersService {
             senha: senhaHash,
             role: 'BARBER',
             roles: ['BARBER'],
+            tenantId: tenantId || null,
           },
         },
       },
@@ -78,15 +98,19 @@ export class BarbersService {
             email: true,
             role: true,
             roles: true,
+            tenantId: true,
           },
         },
       },
     });
   }
 
-  async update(id: string, data: any) {
-    const existing = await this.prisma.barber.findUnique({
-      where: { id },
+  async update(id: string, data: any, tenantId?: string) {
+    const existing = await this.prisma.barber.findFirst({
+      where: {
+        id,
+        user: tenantId ? { tenantId } : undefined,
+      },
       include: { user: true },
     });
 
@@ -123,20 +147,15 @@ export class BarbersService {
             email: true,
             role: true,
             roles: true,
+            tenantId: true,
           },
         },
       },
     });
   }
 
-  async updateProfile(id: string, data: { miniBio?: string; fotoUrl?: string; especialidade?: string }) {
-    const existing = await this.prisma.barber.findUnique({
-      where: { id },
-    });
-
-    if (!existing) {
-      throw new NotFoundException('Profissional não encontrado');
-    }
+  async updateProfile(id: string, data: { miniBio?: string; fotoUrl?: string; especialidade?: string }, tenantId?: string) {
+    await this.checkBarberTenant(id, tenantId);
 
     return this.prisma.barber.update({
       where: { id },
@@ -148,9 +167,12 @@ export class BarbersService {
     });
   }
 
-  async delete(id: string) {
-    const existing = await this.prisma.barber.findUnique({
-      where: { id },
+  async delete(id: string, tenantId?: string) {
+    const existing = await this.prisma.barber.findFirst({
+      where: {
+        id,
+        user: tenantId ? { tenantId } : undefined,
+      },
     });
 
     if (!existing) {
@@ -164,9 +186,12 @@ export class BarbersService {
     return { success: true };
   }
 
-  async getBarberDashboard(id: string) {
-    const barber = await this.prisma.barber.findUnique({
-      where: { id },
+  async getBarberDashboard(id: string, tenantId?: string) {
+    const barber = await this.prisma.barber.findFirst({
+      where: {
+        id,
+        user: tenantId ? { tenantId } : undefined,
+      },
       include: {
         user: true,
       },
@@ -183,6 +208,7 @@ export class BarbersService {
     const agendaHoje = await this.prisma.appointment.findMany({
       where: {
         barberId: id,
+        tenantId: tenantId || undefined,
         data: {
           gte: today,
           lt: tomorrow,
@@ -197,7 +223,11 @@ export class BarbersService {
 
     // 2. Métricas de desempenho
     const allCompleted = await this.prisma.appointment.findMany({
-      where: { barberId: id, status: 'COMPLETED' },
+      where: { 
+        barberId: id, 
+        status: 'COMPLETED',
+        tenantId: tenantId || undefined,
+      },
       include: { client: true },
     });
 
@@ -205,7 +235,6 @@ export class BarbersService {
     const faturamentoTotal = allCompleted.reduce((sum, app) => sum + app.valor, 0);
 
     // Calcular taxa de retorno (clientes recorrentes atendidos)
-    const uniqueClients = new Set(allCompleted.map((app) => app.clientId));
     const recurringClientsCount = allCompleted.filter((app) => app.client.frequency > 1).length;
     const taxaRetorno = allCompleted.length > 0 ? (recurringClientsCount / allCompleted.length) * 100 : 0;
 
@@ -231,20 +260,23 @@ export class BarbersService {
     };
   }
 
-  async getAllBlocks() {
+  async getAllBlocks(tenantId?: string) {
     return this.prisma.agendaBlock.findMany({
+      where: tenantId ? { barber: { user: { tenantId } } } : undefined,
       orderBy: { dataInicio: 'asc' },
     });
   }
 
-  async getSchedule(barberId: string) {
+  async getSchedule(barberId: string, tenantId?: string) {
+    await this.checkBarberTenant(barberId, tenantId);
     return this.prisma.workSchedule.findMany({
       where: { barberId },
       orderBy: { dayOfWeek: 'asc' },
     });
   }
 
-  async updateSchedule(barberId: string, schedules: any[]) {
+  async updateSchedule(barberId: string, schedules: any[], tenantId?: string) {
+    await this.checkBarberTenant(barberId, tenantId);
     const results = [];
     for (const item of schedules) {
       const res = await this.prisma.workSchedule.upsert({
@@ -276,14 +308,16 @@ export class BarbersService {
     return results;
   }
 
-  async getBlocks(barberId: string) {
+  async getBlocks(barberId: string, tenantId?: string) {
+    await this.checkBarberTenant(barberId, tenantId);
     return this.prisma.agendaBlock.findMany({
       where: { barberId },
       orderBy: { dataInicio: 'asc' },
     });
   }
 
-  async createBlock(barberId: string, body: { titulo: string; dataInicio: string; dataFim: string }) {
+  async createBlock(barberId: string, body: { titulo: string; dataInicio: string; dataFim: string }, tenantId?: string) {
+    await this.checkBarberTenant(barberId, tenantId);
     return this.prisma.agendaBlock.create({
       data: {
         barberId,
@@ -294,9 +328,14 @@ export class BarbersService {
     });
   }
 
-  async deleteBlock(id: string) {
-    const block = await this.prisma.agendaBlock.findUnique({ where: { id } });
-    if (!block) throw new NotFoundException('Bloqueio não encontrado');
+  async deleteBlock(id: string, tenantId?: string) {
+    const block = await this.prisma.agendaBlock.findUnique({ 
+      where: { id },
+      include: { barber: { include: { user: true } } }
+    });
+    if (!block || (tenantId && block.barber.user.tenantId !== tenantId)) {
+      throw new NotFoundException('Bloqueio não encontrado');
+    }
     return this.prisma.agendaBlock.delete({ where: { id } });
   }
 }

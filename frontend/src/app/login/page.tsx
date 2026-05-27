@@ -167,7 +167,9 @@ export default function LoginPage() {
       const isDemoAccount = normalizedLogin === 'demo1' || normalizedLogin === 'demo1@salao.com';
       setDemoMode(isDemoAccount, isDemoAccount ? 'admin' : null);
 
-      if (canAccessDashboard(data.user)) {
+      if (data.user.role === 'SUPER_ADMIN' || (data.user.roles && data.user.roles.includes('SUPER_ADMIN'))) {
+        router.push(`/superadmin`);
+      } else if (canAccessDashboard(data.user)) {
         router.push(`/dashboard`);
       } else if (isProfessionalUser(data.user)) {
         router.push(`/profissional`);

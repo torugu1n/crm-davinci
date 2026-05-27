@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { ClientsModule } from './clients/clients.module';
@@ -11,6 +11,8 @@ import { FinanceModule } from './finance/finance.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { PrismaService } from './prisma.service';
+import { TenantMiddleware } from './auth/tenant.middleware';
+import { TenantsModule } from './tenants/tenants.module';
 
 @Module({
   imports: [
@@ -25,7 +27,13 @@ import { PrismaService } from './prisma.service';
     FeedbacksModule,
     FinanceModule,
     WhatsappModule,
+    TenantsModule,
   ],
   providers: [PrismaService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TenantMiddleware).forRoutes('*');
+  }
+}
+

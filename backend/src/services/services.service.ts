@@ -5,8 +5,9 @@ import { PrismaService } from '../prisma.service';
 export class ServicesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(tenantId?: string) {
     return this.prisma.service.findMany({
+      where: tenantId ? { tenantId } : undefined,
       include: {
         barbers: {
           select: {
@@ -24,13 +25,14 @@ export class ServicesService {
     });
   }
 
-  async create(data: any, currentUser?: any) {
+  async create(data: any, currentUser?: any, tenantId?: string) {
     const service = await this.prisma.service.create({
       data: {
         nome: data.nome,
         preco: parseFloat(data.preco),
         duracao: parseInt(data.duracao, 10),
         descricao: data.descricao || null,
+        tenantId: tenantId || null,
         barbers: data.barberIds ? {
           connect: data.barberIds.map((id: string) => ({ id })),
         } : undefined,
@@ -61,14 +63,23 @@ export class ServicesService {
         usuario: currentUser?.nome || currentUser?.email || 'Sistema',
         acao: 'CREATE_SERVICE',
         detalhes: `Serviço "${service.nome}" criado com preço R$ ${service.preco} e duração ${service.duracao} min.`,
+        tenantId: tenantId || null,
       },
     });
 
     return service;
   }
 
-  async update(id: string, data: any, currentUser?: any) {
-    const existing = await this.prisma.service.findUnique({ where: { id } });
+  async update(id: string, data: any, currentUser?: any, tenantId?: string) {
+    const existing = await this.prisma.service.findFirst({
+      where: {
+        id,
+        tenantId: tenantId ? tenantId : undefined,
+      },
+    });
+    if (!existing) {
+      throw new Error('Serviço não encontrado neste estabelecimento');
+    }
     
     const updateData: any = {
       nome: data.nome,
@@ -113,32 +124,40 @@ export class ServicesService {
       },
     });
 
-    if (existing) {
-      if (data.preco && parseFloat(data.preco) !== existing.preco) {
-        await this.prisma.auditLog.create({
-          data: {
-            usuario: currentUser?.nome || currentUser?.email || 'Sistema',
-            acao: 'CHANGE_SERVICE_PRICE',
-            detalhes: `Preço do serviço "${existing.nome}" alterado de R$ ${existing.preco} para R$ ${parseFloat(data.preco)}.`,
-          },
-        });
-      }
+    if (data.preco && parseFloat(data.preco) !== existing.preco) {
+      await this.prisma.auditLog.create({
+        data: {
+          usuario: currentUser?.nome || currentUser?.email || 'Sistema',
+          acao: 'CHANGE_SERVICE_PRICE',
+          detalhes: `Preço do serviço "${existing.nome}" alterado de R$ ${existing.preco} para R$ ${parseFloat(data.preco)}.`,
+          tenantId: tenantId || null,
+        },
+      });
     }
 
     return service;
   }
 
-  async delete(id: string, currentUser?: any) {
-    const existing = await this.prisma.service.findUnique({ where: { id } });
-    if (existing) {
-      await this.prisma.auditLog.create({
-        data: {
-          usuario: currentUser?.nome || currentUser?.email || 'Sistema',
-          acao: 'DELETE_SERVICE',
-          detalhes: `Serviço "${existing.nome}" (Preço: R$ ${existing.preco}) foi excluído.`,
-        },
-      });
+  async delete(id: string, currentUser?: any, tenantId?: string) {
+    const existing = await this.prisma.service.findFirst({
+      where: {
+        id,
+        tenantId: tenantId ? tenantId : undefined,
+      },
+    });
+    if (!existing) {
+      throw new Error('Serviço não encontrado neste estabelecimento');
     }
+
+    await this.prisma.auditLog.create({
+      data: {
+        usuario: currentUser?.nome || currentUser?.email || 'Sistema',
+        acao: 'DELETE_SERVICE',
+        detalhes: `Serviço "${existing.nome}" (Preço: R$ ${existing.preco}) foi excluído.`,
+        tenantId: tenantId || null,
+      },
+    });
+
     return this.prisma.service.delete({ where: { id } });
   }
 }

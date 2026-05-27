@@ -5,8 +5,9 @@ import { PrismaService } from '../prisma.service';
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(tenantId?: string) {
     return this.prisma.product.findMany({
+      where: tenantId ? { tenantId } : undefined,
       include: {
         customCommissions: true,
       },
@@ -14,7 +15,7 @@ export class ProductsService {
     });
   }
 
-  async create(data: any) {
+  async create(data: any, tenantId?: string) {
     const commissionRate = data.commissionRate ? parseFloat(data.commissionRate) : 0;
     return this.prisma.product.create({
       data: {
@@ -22,6 +23,7 @@ export class ProductsService {
         preco: parseFloat(data.preco),
         descricao: data.descricao || null,
         commissionRate,
+        tenantId: tenantId || null,
         customCommissions: data.customCommissions && data.customCommissions.length > 0 ? {
           create: data.customCommissions.map((cc: any) => ({
             barberId: cc.barberId,
@@ -35,7 +37,17 @@ export class ProductsService {
     });
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: any, tenantId?: string) {
+    const existing = await this.prisma.product.findFirst({
+      where: {
+        id,
+        tenantId: tenantId ? tenantId : undefined,
+      },
+    });
+    if (!existing) {
+      throw new Error('Produto não encontrado neste estabelecimento');
+    }
+
     const updateData: any = {
       nome: data.nome,
       preco: data.preco ? parseFloat(data.preco) : undefined,
@@ -67,7 +79,17 @@ export class ProductsService {
     });
   }
 
-  async delete(id: string) {
+  async delete(id: string, tenantId?: string) {
+    const existing = await this.prisma.product.findFirst({
+      where: {
+        id,
+        tenantId: tenantId ? tenantId : undefined,
+      },
+    });
+    if (!existing) {
+      throw new Error('Produto não encontrado neste estabelecimento');
+    }
+
     return this.prisma.product.delete({
       where: { id },
     });

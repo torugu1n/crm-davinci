@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Query, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { ActiveTenantId } from './tenant.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -15,8 +16,8 @@ export class AuthController {
   }
 
   @Post('client')
-  async clientLogin(@Body() body: any) {
-    return this.authService.clientLogin(body.nome, body.telefone, body.aniversario);
+  async clientLogin(@Body() body: any, @ActiveTenantId() tenantId: string) {
+    return this.authService.clientLogin(body.nome, body.telefone, body.aniversario, tenantId);
   }
 
   @Post('seed-demo')

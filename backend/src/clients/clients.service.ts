@@ -6,8 +6,9 @@ import { normalizeBirthday, normalizePhone } from './client-formatters';
 export class ClientsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(tenantId?: string) {
     return this.prisma.client.findMany({
+      where: tenantId ? { tenantId } : undefined,
       include: {
         assignedBarber: {
           include: {
@@ -19,9 +20,12 @@ export class ClientsService {
     });
   }
 
-  async findOne(id: string) {
-    const client = await this.prisma.client.findUnique({
-      where: { id },
+  async findOne(id: string, tenantId?: string) {
+    const client = await this.prisma.client.findFirst({
+      where: { 
+        id,
+        tenantId: tenantId ? tenantId : undefined,
+      },
       include: {
         assignedBarber: {
           include: {
@@ -49,7 +53,7 @@ export class ClientsService {
     return client;
   }
 
-  async create(data: any) {
+  async create(data: any, tenantId?: string) {
     return this.prisma.client.create({
       data: {
         nome: data.nome,
@@ -60,11 +64,14 @@ export class ClientsService {
         preferences: data.preferences,
         tags: data.tags || [],
         assignedBarberId: data.assignedBarberId || null,
+        tenantId: tenantId || null,
       },
     });
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: any, tenantId?: string) {
+    await this.findOne(id, tenantId); // verify exists and belongs to tenant
+
     return this.prisma.client.update({
       where: { id },
       data: {
@@ -84,7 +91,8 @@ export class ClientsService {
     });
   }
 
-  async delete(id: string) {
+  async delete(id: string, tenantId?: string) {
+    await this.findOne(id, tenantId); // verify exists and belongs to tenant
     return this.prisma.client.delete({ where: { id } });
   }
 }

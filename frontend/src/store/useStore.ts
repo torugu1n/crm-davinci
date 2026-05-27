@@ -22,9 +22,20 @@ interface ToastNotification {
   timestamp: Date;
 }
 
+export interface TenantInfo {
+  id: string;
+  name: string;
+  subdomain: string;
+  customDomain?: string | null;
+  logoUrl?: string | null;
+  primaryColor: string;
+  secondaryColor: string;
+}
+
 interface StoreState {
   token: string | null;
   user: UserSession | null;
+  tenant: TenantInfo | null;
   demoMode: boolean;
   demoPersona: DemoPersona | null;
   activeClientForSimulator: { id: string; nome: string; telefone: string } | null;
@@ -34,6 +45,7 @@ interface StoreState {
   tourActive: boolean;
   tourStep: number;
   setSession: (token: string, user: UserSession) => void;
+  setTenant: (tenant: TenantInfo | null) => void;
   logout: () => void;
   setDemoMode: (enabled: boolean, persona?: DemoPersona | null) => void;
   setTourActive: (active: boolean) => void;
@@ -51,6 +63,7 @@ export const useStore = create<StoreState>((set) => ({
     const stored = localStorage.getItem('davinci_user');
     return stored ? JSON.parse(stored) : null;
   })() : null,
+  tenant: null,
   demoMode: typeof window !== 'undefined' ? localStorage.getItem('davinci_demo_mode') === 'true' : false,
   demoPersona: typeof window !== 'undefined' ? (localStorage.getItem('davinci_demo_persona') as DemoPersona | null) : null,
   activeClientForSimulator: null,
@@ -64,6 +77,7 @@ export const useStore = create<StoreState>((set) => ({
     localStorage.setItem('davinci_user', JSON.stringify(user));
     set({ token, user });
   },
+  setTenant: (tenant) => set({ tenant }),
   logout: () => {
     localStorage.removeItem('davinci_token');
     localStorage.removeItem('davinci_user');
@@ -74,6 +88,7 @@ export const useStore = create<StoreState>((set) => ({
     set({
       token: null,
       user: null,
+      tenant: null,
       demoMode: false,
       demoPersona: null,
       activeClientForSimulator: null,

@@ -9,19 +9,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#FDFBF9',
+        background: 'var(--background-color, #FDFBF9)',
         davinci: {
-          black: '#1C1917', // Charcoal (Primary Text)
+          black: 'var(--secondary-color, #1C1917)', // Charcoal (Primary Text / Secondary theme)
           card: '#FFFFFF',  // White Card
-          gold: '#C5A880',  // Premium SaaS Gold
-          'gold-hover': '#B39268',
+          gold: 'var(--primary-color, #C5A880)',  // Premium SaaS Gold
+          'gold-hover': 'var(--primary-hover-color, #B39268)',
           white: '#FFFFFF',
           gray: '#71717A',  // Zinc Muted
         },
       },
       backgroundImage: {
-        'gold-gradient': 'linear-gradient(135deg, #C5A880 0%, #D8C3A5 100%)',
-        'dark-gradient': 'linear-gradient(180deg, #FAF8F5 0%, #FDFBF9 100%)',
+        'gold-gradient': 'linear-gradient(135deg, var(--primary-color, #C5A880) 0%, var(--primary-light-color, #D8C3A5) 100%)',
+        'dark-gradient': 'linear-gradient(180deg, var(--background-light-color, #FAF8F5) 0%, var(--background-color, #FDFBF9) 100%)',
       },
     },
   },

@@ -1,4 +1,5 @@
 export type StaffRole =
+  | 'SUPER_ADMIN'
   | 'ADMIN'
   | 'ATTENDANT'
   | 'BARBER'
@@ -13,7 +14,7 @@ export interface SessionUserLike {
 }
 
 const PROFESSIONAL_ROLES: StaffRole[] = ['BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE'];
-const DASHBOARD_ROLES: StaffRole[] = ['ADMIN', 'ATTENDANT'];
+const DASHBOARD_ROLES: StaffRole[] = ['SUPER_ADMIN', 'ADMIN', 'ATTENDANT'];
 export const ADMIN_ONLY_DASHBOARD_TABS = ['services', 'finance', 'users', 'employees', 'feedbacks'] as const;
 export const ATTENDANT_DASHBOARD_TABS = ['calendar', 'crm', 'whatsapp', 'quick-replies'] as const;
 export const ADMIN_DASHBOARD_TABS = [
@@ -31,6 +32,7 @@ export const ADMIN_DASHBOARD_TABS = [
 export type DashboardTab = (typeof ADMIN_DASHBOARD_TABS)[number];
 
 export const ROLE_LABELS: Record<StaffRole, string> = {
+  SUPER_ADMIN: 'Super Administrador',
   ADMIN: 'Administrador',
   ATTENDANT: 'Atendente',
   BARBER: 'Barbeiro',
@@ -61,7 +63,11 @@ export function canAccessDashboard(user?: SessionUserLike | null) {
 }
 
 export function isAdminUser(user?: SessionUserLike | null) {
-  return hasAnyRole(user, ['ADMIN']);
+  return hasAnyRole(user, ['ADMIN', 'SUPER_ADMIN']);
+}
+
+export function isSuperAdmin(user?: SessionUserLike | null) {
+  return hasAnyRole(user, ['SUPER_ADMIN']);
 }
 
 export function getAllowedDashboardTabs(user?: SessionUserLike | null): DashboardTab[] {

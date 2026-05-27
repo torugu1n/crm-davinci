@@ -3,6 +3,7 @@ import { ClientsService } from './clients.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { ActiveTenantId } from '../auth/tenant.decorator';
 
 @Controller('clients')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -10,38 +11,38 @@ export class ClientsController {
   constructor(private clientsService: ClientsService) {}
 
   @Get()
-  @Roles('ADMIN', 'ATTENDANT', 'BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE')
-  async findAll() {
-    return this.clientsService.findAll();
+  @Roles('ADMIN', 'ATTENDANT', 'BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE', 'SUPER_ADMIN')
+  async findAll(@ActiveTenantId() tenantId: string) {
+    return this.clientsService.findAll(tenantId);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Request() req: any) {
+  async findOne(@Param('id') id: string, @Request() req: any, @ActiveTenantId() tenantId: string) {
     const isClient = req.user.role === 'CLIENT';
     if (isClient && req.user.id !== id) {
       throw new ForbiddenException('Você não tem permissão para visualizar os dados de outro cliente.');
     }
-    return this.clientsService.findOne(id);
+    return this.clientsService.findOne(id, tenantId);
   }
 
   @Post()
-  @Roles('ADMIN', 'ATTENDANT', 'BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE')
-  async create(@Body() body: any) {
-    return this.clientsService.create(body);
+  @Roles('ADMIN', 'ATTENDANT', 'BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE', 'SUPER_ADMIN')
+  async create(@Body() body: any, @ActiveTenantId() tenantId: string) {
+    return this.clientsService.create(body, tenantId);
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+  async update(@Param('id') id: string, @Body() body: any, @Request() req: any, @ActiveTenantId() tenantId: string) {
     const isClient = req.user.role === 'CLIENT';
     if (isClient && req.user.id !== id) {
       throw new ForbiddenException('Você não tem permissão para atualizar os dados de outro cliente.');
     }
-    return this.clientsService.update(id, body);
+    return this.clientsService.update(id, body, tenantId);
   }
 
   @Delete(':id')
-  @Roles('ADMIN', 'ATTENDANT')
-  async delete(@Param('id') id: string) {
-    return this.clientsService.delete(id);
+  @Roles('ADMIN', 'ATTENDANT', 'SUPER_ADMIN')
+  async delete(@Param('id') id: string, @ActiveTenantId() tenantId: string) {
+    return this.clientsService.delete(id, tenantId);
   }
 }

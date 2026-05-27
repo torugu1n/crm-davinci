@@ -26,8 +26,9 @@ export class UsersService {
     return professionalRoles.join(', ');
   }
 
-  async findAll() {
+  async findAll(tenantId?: string) {
     return this.prisma.user.findMany({
+      where: tenantId ? { tenantId } : undefined,
       include: {
         barber: true,
       },
@@ -37,20 +38,20 @@ export class UsersService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, tenantId?: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: { barber: true },
     });
 
-    if (!user) {
+    if (!user || (tenantId && user.tenantId !== tenantId)) {
       throw new NotFoundException('Usuário não encontrado');
     }
 
     return user;
   }
 
-  async create(data: any) {
+  async create(data: any, tenantId?: string) {
     if (!data.nome || !data.email || !data.senha || !data.role) {
       throw new BadRequestException('Nome, e-mail, senha e perfil principal são obrigatórios');
     }
@@ -66,6 +67,7 @@ export class UsersService {
         role: data.role,
         roles,
         isActive: data.isActive !== false,
+        tenantId: tenantId || null,
       },
       include: {
         barber: true,
@@ -85,18 +87,11 @@ export class UsersService {
       });
     }
 
-    return this.findOne(user.id);
+    return this.findOne(user.id, tenantId);
   }
 
-  async update(id: string, data: any) {
-    const existing = await this.prisma.user.findUnique({
-      where: { id },
-      include: { barber: true },
-    });
-
-    if (!existing) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
+  async update(id: string, data: any, tenantId?: string) {
+    const existing = await this.findOne(id, tenantId);
 
     const nextRole = data.role || existing.role;
     const roles = this.normalizeRoles(nextRole, data.roles || existing.roles);
@@ -148,17 +143,11 @@ export class UsersService {
       });
     }
 
-    return this.findOne(id);
+    return this.findOne(id, tenantId);
   }
 
-  async delete(id: string) {
-    const existing = await this.prisma.user.findUnique({
-      where: { id },
-    });
-
-    if (!existing) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
+  async delete(id: string, tenantId?: string) {
+    await this.findOne(id, tenantId);
 
     await this.prisma.user.delete({
       where: { id },

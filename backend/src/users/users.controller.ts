@@ -3,35 +3,36 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { ActiveTenantId } from '../auth/tenant.decorator';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN')
+@Roles('ADMIN', 'SUPER_ADMIN')
 export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Get()
-  async findAll() {
-    return this.usersService.findAll();
+  async findAll(@ActiveTenantId() tenantId: string) {
+    return this.usersService.findAll(tenantId);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+  async findOne(@Param('id') id: string, @ActiveTenantId() tenantId: string) {
+    return this.usersService.findOne(id, tenantId);
   }
 
   @Post()
-  async create(@Body() body: any) {
-    return this.usersService.create(body);
+  async create(@Body() body: any, @ActiveTenantId() tenantId: string) {
+    return this.usersService.create(body, tenantId);
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() body: any) {
-    return this.usersService.update(id, body);
+  async update(@Param('id') id: string, @Body() body: any, @ActiveTenantId() tenantId: string) {
+    return this.usersService.update(id, body, tenantId);
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string) {
-    return this.usersService.delete(id);
+  async delete(@Param('id') id: string, @ActiveTenantId() tenantId: string) {
+    return this.usersService.delete(id, tenantId);
   }
 }

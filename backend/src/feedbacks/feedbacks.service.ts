@@ -9,8 +9,9 @@ export class FeedbacksService {
     private wsGateway: WebsocketGateway,
   ) {}
 
-  async findAll() {
+  async findAll(tenantId?: string) {
     return this.prisma.feedback.findMany({
+      where: tenantId ? { appointment: { tenantId } } : undefined,
       include: {
         appointment: {
           include: {
@@ -24,11 +25,14 @@ export class FeedbacksService {
     });
   }
 
-  async create(data: any) {
+  async create(data: any, tenantId?: string) {
     const { appointmentId, nota, comentario, ratingBarber, ratingEnv, ratingPunctual } = data;
 
-    const app = await this.prisma.appointment.findUnique({
-      where: { id: appointmentId },
+    const app = await this.prisma.appointment.findFirst({
+      where: { 
+        id: appointmentId,
+        tenantId: tenantId ? tenantId : undefined,
+      },
       include: { client: true, barber: { include: { user: true } } },
     });
     if (!app) throw new NotFoundException('Agendamento não encontrado');
@@ -54,6 +58,7 @@ export class FeedbacksService {
       where: {
         appointment: {
           barberId: app.barberId,
+          tenantId: tenantId ? tenantId : undefined,
         },
       },
     });
