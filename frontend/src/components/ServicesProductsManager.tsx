@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Scissors, ShoppingBag, Plus, Edit2, Trash2, Search, Clock, DollarSign, FileText, X, AlertTriangle } from 'lucide-react';
 import { useStore } from '@/store/useStore';
@@ -10,7 +11,10 @@ export default function ServicesProductsManager() {
   const queryClient = useQueryClient();
   const addNotification = useStore((state) => state.addNotification);
   const token = useStore((state) => state.token);
-  const [activeSubTab, setActiveSubTab] = useState<'services' | 'products'>('services');
+  const searchParams = useSearchParams();
+  const requestedSubTab = searchParams.get('catalogSubTab');
+  const initialSubTab = requestedSubTab === 'products' || requestedSubTab === 'services' ? requestedSubTab : 'services';
+  const [activeSubTab, setActiveSubTab] = useState<'services' | 'products'>(initialSubTab);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Modal states
@@ -32,6 +36,13 @@ export default function ServicesProductsManager() {
   });
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+
+  useEffect(() => {
+    if (requestedSubTab === 'products' || requestedSubTab === 'services') {
+      setActiveSubTab(requestedSubTab);
+      setSearchQuery('');
+    }
+  }, [requestedSubTab]);
 
   // Fetch Barbers for linking/custom commissions
   const { data: barbers = [], isLoading: isLoadingBarbers } = useQuery({

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DollarSign,
@@ -25,8 +26,14 @@ import { useStore } from '@/store/useStore';
 export default function FinanceSummary() {
   const token = useStore((state) => state.token);
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const requestedSubTab = searchParams.get('financeSubTab');
+  const initialSubTab =
+    requestedSubTab === 'goals' || requestedSubTab === 'audit' || requestedSubTab === 'overview'
+      ? requestedSubTab
+      : 'overview';
 
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'goals' | 'audit'>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'goals' | 'audit'>(initialSubTab);
   const [showCreateGoalForm, setShowCreateGoalForm] = useState(false);
   const [auditSearchTerm, setAuditSearchTerm] = useState('');
 
@@ -36,6 +43,12 @@ export default function FinanceSummary() {
   const [goalTarget, setGoalTarget] = useState('');
   const [goalStart, setGoalStart] = useState('');
   const [goalEnd, setGoalEnd] = useState('');
+
+  useEffect(() => {
+    if (requestedSubTab === 'goals' || requestedSubTab === 'audit' || requestedSubTab === 'overview') {
+      setActiveSubTab(requestedSubTab);
+    }
+  }, [requestedSubTab]);
 
   // Queries
   const { data: summary, isLoading: summaryLoading, error: summaryError } = useQuery({

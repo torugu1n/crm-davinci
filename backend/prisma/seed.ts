@@ -205,6 +205,22 @@ async function main() {
     },
   });
 
+  await prisma.serviceCommission.create({
+    data: {
+      serviceId: coloracao.id,
+      barberId: professional3.id,
+      commissionRate: 60.0,
+    },
+  });
+
+  await prisma.serviceCommission.create({
+    data: {
+      serviceId: corteMasculino.id,
+      barberId: professional1.id,
+      commissionRate: 52.0,
+    },
+  });
+
   console.log('Profissionais cadastrados com sucesso!');
 
   // 5. Criar Clientes CRM (Foco misto, predominantemente feminino)

@@ -120,14 +120,21 @@ export class AuthService {
 
   async seedDemoData() {
     // 1. Limpar banco de dados anterior
+    await this.prisma.productCommission.deleteMany({});
+    await this.prisma.serviceCommission.deleteMany({});
     await this.prisma.feedback.deleteMany({});
     await this.prisma.message.deleteMany({});
     await this.prisma.appointment.deleteMany({});
+    await this.prisma.workSchedule.deleteMany({});
+    await this.prisma.agendaBlock.deleteMany({});
     await this.prisma.barber.deleteMany({});
     await this.prisma.user.deleteMany({});
     await this.prisma.client.deleteMany({});
     await this.prisma.product.deleteMany({});
     await this.prisma.service.deleteMany({});
+    await this.prisma.quickReply.deleteMany({});
+    await this.prisma.goal.deleteMany({});
+    await this.prisma.auditLog.deleteMany({});
 
     // 2. Criar Serviços com foco em Salão Premium
     const corteFeminino = await this.prisma.service.create({
@@ -149,29 +156,40 @@ export class AuthService {
       data: { nome: 'Manicure & Pedicure Premium', preco: 85.0, duracao: 60 },
     });
 
-    await this.prisma.product.createMany({
-      data: [
-        {
-          nome: 'Shampoo Repair Da Vinci',
-          preco: 89.9,
-          descricao: 'Shampoo de tratamento para manutenção premium pós-coloração e hidratação.',
-        },
-        {
-          nome: 'Máscara Nutritiva Imperial',
-          preco: 129.9,
-          descricao: 'Máscara capilar de nutrição intensa para uso semanal.',
-        },
-        {
-          nome: 'Pomada Matte Signature',
-          preco: 59.9,
-          descricao: 'Pomada de fixação média com acabamento seco para penteados masculinos.',
-        },
-        {
-          nome: 'Óleo Finalizador Golden Touch',
-          preco: 74.9,
-          descricao: 'Óleo leve para brilho e controle de frizz sem pesar nos fios.',
-        },
-      ],
+    const prodShampoo = await this.prisma.product.create({
+      data: {
+        nome: 'Shampoo Repair Da Vinci',
+        preco: 89.9,
+        descricao: 'Shampoo de tratamento para manutenção premium pós-coloração e hidratação.',
+        commissionRate: 10.0,
+      },
+    });
+
+    await this.prisma.product.create({
+      data: {
+        nome: 'Máscara Nutritiva Imperial',
+        preco: 129.9,
+        descricao: 'Máscara capilar de nutrição intensa para uso semanal.',
+        commissionRate: 12.0,
+      },
+    });
+
+    const prodPomada = await this.prisma.product.create({
+      data: {
+        nome: 'Pomada Matte Signature',
+        preco: 59.9,
+        descricao: 'Pomada de fixação média com acabamento seco para penteados masculinos.',
+        commissionRate: 8.0,
+      },
+    });
+
+    await this.prisma.product.create({
+      data: {
+        nome: 'Óleo Finalizador Golden Touch',
+        preco: 74.9,
+        descricao: 'Óleo leve para brilho e controle de frizz sem pesar nos fios.',
+        commissionRate: 15.0,
+      },
     });
 
     // Senhas hash
@@ -245,24 +263,74 @@ export class AuthService {
     const professional1 = await this.prisma.barber.create({
       data: {
         userId: userAlessandro.id,
+        categoria: 'BARBER',
         especialidade: 'Cortes masculinos premium, degradê baixo, visagismo e barboterapia.',
+        miniBio: 'Especialista em cortes masculinos premium e acabamento com toalha quente.',
+        commissionRate: 50.0,
         notaMedia: 4.95,
+        services: {
+          connect: [{ id: corteMasculino.id }, { id: barba.id }],
+        },
       },
     });
 
     const professional2 = await this.prisma.barber.create({
       data: {
         userId: userMarcus.id,
+        categoria: 'HAIRDRESSER',
         especialidade: 'Cortes unissex clássicos, escovas de alta performance e modelagem.',
+        miniBio: 'Atende cortes femininos, escovas e modelagens com foco em visagismo.',
+        commissionRate: 45.0,
         notaMedia: 4.88,
+        services: {
+          connect: [{ id: corteFeminino.id }, { id: escova.id }, { id: corteMasculino.id }],
+        },
       },
     });
 
     const professional3 = await this.prisma.barber.create({
       data: {
         userId: userMariana.id,
+        categoria: 'MANICURE_PEDICURE',
         especialidade: 'Estilista de mechas, coloração avançada, tratamentos capilares e cortes femininos.',
+        miniBio: 'Referência em coloração, mechas e finalizações para eventos.',
+        commissionRate: 55.0,
         notaMedia: 4.98,
+        services: {
+          connect: [{ id: coloracao.id }, { id: manicure.id }, { id: escova.id }],
+        },
+      },
+    });
+
+    await this.prisma.productCommission.create({
+      data: {
+        productId: prodShampoo.id,
+        barberId: professional3.id,
+        commissionRate: 20.0,
+      },
+    });
+
+    await this.prisma.productCommission.create({
+      data: {
+        productId: prodPomada.id,
+        barberId: professional1.id,
+        commissionRate: 15.0,
+      },
+    });
+
+    await this.prisma.serviceCommission.create({
+      data: {
+        serviceId: coloracao.id,
+        barberId: professional3.id,
+        commissionRate: 60.0,
+      },
+    });
+
+    await this.prisma.serviceCommission.create({
+      data: {
+        serviceId: corteMasculino.id,
+        barberId: professional1.id,
+        commissionRate: 52.0,
       },
     });
 
@@ -276,6 +344,10 @@ export class AuthService {
         preferences: 'Corte Long Bob, luzes mel, finalização com ondas suaves.',
         frequency: 6,
         ticketMedio: 220.0,
+        chatStatus: 'CONFIRMED',
+        origem: 'WhatsApp',
+        tags: ['VIP', 'Coloração'],
+        assignedBarberId: professional3.id,
       },
     });
 
@@ -288,6 +360,10 @@ export class AuthService {
         preferences: 'Corte em camadas para dar volume, hidratação profunda sem sulfatos.',
         frequency: 4,
         ticketMedio: 150.0,
+        chatStatus: 'BOOKING',
+        origem: 'Instagram',
+        tags: ['Cacheado'],
+        assignedBarberId: professional2.id,
       },
     });
 
@@ -300,6 +376,10 @@ export class AuthService {
         preferences: 'Corte Pixie moderno com nuca limpa, coloração tom ruivo acobreado.',
         frequency: 3,
         ticketMedio: 190.0,
+        chatStatus: 'NEW',
+        origem: 'Indicação',
+        tags: ['Discrição'],
+        assignedBarberId: professional3.id,
       },
     });
 
@@ -312,6 +392,10 @@ export class AuthService {
         preferences: 'Corte masculino clássico com laterais disfarçadas na máquina 2.',
         frequency: 8,
         ticketMedio: 90.0,
+        chatStatus: 'COMPLETED',
+        origem: 'WhatsApp',
+        tags: ['Barba'],
+        assignedBarberId: professional1.id,
       },
     });
 
@@ -324,6 +408,10 @@ export class AuthService {
         preferences: 'Corte masculino degradê médio, barba apenas aparada e desenhada.',
         frequency: 5,
         ticketMedio: 110.0,
+        chatStatus: 'CONFIRMED',
+        origem: 'Google',
+        tags: ['Pele sensível'],
+        assignedBarberId: professional1.id,
       },
     });
 
@@ -508,6 +596,106 @@ export class AuthService {
         mensagem: 'Perfeito! Obrigado pelo retorno rápido.',
         tipo: 'RECEIVED',
       },
+    });
+
+    // 10. Grade de trabalho e bloqueios para demonstrar disponibilidade na agenda
+    const professionals = [professional1.id, professional2.id, professional3.id];
+    for (const barberId of professionals) {
+      for (let dayOfWeek = 0; dayOfWeek <= 6; dayOfWeek++) {
+        await this.prisma.workSchedule.create({
+          data: {
+            barberId,
+            dayOfWeek,
+            startTime: '09:00',
+            endTime: '20:00',
+            breakStart: '12:00',
+            breakEnd: '13:00',
+            active: dayOfWeek !== 0,
+          },
+        });
+      }
+    }
+
+    const blockDate = new Date();
+    await this.prisma.agendaBlock.create({
+      data: {
+        barberId: professional1.id,
+        titulo: 'Bloqueio de Almoço',
+        dataInicio: new Date(blockDate.getFullYear(), blockDate.getMonth(), blockDate.getDate(), 12, 0, 0),
+        dataFim: new Date(blockDate.getFullYear(), blockDate.getMonth(), blockDate.getDate(), 13, 0, 0),
+      },
+    });
+
+    // 11. Respostas rápidas para a demonstração do atendimento
+    await this.prisma.quickReply.createMany({
+      data: [
+        {
+          titulo: 'Confirmação',
+          conteudo: 'Olá! Confirmamos seu horário agendado para hoje. Aguardamos sua visita!',
+        },
+        {
+          titulo: 'Boas-vindas',
+          conteudo: 'Olá! Seja muito bem-vindo(a). Como posso te ajudar hoje?',
+        },
+        {
+          titulo: 'Atraso',
+          conteudo: 'Olá! Tivemos um pequeno imprevisto na agenda de hoje e seu atendimento pode atrasar cerca de 10 minutos. Tudo bem para você?',
+        },
+        {
+          titulo: 'Pós-atendimento',
+          conteudo: 'Foi um prazer receber você hoje. Pode avaliar seu atendimento pelo link enviado?',
+        },
+      ],
+    });
+
+    // 12. Metas e auditoria para o dashboard financeiro
+    const goalBaseDate = new Date();
+    const dataInicioMeta = new Date(goalBaseDate.getFullYear(), goalBaseDate.getMonth(), 1);
+    const dataFimMeta = new Date(goalBaseDate.getFullYear(), goalBaseDate.getMonth() + 1, 0, 23, 59, 59);
+
+    await this.prisma.goal.create({
+      data: {
+        titulo: 'Meta de Faturamento Mensal',
+        tipo: 'BILLING',
+        valorAlvo: 15000.0,
+        valorAtual: 900.0,
+        dataInicio: dataInicioMeta,
+        dataFim: dataFimMeta,
+      },
+    });
+
+    await this.prisma.goal.create({
+      data: {
+        titulo: 'Meta de Atendimentos Mensal',
+        tipo: 'SERVICES',
+        valorAlvo: 100.0,
+        valorAtual: 25.0,
+        dataInicio: dataInicioMeta,
+        dataFim: dataFimMeta,
+      },
+    });
+
+    await this.prisma.auditLog.createMany({
+      data: [
+        {
+          usuario: 'Administrador 1',
+          acao: 'Cadastro de Profissional',
+          detalhes: 'Profissional Manicure 2 cadastrado com categoria, mini bio e comissão padrão.',
+          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        },
+        {
+          usuario: 'Atendente 1',
+          acao: 'Agendamento Criado',
+          detalhes: `Agendamento criado para Clara Vasconcelos no dia ${goalBaseDate.toLocaleDateString('pt-BR')}.`,
+          createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        },
+        {
+          usuario: 'Administrador 1',
+          acao: 'Alteração de Comissão',
+          detalhes: 'Comissão do produto Shampoo Repair alterada para 20% para a profissional Manicure 2.',
+          createdAt: new Date(),
+        },
+      ],
     });
 
     return { success: true, message: 'Banco de dados semeado!' };
