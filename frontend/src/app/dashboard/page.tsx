@@ -96,7 +96,7 @@ export default function DashboardPage() {
       case 'calendar':
         return 'Agenda Inteligente';
       case 'crm':
-        return 'CRM Gestão de Clientes';
+        return 'Gestão de Clientes';
       case 'whatsapp':
         return 'WhatsApp e Atendimento';
       case 'services':
@@ -151,7 +151,7 @@ export default function DashboardPage() {
             <div
               id="dashboard-tab-content-crm"
               className="space-y-6"
-              data-demo-title="CRM de clientes"
+              data-demo-title="Gestão de clientes"
               data-demo-description="Aqui a operação consulta cadastro, preferências, aniversário e histórico para personalizar o atendimento."
             >
               {/* Toolbar */}
@@ -181,7 +181,7 @@ export default function DashboardPage() {
                 ) : error ? (
                   <div className="p-8 text-center text-red-500 flex items-center justify-center gap-2">
                     <ShieldAlert className="h-5 w-5" />
-                    Erro ao carregar banco de dados do CRM.
+                    Erro ao carregar banco de dados de clientes.
                   </div>
                 ) : (
                   <div className="overflow-x-auto">

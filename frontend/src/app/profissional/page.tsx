@@ -532,7 +532,7 @@ export default function ProfessionalPage() {
           </div>
           <div>
             <h2 className="text-md font-bold text-davinci-black uppercase tracking-wider text-glow">
-              Beauty CRM
+              Gestão de Beleza
             </h2>
             <p className="text-[8px] text-davinci-gold uppercase tracking-[0.05em] font-semibold">
               Painel do profissional

@@ -113,7 +113,7 @@ export default function BrandLogo({
 
       <div>
         <h2 className={`${textSizeClasses[textSize]} font-bold text-davinci-black uppercase tracking-wider text-glow`}>
-          Beauty CRM
+          Gestão de Beleza
         </h2>
         <p className="text-[8px] text-davinci-gold uppercase tracking-[0.08em] font-semibold">
           {subtitle}

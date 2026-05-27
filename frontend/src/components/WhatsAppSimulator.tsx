@@ -709,11 +709,11 @@ export default function WhatsAppSimulator() {
             <div className="bg-[#f0f2f5] px-3.5 py-2.5 border-b border-zinc-200 flex items-center justify-between h-14 shrink-0">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-davinci-gold/20 border border-davinci-gold flex items-center justify-center text-[10px] font-bold text-davinci-gold">
-                  DV
+                  EP
                 </div>
                 <div>
                   <h4 className="text-[10px] font-bold text-davinci-black flex items-center gap-1 leading-none">
-                    Da Vinci Premium
+                    Estabelecimento Premium
                   </h4>
                   <span className="text-[8px] text-emerald-600 font-bold flex items-center gap-0.5 mt-0.5">
                     <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />

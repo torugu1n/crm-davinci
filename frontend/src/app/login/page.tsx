@@ -285,7 +285,7 @@ export default function LoginPage() {
           transition={{ delay: 0.9, duration: 0.5 }}
           className="space-y-1 text-[9px] text-davinci-gray font-bold uppercase tracking-widest hidden lg:block"
         >
-          <div>© 2026 Beauty CRM. Todos os direitos reservados.</div>
+          <div>© 2026 Gestão de Beleza. Todos os direitos reservados.</div>
           <div className="text-davinci-gold">Desenvolvido por VTRX Solutions</div>
         </motion.div>
       </div>

@@ -27,7 +27,7 @@ export const DEMO_PERSONAS: Record<
   },
   attendant: {
     label: 'Atendente',
-    description: 'Painel de recepção com controle de agenda, CRM de clientes e WhatsApp.',
+    description: 'Painel de recepção com controle de agenda, gestão de clientes e WhatsApp.',
     destination: '/dashboard?tab=calendar',
     loginType: 'staff',
     credentials: { login: 'atendente1', senha: 'atendente1' },
@@ -72,10 +72,10 @@ export const DEMO_TOUR_CONTENT: Record<
         selector: '#dashboard-tab-content-calendar',
       },
       {
-        title: 'CRM e Gestão de Clientes',
+        title: 'Gestão de Clientes',
         description: 'Banco de dados centralizado. Veja o histórico de visitas, ticket médio e preferências de cada cliente para estruturar campanhas de marketing.',
         href: '/dashboard?tab=crm',
-        cta: 'Abrir CRM',
+        cta: 'Abrir Clientes',
         selector: '#dashboard-tab-content-crm',
       },
       {
@@ -134,7 +134,7 @@ export const DEMO_TOUR_CONTENT: Record<
         selector: '#dashboard-tab-content-calendar',
       },
       {
-        title: 'Clientes da Casa (CRM)',
+        title: 'Clientes da Casa',
         description: 'Apoio à recepção. Consulte dados de contato, ticket de consumo, datas de aniversário e observações importantes antes do cliente entrar.',
         href: '/dashboard?tab=crm',
         cta: 'Abrir clientes',
