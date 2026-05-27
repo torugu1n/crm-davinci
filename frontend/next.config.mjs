@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/** @type {import('next').NextConfig} */
 const nextConfig = {
-  outputFileTracingRoot: __dirname,
+  // Ignora outputFileTracingRoot na Vercel para evitar erros de build (lstat routes-manifest)
+  ...(process.env.VERCEL ? {} : { outputFileTracingRoot: __dirname }),
 };
 
 export default nextConfig;
