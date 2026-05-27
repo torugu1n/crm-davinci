@@ -167,21 +167,43 @@ export default function InteractiveTour() {
     }
   };
 
-  // Safe Tooltip Card styling: placed at the bottom-left, next to the 256px sidebar
-  // This guarantees it is 100% visible, never overlaps the main content, and never goes offscreen.
+  // Safe Tooltip Card styling: dynamically positioned to avoid blocking highlighted content.
+  // When the spotlight is on the left, it sits on the right side, and vice versa.
+  const getTooltipPosition = () => {
+    if (isMobile) {
+      return {
+        left: '50%',
+        bottom: '24px',
+        transform: 'translateX(-50%)',
+      };
+    }
+
+    if (coords) {
+      const centerX = coords.left + coords.width / 2;
+      const screenCenter = window.innerWidth / 2;
+      if (centerX < screenCenter) {
+        return {
+          right: '24px',
+          left: 'auto',
+          bottom: '24px',
+        };
+      }
+    }
+
+    return {
+      left: pathname.startsWith('/dashboard') || pathname.startsWith('/profissional') ? '280px' : '24px',
+      right: 'auto',
+      bottom: '24px',
+    };
+  };
+
   const tooltipStyle: React.CSSProperties = {
     position: 'fixed',
     zIndex: 99,
     width: isMobile ? 'calc(100% - 32px)' : '340px',
     maxWidth: '380px',
-    bottom: '24px',
-    left: isMobile
-      ? '50%'
-      : pathname.startsWith('/dashboard') || pathname.startsWith('/profissional')
-      ? '280px' // Clear of the 256px sidebar
-      : '24px',
-    transform: isMobile ? 'translateX(-50%)' : 'none',
-    transition: 'left 0.3s ease, transform 0.3s ease',
+    transition: 'all 0.3s ease',
+    ...getTooltipPosition(),
   };
 
   const personaLabels: Record<DemoPersona, string> = {
@@ -275,7 +297,7 @@ export default function InteractiveTour() {
           <p className="text-[9px] font-black uppercase tracking-[0.16em] text-davinci-gold">
             Alternar Roteiro / Conta Demo
           </p>
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
             {(['admin', 'attendant', 'professional', 'client'] as DemoPersona[]).map((persona) => {
               const isActive = persona === activePersona;
               return (
