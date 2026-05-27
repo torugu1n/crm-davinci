@@ -15,10 +15,9 @@ import {
   Settings,
   Camera,
   Check,
-  LogOut,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { isProfessionalUser, getPrimaryRoleLabel } from '@/lib/auth';
+import { isProfessionalUser } from '@/lib/auth';
 import BrandLogo from '@/components/BrandLogo';
 import Header from '@/components/Header';
 
@@ -169,15 +168,8 @@ export default function ProfessionalPage() {
   const queryClient = useQueryClient();
   const token = useStore((state) => state.token);
   const user = useStore((state) => state.user);
-  const logout = useStore((state) => state.logout);
   const mobileMenuOpen = useStore((state) => state.mobileMenuOpen);
   const setMobileMenuOpen = useStore((state) => state.setMobileMenuOpen);
-
-  const handleLogout = () => {
-    logout();
-    setMobileMenuOpen(false);
-    router.push('/login');
-  };
 
   const [activeTab, setActiveTab] = useState<ProfessionalTab>('overview');
   const [activeClientNotesId, setActiveClientNotesId] = useState<string | null>(null);
@@ -468,29 +460,6 @@ export default function ProfessionalPage() {
             );
           })}
         </nav>
-
-        {/* User Info & Logout */}
-        <div className="p-4 border-t border-zinc-200/80 bg-background/50 shrink-0">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-davinci-gold/10 border border-davinci-gold/20 flex items-center justify-center font-bold text-davinci-gold text-sm">
-              {user?.nome ? user.nome.charAt(0).toUpperCase() : 'U'}
-            </div>
-            <div className="overflow-hidden">
-              <h4 className="text-xs font-semibold text-davinci-black truncate">{user?.nome}</h4>
-              <span className="text-[9px] text-davinci-gold uppercase font-semibold tracking-wider">
-                {getPrimaryRoleLabel(user)}
-              </span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/5 transition-colors text-xs font-medium cursor-pointer"
-          >
-            <LogOut className="h-4.5 w-4.5" />
-            Sair do Sistema
-          </button>
-        </div>
       </aside>
 
       <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
