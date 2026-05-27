@@ -11,11 +11,16 @@ async function main() {
   await prisma.feedback.deleteMany({});
   await prisma.message.deleteMany({});
   await prisma.appointment.deleteMany({});
+  await prisma.workSchedule.deleteMany({});
+  await prisma.agendaBlock.deleteMany({});
   await prisma.barber.deleteMany({});
   await prisma.user.deleteMany({});
   await prisma.client.deleteMany({});
   await prisma.product.deleteMany({});
   await prisma.service.deleteMany({});
+  await prisma.quickReply.deleteMany({});
+  await prisma.goal.deleteMany({});
+  await prisma.auditLog.deleteMany({});
 
   // 2. Criar Serviços com foco em Salão Premium (Foco Feminino + Cortes Masculinos)
   const corteFeminino = await prisma.service.create({
@@ -150,6 +155,7 @@ async function main() {
   const professional1 = await prisma.barber.create({
     data: {
       userId: userAlessandro.id,
+      categoria: 'BARBER',
       especialidade: 'Cortes masculinos premium, degradê baixo, visagismo e barboterapia.',
       notaMedia: 4.95,
       services: {
@@ -161,6 +167,7 @@ async function main() {
   const professional2 = await prisma.barber.create({
     data: {
       userId: userMarcus.id,
+      categoria: 'HAIRDRESSER',
       especialidade: 'Cortes unissex clássicos, escovas de alta performance e modelagem.',
       notaMedia: 4.88,
       services: {
@@ -172,6 +179,7 @@ async function main() {
   const professional3 = await prisma.barber.create({
     data: {
       userId: userMariana.id,
+      categoria: 'MANICURE_PEDICURE',
       especialidade: 'Estilista de mechas, coloração avançada, tratamentos capilares e cortes femininos.',
       notaMedia: 4.98,
       services: {
@@ -209,6 +217,8 @@ async function main() {
       preferences: 'Corte Long Bob, luzes mel, finalização com ondas suaves.',
       frequency: 6,
       ticketMedio: 220.0,
+      chatStatus: 'CONFIRMED',
+      origem: 'WhatsApp',
     },
   });
 
@@ -221,6 +231,8 @@ async function main() {
       preferences: 'Corte em camadas para dar volume, hidratação profunda sem sulfatos.',
       frequency: 4,
       ticketMedio: 150.0,
+      chatStatus: 'BOOKING',
+      origem: 'Instagram',
     },
   });
 
@@ -233,6 +245,8 @@ async function main() {
       preferences: 'Corte Pixie moderno com nuca limpa, coloração tom ruivo acobreado.',
       frequency: 3,
       ticketMedio: 190.0,
+      chatStatus: 'NEW',
+      origem: 'Indicação',
     },
   });
 
@@ -245,6 +259,8 @@ async function main() {
       preferences: 'Corte masculino clássico com laterais disfarçadas na máquina 2.',
       frequency: 8,
       ticketMedio: 90.0,
+      chatStatus: 'COMPLETED',
+      origem: 'WhatsApp',
     },
   });
 
@@ -257,6 +273,8 @@ async function main() {
       preferences: 'Corte masculino degradê médio, barba apenas aparada e desenhada.',
       frequency: 5,
       ticketMedio: 110.0,
+      chatStatus: 'CONFIRMED',
+      origem: 'Google',
     },
   });
 
@@ -454,6 +472,109 @@ async function main() {
   });
 
   console.log('Mensagens iniciais do simulador gravadas!');
+
+  // 10. Criar Grades de Trabalho Semanais (Segunda a Sábado, 09h às 20h, almoço 12h-13h)
+  const pros = [professional1.id, professional2.id, professional3.id];
+  for (const proId of pros) {
+    // 0 = Domingo (inativo), 1 a 6 = Segunda a Sábado
+    for (let day = 0; day <= 6; day++) {
+      await prisma.workSchedule.create({
+        data: {
+          barberId: proId,
+          dayOfWeek: day,
+          startTime: '09:00',
+          endTime: '20:00',
+          breakStart: '12:00',
+          breakEnd: '13:00',
+          active: day !== 0, // Domingo inativo por padrão
+        },
+      });
+    }
+  }
+  console.log('Grades de trabalho semanais criadas!');
+
+  // 11. Criar Indisponibilidade/Bloqueio temporário (ex: Almoço ou Férias)
+  await prisma.agendaBlock.create({
+    data: {
+      barberId: professional1.id,
+      titulo: 'Bloqueio de Almoço',
+      dataInicio: new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 12, 0, 0),
+      dataFim: new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 13, 0, 0),
+    },
+  });
+  console.log('Bloqueio de agenda de teste criado!');
+
+  // 12. Criar Respostas Rápidas
+  await prisma.quickReply.createMany({
+    data: [
+      {
+        titulo: 'Confirmação',
+        conteudo: 'Olá! Confirmamos seu horário agendado para hoje no salão Da Vinci. Aguardamos sua visita!',
+      },
+      {
+        titulo: 'Boas-vindas',
+        conteudo: 'Olá! Seja muito bem-vindo(a) ao Da Vinci Premium. Como posso te ajudar hoje?',
+      },
+      {
+        titulo: 'Atraso',
+        conteudo: 'Olá! Tivemos um pequeno imprevisto na agenda de hoje e seu atendimento pode atrasar cerca de 10 minutos. Tudo bem para você?',
+      },
+    ],
+  });
+  console.log('Modelos de respostas rápidas criados!');
+
+  // 13. Criar Metas do Mês
+  const dataInicioMeta = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  const dataFimMeta = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59);
+  
+  await prisma.goal.create({
+    data: {
+      titulo: 'Meta de Faturamento Mensal',
+      tipo: 'BILLING',
+      valorAlvo: 15000.0,
+      valorAtual: 900.0, // Faturamento simulado atual
+      dataInicio: dataInicioMeta,
+      dataFim: dataFimMeta,
+    },
+  });
+
+  await prisma.goal.create({
+    data: {
+      titulo: 'Meta de Atendimentos Mensal',
+      tipo: 'SERVICES',
+      valorAlvo: 100.0,
+      valorAtual: 25.0,
+      dataInicio: dataInicioMeta,
+      dataFim: dataFimMeta,
+    },
+  });
+  console.log('Metas financeiras/operacionais criadas!');
+
+  // 14. Criar Logs de Auditoria
+  await prisma.auditLog.createMany({
+    data: [
+      {
+        usuario: 'Administrador 1',
+        acao: 'Cadastro de Profissional',
+        detalhes: 'Profissional Manicure 2 cadastrado com sucesso no sistema.',
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      },
+      {
+        usuario: 'Atendente 1',
+        acao: 'Agendamento Criado',
+        detalhes: 'Agendamento criado para Clara Vasconcelos no dia ' + hoje.toLocaleDateString(),
+        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      },
+      {
+        usuario: 'Administrador 1',
+        acao: 'Alteração de Comissão',
+        detalhes: 'Comissão do produto Shampoo Repair alterada para 20% para a profissional Manicure 2.',
+        createdAt: new Date(),
+      },
+    ],
+  });
+  console.log('Logs de auditoria iniciais gravados!');
+
   console.log('Seeding concluído com total sucesso!');
 }
 

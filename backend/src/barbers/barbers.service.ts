@@ -230,4 +230,73 @@ export class BarbersService {
       },
     };
   }
+
+  async getAllBlocks() {
+    return this.prisma.agendaBlock.findMany({
+      orderBy: { dataInicio: 'asc' },
+    });
+  }
+
+  async getSchedule(barberId: string) {
+    return this.prisma.workSchedule.findMany({
+      where: { barberId },
+      orderBy: { dayOfWeek: 'asc' },
+    });
+  }
+
+  async updateSchedule(barberId: string, schedules: any[]) {
+    const results = [];
+    for (const item of schedules) {
+      const res = await this.prisma.workSchedule.upsert({
+        where: {
+          barberId_dayOfWeek: {
+            barberId,
+            dayOfWeek: Number(item.dayOfWeek),
+          },
+        },
+        update: {
+          startTime: item.startTime,
+          endTime: item.endTime,
+          breakStart: item.breakStart,
+          breakEnd: item.breakEnd,
+          active: item.active,
+        },
+        create: {
+          barberId,
+          dayOfWeek: Number(item.dayOfWeek),
+          startTime: item.startTime,
+          endTime: item.endTime,
+          breakStart: item.breakStart,
+          breakEnd: item.breakEnd,
+          active: item.active,
+        },
+      });
+      results.push(res);
+    }
+    return results;
+  }
+
+  async getBlocks(barberId: string) {
+    return this.prisma.agendaBlock.findMany({
+      where: { barberId },
+      orderBy: { dataInicio: 'asc' },
+    });
+  }
+
+  async createBlock(barberId: string, body: { titulo: string; dataInicio: string; dataFim: string }) {
+    return this.prisma.agendaBlock.create({
+      data: {
+        barberId,
+        titulo: body.titulo,
+        dataInicio: new Date(body.dataInicio),
+        dataFim: new Date(body.dataFim),
+      },
+    });
+  }
+
+  async deleteBlock(id: string) {
+    const block = await this.prisma.agendaBlock.findUnique({ where: { id } });
+    if (!block) throw new NotFoundException('Bloqueio não encontrado');
+    return this.prisma.agendaBlock.delete({ where: { id } });
+  }
 }

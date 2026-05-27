@@ -15,6 +15,7 @@ import {
   Settings,
   Camera,
   Check,
+  Trash2,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { isProfessionalUser } from '@/lib/auth';
@@ -201,6 +202,110 @@ export default function ProfessionalPage() {
 
   const professionalId = user?.barberId;
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+
+  // Work schedules & agenda blocks states
+  const [newBlockTitle, setNewBlockTitle] = useState('');
+  const [newBlockStart, setNewBlockStart] = useState('');
+  const [newBlockEnd, setNewBlockEnd] = useState('');
+  const [localSchedule, setLocalSchedule] = useState<any[]>([]);
+
+  // Fetch Work Schedules
+  const { data: rawSchedule, refetch: refetchSchedule } = useQuery({
+    queryKey: ['barberSchedule', professionalId],
+    queryFn: () =>
+      fetch(`${apiUrl}/barbers/${professionalId}/schedule`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((res) => { if (!res.ok) throw new Error('Falha ao carregar grade'); return res.json(); }),
+    enabled: !!professionalId && !!token && activeTab === 'settings',
+  });
+
+  const schedule = rawSchedule || [];
+
+  // Fetch Agenda Blocks
+  const { data: blocks = [], refetch: refetchBlocks } = useQuery({
+    queryKey: ['barberBlocks', professionalId],
+    queryFn: () =>
+      fetch(`${apiUrl}/barbers/${professionalId}/blocks`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((res) => { if (!res.ok) throw new Error('Falha ao carregar bloqueios'); return res.json(); }),
+    enabled: !!professionalId && !!token && activeTab === 'settings',
+  });
+
+  // Initialize localSchedule when schedule is loaded
+  useEffect(() => {
+    if (rawSchedule) {
+      if (rawSchedule.length > 0) {
+        setLocalSchedule(rawSchedule);
+      } else {
+        const defaults = Array.from({ length: 7 }, (_, i) => ({
+          dayOfWeek: i,
+          startTime: '09:00',
+          endTime: '20:00',
+          breakStart: '12:00',
+          breakEnd: '13:00',
+          active: i !== 0,
+        }));
+        setLocalSchedule(defaults);
+      }
+    }
+  }, [rawSchedule]);
+
+  const updateScheduleMutation = useMutation({
+    mutationFn: (schedulesList: any[]) =>
+      fetch(`${apiUrl}/barbers/${professionalId}/schedule`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(schedulesList),
+      }).then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erro ao salvar grade');
+        return data;
+      }),
+    onSuccess: () => {
+      refetchSchedule();
+      alert('Grade de trabalho salva com sucesso!');
+    },
+  });
+
+  const createBlockMutation = useMutation({
+    mutationFn: (newBlock: { titulo: string; dataInicio: string; dataFim: string }) =>
+      fetch(`${apiUrl}/barbers/${professionalId}/blocks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newBlock),
+      }).then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erro ao criar bloqueio');
+        return data;
+      }),
+    onSuccess: () => {
+      refetchBlocks();
+      setNewBlockTitle('');
+      setNewBlockStart('');
+      setNewBlockEnd('');
+    },
+  });
+
+  const deleteBlockMutation = useMutation({
+    mutationFn: (blockId: string) =>
+      fetch(`${apiUrl}/barbers/blocks/${blockId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      }).then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erro ao deletar bloqueio');
+        return data;
+      }),
+    onSuccess: () => {
+      refetchBlocks();
+    },
+  });
 
   const { data: dashboard, isLoading } = useQuery<DashboardData>({
     queryKey: ['professionalDashboard', professionalId],
@@ -938,127 +1043,369 @@ export default function ProfessionalPage() {
           )}
 
           {activeTab === 'settings' && (
-            <div className="bg-white rounded-2xl border border-zinc-200/80 p-6 shadow-sm max-w-2xl mx-auto space-y-6">
-              <div>
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-davinci-gold/10 border border-davinci-gold/20 text-davinci-gold text-[10px] font-bold uppercase tracking-widest">
-                  Meu Perfil Público
-                </span>
-                <h2 className="text-xl font-bold text-davinci-black mt-2">CONFIGURAÇÃO DE EXIBIÇÃO</h2>
-                <p className="text-xs text-davinci-gray mt-1">
-                  Personalize as informações que os clientes visualizam no portal de agendamentos online.
-                </p>
+            <div className="max-w-2xl mx-auto space-y-8">
+              {/* Card 1: Perfil de Exibição */}
+              <div className="bg-white rounded-2xl border border-zinc-200/80 p-6 shadow-sm space-y-6">
+                <div>
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-davinci-gold/10 border border-davinci-gold/20 text-davinci-gold text-[10px] font-bold uppercase tracking-widest">
+                    Meu Perfil Público
+                  </span>
+                  <h2 className="text-xl font-bold text-davinci-black mt-2">CONFIGURAÇÃO DE EXIBIÇÃO</h2>
+                  <p className="text-xs text-davinci-gray mt-1">
+                    Personalize as informações que os clientes visualizam no portal de agendamentos online.
+                  </p>
+                </div>
+
+                {saveSuccess && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2 font-bold">
+                    <Check className="h-4 w-4 text-emerald-600" />
+                    Perfil atualizado com sucesso! Suas alterações já estão ativas para os clientes.
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-zinc-100">
+                  <div className="relative group">
+                    {fotoUrlInput ? (
+                      <img
+                        src={fotoUrlInput}
+                        alt="Foto do Perfil"
+                        className="h-24 w-24 rounded-2xl object-cover border-2 border-davinci-gold/30 shadow-md animate-fade-in"
+                      />
+                    ) : (
+                      <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50 text-xs text-zinc-400 font-semibold">
+                        Sem Foto
+                      </div>
+                    )}
+                    <label
+                      htmlFor="photo-upload"
+                      className="absolute -bottom-2 -right-2 p-1.5 rounded-xl bg-davinci-gold text-white hover:bg-davinci-gold/90 transition-colors shadow-md cursor-pointer flex items-center justify-center hover:scale-105 active:scale-95"
+                    >
+                      <Camera className="h-4 w-4" />
+                      <input
+                        type="file"
+                        id="photo-upload"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  <div className="text-center sm:text-left space-y-1">
+                    <h3 className="font-bold text-davinci-black">{professional.nome}</h3>
+                    <p className="text-xs text-davinci-gold font-bold uppercase tracking-wider">
+                      {professional.categoria === 'BARBER' ? 'Barbeiro' : 'Profissional'}
+                    </p>
+                    <p className="text-[10px] text-davinci-gray">Formatos aceitos: JPG, PNG. Tamanho máximo: 2MB.</p>
+                    {fotoUrlInput && (
+                      <button
+                        onClick={() => setFotoUrlInput('')}
+                        className="text-[10px] font-bold text-red-500 hover:text-red-700 block transition-colors mt-2 mx-auto sm:mx-0"
+                      >
+                        Remover foto
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider font-bold text-davinci-black mb-1.5">
+                      Minha Especialidade
+                    </label>
+                    <input
+                      type="text"
+                      value={especialidadeInput}
+                      onChange={(e) => setEspecialidadeInput(e.target.value)}
+                      placeholder="Ex: Cortes unissex clássicos, colorimetria avançada, manicure artística..."
+                      className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-xs text-davinci-black focus:outline-none focus:border-davinci-gold shadow-sm"
+                    />
+                    <span className="text-[9px] text-davinci-gray block mt-1">Breve resumo de suas principais competências de atendimento.</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider font-bold text-davinci-black mb-1.5">
+                      Biografia Curta (Mini Bio)
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={miniBioInput}
+                      onChange={(e) => setMiniBioInput(e.target.value)}
+                      placeholder="Conte um pouco sobre sua trajetória profissional, estilo de atendimento ou especializações para os clientes..."
+                      className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-xs text-davinci-black focus:outline-none focus:border-davinci-gold shadow-sm resize-none"
+                    />
+                    <span className="text-[9px] text-davinci-gray block mt-1">Este texto aparecerá no card de escolha do profissional no portal do cliente.</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100">
+                  <button
+                    onClick={() => {
+                      setEspecialidadeInput(professional.especialidade || '');
+                      setMiniBioInput(professional.miniBio || '');
+                      setFotoUrlInput(professional.fotoUrl || '');
+                      setActiveTab('overview');
+                      router.push('/profissional');
+                    }}
+                    className="px-4 py-2.5 rounded-xl border border-zinc-200 text-xs font-bold text-davinci-gray hover:text-davinci-black transition-colors cursor-pointer"
+                  >
+                    Descartar
+                  </button>
+                  <button
+                    onClick={() =>
+                      updateProfileMutation.mutate({
+                        especialidade: especialidadeInput,
+                        miniBio: miniBioInput,
+                        fotoUrl: fotoUrlInput,
+                      })
+                    }
+                    disabled={updateProfileMutation.isPending}
+                    className="px-4 py-2.5 rounded-xl bg-gold-gradient text-davinci-black text-xs font-bold transition-all shadow-[0_4px_14px_rgba(197,168,128,0.2)] hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center gap-1.5"
+                  >
+                    {updateProfileMutation.isPending && (
+                      <div className="h-3 w-3 border-2 border-davinci-black border-t-transparent rounded-full animate-spin" />
+                    )}
+                    Salvar Alterações
+                  </button>
+                </div>
               </div>
 
-              {saveSuccess && (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2 font-bold">
-                  <Check className="h-4 w-4 text-emerald-600" />
-                  Perfil atualizado com sucesso! Suas alterações já estão ativas para os clientes.
+              {/* Card 2: Grade de Horários */}
+              <div className="bg-white rounded-2xl border border-zinc-200/80 p-6 shadow-sm space-y-6">
+                <div>
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-davinci-gold/10 border border-davinci-gold/20 text-davinci-gold text-[10px] font-bold uppercase tracking-widest">
+                    Minha Agenda
+                  </span>
+                  <h2 className="text-xl font-bold text-davinci-black mt-2">GRADE SEMANAL DE TRABALHO</h2>
+                  <p className="text-xs text-davinci-gray mt-1">
+                    Defina seus dias de atendimento, horários de expediente e intervalos.
+                  </p>
                 </div>
-              )}
 
-              <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-zinc-100">
-                <div className="relative group">
-                  {fotoUrlInput ? (
-                    <img
-                      src={fotoUrlInput}
-                      alt="Foto do Perfil"
-                      className="h-24 w-24 rounded-2xl object-cover border-2 border-davinci-gold/30 shadow-md animate-fade-in"
-                    />
+                <div className="space-y-4 divide-y divide-zinc-100">
+                  {[
+                    { value: 1, label: 'Segunda-feira' },
+                    { value: 2, label: 'Terça-feira' },
+                    { value: 3, label: 'Quarta-feira' },
+                    { value: 4, label: 'Quinta-feira' },
+                    { value: 5, label: 'Sexta-feira' },
+                    { value: 6, label: 'Sábado' },
+                    { value: 0, label: 'Domingo' }
+                  ].map((day) => {
+                    const daySchedule = localSchedule.find((s) => s.dayOfWeek === day.value) || {
+                      dayOfWeek: day.value,
+                      startTime: '09:00',
+                      endTime: '20:00',
+                      breakStart: '12:00',
+                      breakEnd: '13:00',
+                      active: false,
+                    };
+
+                    const handleDayActiveToggle = (checked: boolean) => {
+                      setLocalSchedule((prev) => {
+                        const index = prev.findIndex((s) => s.dayOfWeek === day.value);
+                        const updated = { ...daySchedule, active: checked };
+                        if (index >= 0) {
+                          const copy = [...prev];
+                          copy[index] = updated;
+                          return copy;
+                        } else {
+                          return [...prev, updated];
+                        }
+                      });
+                    };
+
+                    const handleTimeChange = (field: string, val: string) => {
+                      setLocalSchedule((prev) => {
+                        const index = prev.findIndex((s) => s.dayOfWeek === day.value);
+                        const updated = { ...daySchedule, [field]: val };
+                        if (index >= 0) {
+                          const copy = [...prev];
+                          copy[index] = updated;
+                          return copy;
+                        } else {
+                          return [...prev, updated];
+                        }
+                      });
+                    };
+
+                    return (
+                      <div key={day.value} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 py-4 first:pt-0">
+                        <div className="flex items-center gap-3 w-40">
+                          <input
+                            type="checkbox"
+                            id={`day-${day.value}`}
+                            checked={daySchedule.active}
+                            onChange={(e) => handleDayActiveToggle(e.target.checked)}
+                            className="h-4 w-4 text-davinci-gold border-zinc-300 rounded focus:ring-davinci-gold"
+                          />
+                          <label htmlFor={`day-${day.value}`} className="text-xs font-bold text-davinci-black uppercase tracking-wider cursor-pointer">
+                            {day.label}
+                          </label>
+                        </div>
+
+                        {daySchedule.active ? (
+                          <div className="flex flex-wrap gap-2 items-center text-xs text-davinci-gray font-medium">
+                            <div className="flex items-center gap-1.5">
+                              <span>Expediente:</span>
+                              <input
+                                type="time"
+                                value={daySchedule.startTime}
+                                onChange={(e) => handleTimeChange('startTime', e.target.value)}
+                                className="px-2 py-1 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold"
+                              />
+                              <span>às</span>
+                              <input
+                                type="time"
+                                value={daySchedule.endTime}
+                                onChange={(e) => handleTimeChange('endTime', e.target.value)}
+                                className="px-2 py-1 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold"
+                              />
+                            </div>
+
+                            <div className="flex items-center gap-1.5 sm:ml-4">
+                              <span>Almoço:</span>
+                              <input
+                                type="time"
+                                value={daySchedule.breakStart || '12:00'}
+                                onChange={(e) => handleTimeChange('breakStart', e.target.value)}
+                                className="px-2 py-1 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold"
+                              />
+                              <span>às</span>
+                              <input
+                                type="time"
+                                value={daySchedule.breakEnd || '13:00'}
+                                onChange={(e) => handleTimeChange('breakEnd', e.target.value)}
+                                className="px-2 py-1 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Fechado / Folga</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-zinc-100">
+                  <button
+                    onClick={() => updateScheduleMutation.mutate(localSchedule)}
+                    disabled={updateScheduleMutation.isPending}
+                    className="px-4 py-2.5 rounded-xl bg-gold-gradient text-davinci-black text-xs font-bold transition-all shadow-[0_4px_14px_rgba(197,168,128,0.2)] hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center gap-1.5"
+                  >
+                    {updateScheduleMutation.isPending && (
+                      <div className="h-3 w-3 border-2 border-davinci-black border-t-transparent rounded-full animate-spin" />
+                    )}
+                    Salvar Grade Semanal
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 3: Bloqueios e Férias */}
+              <div className="bg-white rounded-2xl border border-zinc-200/80 p-6 shadow-sm space-y-6">
+                <div>
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-davinci-gold/10 border border-davinci-gold/20 text-davinci-gold text-[10px] font-bold uppercase tracking-widest">
+                    Bloqueios
+                  </span>
+                  <h2 className="text-xl font-bold text-davinci-black mt-2">AUSÊNCIAS, FÉRIAS & ALMOÇOS</h2>
+                  <p className="text-xs text-davinci-gray mt-1">
+                    Bloqueie horários específicos da sua agenda para reuniões, folgas ou férias.
+                  </p>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!newBlockTitle || !newBlockStart || !newBlockEnd) return;
+                    createBlockMutation.mutate({
+                      titulo: newBlockTitle,
+                      dataInicio: newBlockStart,
+                      dataFim: newBlockEnd,
+                    });
+                  }}
+                  className="bg-background/60 p-4 rounded-xl border border-zinc-200/80 space-y-4"
+                >
+                  <h4 className="text-[10px] font-bold text-davinci-black uppercase tracking-widest">Adicionar Bloqueio</h4>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-wider font-bold text-davinci-gray mb-1">Título/Motivo</label>
+                      <input
+                        required
+                        type="text"
+                        value={newBlockTitle}
+                        onChange={(e) => setNewBlockTitle(e.target.value)}
+                        placeholder="Ex: Férias, Médico"
+                        className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs text-davinci-black focus:outline-none focus:border-davinci-gold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-wider font-bold text-davinci-gray mb-1">Início</label>
+                      <input
+                        required
+                        type="datetime-local"
+                        value={newBlockStart}
+                        onChange={(e) => setNewBlockStart(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs text-davinci-black focus:outline-none focus:border-davinci-gold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-wider font-bold text-davinci-gray mb-1">Fim</label>
+                      <input
+                        required
+                        type="datetime-local"
+                        value={newBlockEnd}
+                        onChange={(e) => setNewBlockEnd(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-xs text-davinci-black focus:outline-none focus:border-davinci-gold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={createBlockMutation.isPending}
+                      className="px-3.5 py-2 bg-zinc-900 text-white rounded-lg text-xs font-bold hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      {createBlockMutation.isPending && (
+                        <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      )}
+                      Bloquear Agenda
+                    </button>
+                  </div>
+                </form>
+
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-bold text-davinci-gray uppercase tracking-widest">Bloqueios Ativos</h4>
+
+                  {blocks.length === 0 ? (
+                    <div className="p-4 bg-background/50 border border-dashed border-zinc-200 text-center text-xs text-davinci-gray rounded-xl">
+                      Nenhum período de bloqueio ativo no momento.
+                    </div>
                   ) : (
-                    <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50 text-xs text-zinc-400 font-semibold">
-                      Sem Foto
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {blocks.map((block: any) => (
+                        <div key={block.id} className="p-3 bg-white border border-zinc-200 rounded-xl flex items-center justify-between gap-4">
+                          <div>
+                            <span className="text-xs font-bold text-davinci-black">{block.titulo}</span>
+                            <p className="text-[10px] text-davinci-gray mt-1">
+                              De: {new Date(block.dataInicio).toLocaleString('pt-BR')} <br />
+                              Até: {new Date(block.dataFim).toLocaleString('pt-BR')}
+                            </p>
+                          </div>
+                          
+                          <button
+                            onClick={() => deleteBlockMutation.mutate(block.id)}
+                            disabled={deleteBlockMutation.isPending}
+                            className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="h-4.5 w-4.5" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
-                  <label
-                    htmlFor="photo-upload"
-                    className="absolute -bottom-2 -right-2 p-1.5 rounded-xl bg-davinci-gold text-white hover:bg-davinci-gold/90 transition-colors shadow-md cursor-pointer flex items-center justify-center hover:scale-105 active:scale-95"
-                  >
-                    <Camera className="h-4 w-4" />
-                    <input
-                      type="file"
-                      id="photo-upload"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      className="hidden"
-                    />
-                  </label>
                 </div>
-                <div className="text-center sm:text-left space-y-1">
-                  <h3 className="font-bold text-davinci-black">{professional.nome}</h3>
-                  <p className="text-xs text-davinci-gold font-bold uppercase tracking-wider">
-                    {professional.categoria === 'BARBER' ? 'Barbeiro' : 'Profissional'}
-                  </p>
-                  <p className="text-[10px] text-davinci-gray">Formatos aceitos: JPG, PNG. Tamanho máximo: 2MB.</p>
-                  {fotoUrlInput && (
-                    <button
-                      onClick={() => setFotoUrlInput('')}
-                      className="text-[10px] font-bold text-red-500 hover:text-red-700 block transition-colors mt-2 mx-auto sm:mx-0"
-                    >
-                      Remover foto
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-bold text-davinci-black mb-1.5">
-                    Minha Especialidade
-                  </label>
-                  <input
-                    type="text"
-                    value={especialidadeInput}
-                    onChange={(e) => setEspecialidadeInput(e.target.value)}
-                    placeholder="Ex: Cortes unissex clássicos, colorimetria avançada, manicure artística..."
-                    className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-xs text-davinci-black focus:outline-none focus:border-davinci-gold shadow-sm"
-                  />
-                  <span className="text-[9px] text-davinci-gray block mt-1">Breve resumo de suas principais competências de atendimento.</span>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider font-bold text-davinci-black mb-1.5">
-                    Biografia Curta (Mini Bio)
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={miniBioInput}
-                    onChange={(e) => setMiniBioInput(e.target.value)}
-                    placeholder="Conte um pouco sobre sua trajetória profissional, estilo de atendimento ou especializações para os clientes..."
-                    className="w-full px-3 py-2.5 bg-white border border-zinc-200 rounded-xl text-xs text-davinci-black focus:outline-none focus:border-davinci-gold shadow-sm resize-none"
-                  />
-                  <span className="text-[9px] text-davinci-gray block mt-1">Este texto aparecerá no card de escolha do profissional no portal do cliente.</span>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-100">
-                <button
-                  onClick={() => {
-                    setEspecialidadeInput(professional.especialidade || '');
-                    setMiniBioInput(professional.miniBio || '');
-                    setFotoUrlInput(professional.fotoUrl || '');
-                    setActiveTab('overview');
-                    router.push('/profissional');
-                  }}
-                  className="px-4 py-2.5 rounded-xl border border-zinc-200 text-xs font-bold text-davinci-gray hover:text-davinci-black transition-colors cursor-pointer"
-                >
-                  Descartar
-                </button>
-                <button
-                  onClick={() =>
-                    updateProfileMutation.mutate({
-                      especialidade: especialidadeInput,
-                      miniBio: miniBioInput,
-                      fotoUrl: fotoUrlInput,
-                    })
-                  }
-                  disabled={updateProfileMutation.isPending}
-                  className="px-4 py-2.5 rounded-xl bg-gold-gradient text-davinci-black text-xs font-bold transition-all shadow-[0_4px_14px_rgba(197,168,128,0.2)] hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center gap-1.5"
-                >
-                  {updateProfileMutation.isPending && (
-                    <div className="h-3 w-3 border-2 border-davinci-black border-t-transparent rounded-full animate-spin" />
-                  )}
-                  Salvar Alterações
-                </button>
               </div>
             </div>
           )}

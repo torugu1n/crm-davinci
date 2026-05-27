@@ -105,6 +105,10 @@ export default function DashboardCalendar() {
   // Clock state for live timeline
   const [now, setNow] = useState(new Date());
 
+  // Filters state
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState('ALL');
+  const [selectedBarberFilter, setSelectedBarberFilter] = useState('ALL');
+
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
@@ -138,6 +142,28 @@ export default function DashboardCalendar() {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     }).then((res) => { if (!res.ok) throw new Error('Failed to fetch appointments'); return res.json(); }),
   });
+
+  const { data: agendaBlocks = [] } = useQuery({
+    queryKey: ['allAgendaBlocks'],
+    queryFn: () => fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/barbers/blocks/all`, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    }).then((res) => { if (!res.ok) throw new Error('Failed to fetch blocks'); return res.json(); }),
+  });
+
+  const filteredBarbers = barbers.filter((barber: any) => {
+    const matchesRole = selectedRoleFilter === 'ALL' || barber.categoria === selectedRoleFilter;
+    const matchesBarber = selectedBarberFilter === 'ALL' || barber.id === selectedBarberFilter;
+    return matchesRole && matchesBarber;
+  });
+
+  const allowedBarbersForFilter = selectedRoleFilter === 'ALL'
+    ? barbers
+    : barbers.filter((b: any) => b.categoria === selectedRoleFilter);
+
+  const handleRoleFilterChange = (role: string) => {
+    setSelectedRoleFilter(role);
+    setSelectedBarberFilter('ALL');
+  };
 
   const allowedServices = selectedCell?.barberId
     ? services.filter((s: any) => s.barbers?.some((b: any) => b.id === selectedCell.barberId))
@@ -291,8 +317,8 @@ export default function DashboardCalendar() {
   return (
     <div className="space-y-6">
       {/* Date Controls */}
-      <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-zinc-200/80 shadow-sm">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 p-4 bg-white rounded-xl border border-zinc-200/80 shadow-sm">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => adjustDate(-1)}
             className="p-2 rounded-lg bg-white border border-zinc-200 hover:border-davinci-gold transition-colors text-davinci-black cursor-pointer"
@@ -313,33 +339,61 @@ export default function DashboardCalendar() {
           </button>
         </div>
 
-        {/* Premium DatePicker Switcher */}
-        <div className="relative">
-          <button
-            onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-            className="flex items-center gap-2.5 text-davinci-black font-semibold hover:text-davinci-gold transition-colors cursor-pointer border border-zinc-200/60 bg-white py-2 px-4 rounded-xl shadow-sm hover:shadow-md"
+        {/* Premium Filters Selector */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Categoria/Função */}
+          <select
+            value={selectedRoleFilter}
+            onChange={(e) => handleRoleFilterChange(e.target.value)}
+            className="px-3.5 py-2 bg-white border border-zinc-200 rounded-xl text-xs text-davinci-black focus:outline-none focus:border-davinci-gold font-medium cursor-pointer shadow-sm hover:border-zinc-300 transition-colors"
           >
-            <CalendarIcon className="h-5 w-5 text-davinci-gold" />
-            <span className="text-xs md:text-sm uppercase tracking-wider font-bold">
-              {selectedDate.toLocaleDateString('pt-BR', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })}
-            </span>
-          </button>
-          
-          {isDatePickerOpen && (
-            <DatePickerPopover
-              selectedDate={selectedDate}
-              onChange={(d) => setSelectedDate(d)}
-              onClose={() => setIsDatePickerOpen(false)}
-            />
-          )}
+            <option value="ALL">Todas as funções</option>
+            <option value="BARBER">Barbeiro</option>
+            <option value="HAIRDRESSER">Cabeleireira(o)</option>
+            <option value="MANICURE_PEDICURE">Manicure/Pedicure</option>
+            <option value="OTHER">Outros</option>
+          </select>
+
+          {/* Profissionais */}
+          <select
+            value={selectedBarberFilter}
+            onChange={(e) => setSelectedBarberFilter(e.target.value)}
+            className="px-3.5 py-2 bg-white border border-zinc-200 rounded-xl text-xs text-davinci-black focus:outline-none focus:border-davinci-gold font-medium cursor-pointer shadow-sm hover:border-zinc-300 transition-colors"
+          >
+            <option value="ALL">Todos os profissionais</option>
+            {allowedBarbersForFilter.map((b: any) => (
+              <option key={b.id} value={b.id}>{b.user.nome}</option>
+            ))}
+          </select>
+
+          {/* Premium DatePicker Switcher */}
+          <div className="relative">
+            <button
+              onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+              className="flex items-center gap-2.5 text-davinci-black font-semibold hover:text-davinci-gold transition-colors cursor-pointer border border-zinc-200/60 bg-white py-2 px-4 rounded-xl shadow-sm hover:shadow-md"
+            >
+              <CalendarIcon className="h-5 w-5 text-davinci-gold" />
+              <span className="text-xs md:text-sm uppercase tracking-wider font-bold">
+                {selectedDate.toLocaleDateString('pt-BR', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </span>
+            </button>
+            
+            {isDatePickerOpen && (
+              <DatePickerPopover
+                selectedDate={selectedDate}
+                onChange={(d) => setSelectedDate(d)}
+                onClose={() => setIsDatePickerOpen(false)}
+              />
+            )}
+          </div>
         </div>
 
-        <div className="hidden md:flex gap-4 text-[10px] font-bold text-davinci-gray uppercase tracking-widest">
+        <div className="hidden xl:flex gap-4 text-[10px] font-bold text-davinci-gray uppercase tracking-widest">
           <span>Horário de Funcionamento: 09h - 21h</span>
         </div>
       </div>
@@ -356,26 +410,32 @@ export default function DashboardCalendar() {
             </div>
 
             {/* Barbers Header columns */}
-            <div className="grid" style={{ gridTemplateColumns: `repeat(${barbers.length || 1}, minmax(0, 1fr))` }}>
-              {barbers.map((barber: any) => {
-                const isHoveredCol = hoveredCell?.barberId === barber.id;
-                return (
-                  <div 
-                    key={barber.id} 
-                    className={`p-4 text-center transition-colors flex flex-col items-center justify-center ${
-                      isHoveredCol ? 'bg-davinci-gold/5' : 'bg-background'
-                    }`}
-                  >
-                    <div className="w-9 h-9 rounded-full bg-davinci-gold/10 border border-davinci-gold/30 flex items-center justify-center font-bold text-xs text-davinci-gold mb-1 shadow-inner">
-                      {barber.user.nome.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+            <div className="grid" style={{ gridTemplateColumns: `repeat(${filteredBarbers.length || 1}, minmax(0, 1fr))` }}>
+              {filteredBarbers.length === 0 ? (
+                <div className="p-4 text-center text-xs text-davinci-gray font-semibold bg-background flex items-center justify-center col-span-full">
+                  Nenhum profissional com os filtros aplicados
+                </div>
+              ) : (
+                filteredBarbers.map((barber: any) => {
+                  const isHoveredCol = hoveredCell?.barberId === barber.id;
+                  return (
+                    <div 
+                      key={barber.id} 
+                      className={`p-4 text-center transition-colors flex flex-col items-center justify-center ${
+                        isHoveredCol ? 'bg-davinci-gold/5' : 'bg-background'
+                      }`}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-davinci-gold/10 border border-davinci-gold/30 flex items-center justify-center font-bold text-xs text-davinci-gold mb-1 shadow-inner">
+                        {barber.user.nome.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                      </div>
+                      <h4 className="text-xs font-bold text-davinci-black leading-tight">{barber.user.nome}</h4>
+                      <p className="text-[9px] text-davinci-gold font-semibold tracking-wider mt-0.5">
+                        ★ {barber.notaMedia.toFixed(2)}
+                      </p>
                     </div>
-                    <h4 className="text-xs font-bold text-davinci-black leading-tight">{barber.user.nome}</h4>
-                    <p className="text-[9px] text-davinci-gold font-semibold tracking-wider mt-0.5">
-                      ★ {barber.notaMedia.toFixed(2)}
-                    </p>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -419,30 +479,44 @@ export default function DashboardCalendar() {
                       </div>
 
                       {/* Slots Cells */}
-                      <div className="grid" style={{ gridTemplateColumns: `repeat(${barbers.length || 1}, minmax(0, 1fr))` }}>
-                        {barbers.map((barber: any) => {
-                          const cellAppointment = dailyAppointments.find((app: any) => {
-                            const appDate = new Date(app.data);
-                            return appDate.getHours() === hour && app.barberId === barber.id;
-                          });
+                      <div className="grid" style={{ gridTemplateColumns: `repeat(${filteredBarbers.length || 1}, minmax(0, 1fr))` }}>
+                        {filteredBarbers.length === 0 ? (
+                          <div className="h-[72px] bg-background/10 col-span-full" />
+                        ) : (
+                          filteredBarbers.map((barber: any) => {
+                            const cellAppointment = dailyAppointments.find((app: any) => {
+                              const appDate = new Date(app.data);
+                              return appDate.getHours() === hour && app.barberId === barber.id;
+                            });
 
-                          const isHoveredCell = hoveredCell?.hour === hour && hoveredCell?.barberId === barber.id;
-                          const isHoveredCol = hoveredCell?.barberId === barber.id;
+                            const cellBlock = agendaBlocks.find((block: any) => {
+                              const blockStart = new Date(block.dataInicio);
+                              const blockEnd = new Date(block.dataFim);
+                              const targetTime = new Date(selectedDate);
+                              targetTime.setHours(hour, 0, 0, 0);
+                              return block.barberId === barber.id && targetTime >= blockStart && targetTime < blockEnd;
+                            });
 
-                          return (
-                            <div
-                              key={barber.id}
-                              onMouseEnter={() => setHoveredCell({ hour, barberId: barber.id })}
-                              onMouseLeave={() => setHoveredCell(null)}
-                              onClick={() => handleCellClick(hour, barber.id)}
-                              className={`p-2 flex flex-col justify-center h-[72px] cursor-pointer transition-all relative group ${
-                                isHoveredCell
-                                  ? 'bg-davinci-gold/15'
-                                  : isHoveredRow || isHoveredCol
-                                  ? 'bg-davinci-gold/5'
-                                  : 'bg-transparent'
-                              }`}
-                            >
+                            const isHoveredCell = hoveredCell?.hour === hour && hoveredCell?.barberId === barber.id;
+                            const isHoveredCol = hoveredCell?.barberId === barber.id;
+
+                            return (
+                              <div
+                                key={barber.id}
+                                onMouseEnter={() => setHoveredCell({ hour, barberId: barber.id })}
+                                onMouseLeave={() => setHoveredCell(null)}
+                                onClick={() => {
+                                  if (cellBlock) return;
+                                  handleCellClick(hour, barber.id);
+                                }}
+                                className={`p-2 flex flex-col justify-center h-[72px] cursor-pointer transition-all relative group ${
+                                  isHoveredCell
+                                    ? 'bg-davinci-gold/15'
+                                    : isHoveredRow || isHoveredCol
+                                    ? 'bg-davinci-gold/5'
+                                    : 'bg-transparent'
+                                }`}
+                              >
                               {cellAppointment ? (
                                 <motion.div
                                   layoutId={`card-${cellAppointment.id}`}
@@ -466,6 +540,15 @@ export default function DashboardCalendar() {
                                     {getStatusLabel(cellAppointment.status)}
                                   </span>
                                 </motion.div>
+                              ) : cellBlock ? (
+                                <div className="w-full h-full p-2 rounded-lg bg-zinc-100 border border-zinc-200 text-zinc-400 text-left flex flex-col justify-between cursor-not-allowed select-none">
+                                  <div className="font-bold text-[10px] uppercase tracking-wider truncate flex items-center gap-1">
+                                    <span>🔒 {cellBlock.titulo}</span>
+                                  </div>
+                                  <span className="text-[8px] uppercase tracking-wider font-extrabold opacity-60">
+                                    Bloqueado
+                                  </span>
+                                </div>
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center border border-dashed border-zinc-200 group-hover:border-davinci-gold/40 rounded-lg text-davinci-gold/0 group-hover:text-davinci-gold transition-all text-xs">
                                   <Plus className="h-4.5 w-4.5" />
@@ -473,7 +556,7 @@ export default function DashboardCalendar() {
                               )}
                             </div>
                           );
-                        })}
+                        }))}
                       </div>
                     </div>
                   );

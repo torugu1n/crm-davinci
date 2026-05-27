@@ -324,6 +324,17 @@ export default function ServicesProductsManager() {
     if (activeSubTab === 'services') {
       payload.duracao = parseInt(formData.duracao || '30', 10);
       payload.barberIds = formData.barberIds;
+      if (formData.variedCommission) {
+        const customCommissionsArray = Object.keys(formData.customCommissions)
+          .map((bId) => ({
+            barberId: bId,
+            commissionRate: parseFloat(formData.customCommissions[bId] || '0'),
+          }))
+          .filter((cc) => cc.commissionRate > 0 && formData.barberIds.includes(cc.barberId));
+        payload.customCommissions = customCommissionsArray;
+      } else {
+        payload.customCommissions = [];
+      }
       if (editingItem) {
         updateServiceMutation.mutate({ id: editingItem.id, data: payload });
       } else {
@@ -523,6 +534,26 @@ export default function ServicesProductsManager() {
                         </span>
                       ))}
                     </div>
+                    {item.customCommissions && item.customCommissions.length > 0 ? (
+                      <div className="mt-2.5 border-t border-zinc-200/60 pt-2 space-y-1">
+                        <span className="font-bold text-davinci-gold uppercase tracking-wider block mb-1">
+                          Comissão Variável:
+                        </span>
+                        {item.customCommissions.map((cc: any) => {
+                          const b = barbers.find((barb: any) => barb.id === cc.barberId);
+                          return (
+                            <div key={cc.barberId} className="flex justify-between font-semibold text-davinci-black text-[9px]">
+                              <span>{b?.user?.nome || 'Profissional'}:</span>
+                              <span>{cc.commissionRate}%</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className="text-[8px] text-davinci-gray font-semibold block mt-1">
+                        *Comissão baseada no perfil padrão do profissional
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -711,6 +742,70 @@ export default function ServicesProductsManager() {
                             </label>
                           );
                         })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Configurações de Comissão (Apenas para Serviços se houver profissionais marcados) */}
+                {activeSubTab === 'services' && formData.barberIds.length > 0 && (
+                  <div className="space-y-4">
+                    {/* Varied Commission Toggle */}
+                    <div className="flex items-start justify-between gap-3 bg-zinc-50/80 p-3 border border-zinc-200/50 rounded-xl">
+                      <div className="space-y-1">
+                        <span className="block text-[10px] font-bold text-davinci-black uppercase tracking-wider">
+                          Comissão Variável de Serviço
+                        </span>
+                        <p className="text-[9px] text-davinci-gray font-medium leading-relaxed max-w-[220px]">
+                          Ative esta opção se deseja configurar uma porcentagem de comissão específica para este serviço. Se desmarcada, seguirá a taxa de comissão padrão de cada profissional.
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer mt-1">
+                        <input
+                          type="checkbox"
+                          checked={formData.variedCommission}
+                          onChange={(e) => setFormData({ ...formData, variedCommission: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-zinc-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-davinci-gold"></div>
+                      </label>
+                    </div>
+
+                    {/* Custom Commission Inputs per selected Barber */}
+                    {formData.variedCommission && (
+                      <div className="space-y-2">
+                        <label className="block text-[10px] font-bold text-davinci-gray uppercase tracking-wider mb-1.5">
+                          Taxa de Comissão por Profissional (%)
+                        </label>
+                        <div className="space-y-2 max-h-[140px] overflow-y-auto border border-zinc-200 rounded-lg p-2.5 bg-zinc-50/50 font-semibold text-davinci-black">
+                          {barbers.filter((b: any) => formData.barberIds.includes(b.id)).map((barber: any) => {
+                            const currentVal = formData.customCommissions[barber.id] || '';
+                            return (
+                              <div key={barber.id} className="flex items-center justify-between gap-3 text-xs">
+                                <span className="font-semibold text-davinci-black truncate">{barber.user.nome}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.1"
+                                    placeholder="Ex: 50.0"
+                                    value={currentVal}
+                                    onChange={(e) => setFormData({
+                                      ...formData,
+                                      customCommissions: {
+                                        ...formData.customCommissions,
+                                        [barber.id]: e.target.value
+                                      }
+                                    })}
+                                    className="w-16 px-2 py-1 bg-white border border-zinc-200 rounded text-right focus:outline-none focus:border-davinci-gold text-xs"
+                                  />
+                                  <span className="text-[10px] font-bold text-davinci-gray">%</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>

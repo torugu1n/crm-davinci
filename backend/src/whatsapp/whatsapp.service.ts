@@ -486,4 +486,25 @@ export class WhatsappService {
       };
     }
   }
+
+  async getQuickReplies() {
+    return this.prisma.quickReply.findMany({
+      orderBy: { titulo: 'asc' },
+    });
+  }
+
+  async createQuickReply(body: { titulo: string; conteudo: string }) {
+    return this.prisma.quickReply.create({
+      data: {
+        titulo: body.titulo,
+        conteudo: body.conteudo,
+      },
+    });
+  }
+
+  async deleteQuickReply(id: string) {
+    return this.prisma.quickReply.delete({
+      where: { id },
+    });
+  }
 }

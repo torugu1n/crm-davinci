@@ -98,7 +98,14 @@ export class AppointmentsService {
   }
 
   async update(id: string, data: any, currentUser: any) {
-    const existing = await this.prisma.appointment.findUnique({ where: { id } });
+    const existing = await this.prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        client: true,
+        service: true,
+        barber: { include: { user: true } },
+      },
+    });
     if (!existing) throw new NotFoundException('Agendamento não encontrado');
 
     const isClient = currentUser.role === 'CLIENT';
@@ -126,6 +133,28 @@ export class AppointmentsService {
       } else {
         finalValor = parseFloat(data.valor);
       }
+    }
+
+    // Log price changes
+    if (finalValor !== existing.valor) {
+      await this.prisma.auditLog.create({
+        data: {
+          usuario: currentUser.nome || currentUser.email || 'Sistema',
+          acao: 'CHANGE_APPOINTMENT_PRICE',
+          detalhes: `Valor do agendamento de ${existing.client.nome} (${existing.service.nome}) em ${new Date(existing.data).toLocaleString('pt-BR')} alterado de R$ ${existing.valor} para R$ ${finalValor}.`,
+        },
+      });
+    }
+
+    // Log status cancellation
+    if (finalStatus === 'CANCELLED' && existing.status !== 'CANCELLED') {
+      await this.prisma.auditLog.create({
+        data: {
+          usuario: currentUser.nome || currentUser.email || 'Sistema',
+          acao: 'CANCEL_APPOINTMENT',
+          detalhes: `Agendamento do cliente ${existing.client.nome} com o profissional ${existing.barber.user.nome} em ${new Date(existing.data).toLocaleString('pt-BR')} foi cancelado.`,
+        },
+      });
     }
 
     const updated = await this.prisma.appointment.update({
@@ -206,7 +235,24 @@ export class AppointmentsService {
     }, delayMs);
   }
 
-  async delete(id: string) {
+  async delete(id: string, currentUser?: any) {
+    const existing = await this.prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        client: true,
+        service: true,
+        barber: { include: { user: true } },
+      },
+    });
+    if (existing) {
+      await this.prisma.auditLog.create({
+        data: {
+          usuario: currentUser?.nome || currentUser?.email || 'Sistema',
+          acao: 'DELETE_APPOINTMENT',
+          detalhes: `Agendamento de ${existing.client.nome} (${existing.service.nome}) com ${existing.barber.user.nome} marcado para ${new Date(existing.data).toLocaleString('pt-BR')} foi excluído.`,
+        },
+      });
+    }
     const deleted = await this.prisma.appointment.delete({ where: { id } });
     this.wsGateway.broadcast('appointment-deleted', { id });
     return deleted;

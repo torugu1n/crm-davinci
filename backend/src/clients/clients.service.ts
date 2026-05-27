@@ -60,6 +60,8 @@ export class ClientsService {
         preferences: data.preferences,
         frequency: data.frequency,
         ticketMedio: data.ticketMedio,
+        chatStatus: data.chatStatus,
+        origem: data.origem,
       },
     });
   }

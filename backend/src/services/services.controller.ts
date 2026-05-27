@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -16,21 +16,21 @@ export class ServicesController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'ATTENDANT')
-  async create(@Body() body: any) {
-    return this.servicesService.create(body);
+  async create(@Body() body: any, @Request() req: any) {
+    return this.servicesService.create(body, req.user);
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'ATTENDANT')
-  async update(@Param('id') id: string, @Body() body: any) {
-    return this.servicesService.update(id, body);
+  async update(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    return this.servicesService.update(id, body, req.user);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'ATTENDANT')
-  async delete(@Param('id') id: string) {
-    return this.servicesService.delete(id);
+  async delete(@Param('id') id: string, @Request() req: any) {
+    return this.servicesService.delete(id, req.user);
   }
 }

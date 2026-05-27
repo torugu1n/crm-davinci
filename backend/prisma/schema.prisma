@@ -34,6 +34,9 @@ model Barber {
   appointments  Appointment[]
   services       Service[]     @relation("BarberServices")
   productCommissions ProductCommission[]
+  serviceCommissions ServiceCommission[]
+  workSchedules WorkSchedule[]
+  agendaBlocks AgendaBlock[]
 
   @@map("barbers")
 }
@@ -47,6 +50,8 @@ model Client {
   preferences String?
   frequency   Int           @default(0)
   ticketMedio Float         @default(0.0) @map("ticket_medio")
+  chatStatus  String        @default("NEW") @map("chat_status")
+  origem      String?
   createdAt   DateTime      @default(now()) @map("created_at")
   appointments Appointment[]
   messages    Message[]
@@ -55,13 +60,14 @@ model Client {
 }
 
 model Service {
-  id           String        @id @default(uuid())
-  nome         String
-  preco        Float
-  duracao      Int // em minutos
-  descricao    String?
-  appointments Appointment[]
-  barbers       Barber[]      @relation("BarberServices")
+  id                String              @id @default(uuid())
+  nome              String
+  preco             Float
+  duracao           Int // em minutos
+  descricao         String?
+  appointments      Appointment[]
+  barbers           Barber[]            @relation("BarberServices")
+  customCommissions ServiceCommission[]
 
   @@map("services")
 }
@@ -131,3 +137,73 @@ model Message {
 
   @@map("messages")
 }
+
+model WorkSchedule {
+  id          String   @id @default(uuid())
+  barberId    String   @map("barber_id")
+  dayOfWeek   Int      // 0 (Domingo) a 6 (Sábado)
+  startTime   String   // "09:00"
+  endTime     String   // "18:00"
+  breakStart  String?  @map("break_start")
+  breakEnd    String?  @map("break_end")
+  active      Boolean  @default(true)
+  barber      Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@unique([barberId, dayOfWeek])
+  @@map("work_schedules")
+}
+
+model AgendaBlock {
+  id          String   @id @default(uuid())
+  barberId    String   @map("barber_id")
+  titulo      String   // Ex: "Férias", "Almoço", "Médico"
+  dataInicio  DateTime @map("data_inicio")
+  dataFim     DateTime @map("data_fim")
+  barber      Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@map("agenda_blocks")
+}
+
+model QuickReply {
+  id        String   @id @default(uuid())
+  titulo    String
+  conteudo  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("quick_replies")
+}
+
+model Goal {
+  id          String   @id @default(uuid())
+  titulo      String
+  tipo        String   // "BILLING" | "SERVICES"
+  valorAlvo   Float    @map("valor_alvo")
+  valorAtual  Float    @default(0.0) @map("valor_atual")
+  dataInicio  DateTime @map("data_inicio")
+  dataFim     DateTime @map("data_fim")
+
+  @@map("goals")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  usuario   String
+  acao      String
+  detalhes  String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+model ServiceCommission {
+  id             String   @id @default(uuid())
+  serviceId      String   @map("service_id")
+  barberId       String   @map("barber_id")
+  commissionRate Float    @map("commission_rate")
+  service        Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  barber         Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, barberId])
+  @@map("service_commissions")
+}
+

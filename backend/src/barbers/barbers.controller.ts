@@ -13,6 +13,11 @@ export class BarbersController {
     return this.barbersService.findAll();
   }
 
+  @Get('blocks/all')
+  async getAllBlocks() {
+    return this.barbersService.getAllBlocks();
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.barbersService.findOne(id);
@@ -61,5 +66,36 @@ export class BarbersController {
   @Get(':id/dashboard')
   async getDashboard(@Param('id') id: string) {
     return this.barbersService.getBarberDashboard(id);
+  }
+
+  @Get(':id/schedule')
+  async getSchedule(@Param('id') id: string) {
+    return this.barbersService.getSchedule(id);
+  }
+
+  @Put(':id/schedule')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'BARBER')
+  async updateSchedule(@Param('id') id: string, @Body() body: any) {
+    return this.barbersService.updateSchedule(id, body);
+  }
+
+  @Get(':id/blocks')
+  async getBlocks(@Param('id') id: string) {
+    return this.barbersService.getBlocks(id);
+  }
+
+  @Post(':id/blocks')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'BARBER')
+  async createBlock(@Param('id') id: string, @Body() body: { titulo: string; dataInicio: string; dataFim: string }) {
+    return this.barbersService.createBlock(id, body);
+  }
+
+  @Delete('blocks/:blockId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'BARBER')
+  async deleteBlock(@Param('blockId') blockId: string) {
+    return this.barbersService.deleteBlock(blockId);
   }
 }

@@ -31,7 +31,7 @@ export class AppointmentsController {
 
   @Delete(':id')
   @Roles('ADMIN', 'ATTENDANT', 'BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE')
-  async delete(@Param('id') id: string) {
-    return this.appointmentsService.delete(id);
+  async delete(@Param('id') id: string, @Request() req: any) {
+    return this.appointmentsService.delete(id, req.user);
   }
 }

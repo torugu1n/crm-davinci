@@ -171,6 +171,30 @@ export default function ClientPortalPage() {
     enabled: !!token,
   });
 
+  // Fetch Work Schedules for selected barber
+  const { data: selectedBarberSchedule = [] } = useQuery({
+    queryKey: ['barberSchedule', selectedBarber],
+    queryFn: () =>
+      selectedBarber
+        ? fetch(`${apiUrl}/barbers/${selectedBarber}/schedule`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((res) => { if (!res.ok) throw new Error('Failed to fetch schedule'); return res.json(); })
+        : Promise.resolve([]),
+    enabled: !!selectedBarber && !!token,
+  });
+
+  // Fetch Agenda Blocks for selected barber
+  const { data: selectedBarberBlocks = [] } = useQuery({
+    queryKey: ['barberBlocks', selectedBarber],
+    queryFn: () =>
+      selectedBarber
+        ? fetch(`${apiUrl}/barbers/${selectedBarber}/blocks`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((res) => { if (!res.ok) throw new Error('Failed to fetch blocks'); return res.json(); })
+        : Promise.resolve([]),
+    enabled: !!selectedBarber && !!token,
+  });
+
   const createAppointmentMutation = useMutation({
     mutationFn: (newApp: any) =>
       fetch(`${apiUrl}/appointments`, {
@@ -219,9 +243,50 @@ export default function ClientPortalPage() {
   const getSlotsStatus = () => {
     if (!selectedBarber || !selectedDate) return [];
 
+    const dayOfWeek = selectedDate.getDay(); // 0 = Domingo, 1 = Segunda, etc.
+    const daySchedule = selectedBarberSchedule.find((s: any) => s.dayOfWeek === dayOfWeek);
+
     return HOURS.map((hourStr) => {
       const hourInt = parseInt(hourStr, 10);
 
+      // 1. Verificar se o profissional trabalha nesse dia da semana
+      if (daySchedule && !daySchedule.active) {
+        return { hour: hourStr, label: `${hourStr}:00`, available: false };
+      }
+
+      // 2. Verificar se está dentro do horário de expediente
+      if (daySchedule) {
+        const startHour = parseInt(daySchedule.startTime.split(':')[0], 10);
+        const endHour = parseInt(daySchedule.endTime.split(':')[0], 10);
+        if (hourInt < startHour || hourInt >= endHour) {
+          return { hour: hourStr, label: `${hourStr}:00`, available: false };
+        }
+        
+        // 3. Verificar se coincide com o horário de almoço
+        if (daySchedule.breakStart && daySchedule.breakEnd) {
+          const breakStartHour = parseInt(daySchedule.breakStart.split(':')[0], 10);
+          const breakEndHour = parseInt(daySchedule.breakEnd.split(':')[0], 10);
+          if (hourInt >= breakStartHour && hourInt < breakEndHour) {
+            return { hour: hourStr, label: `${hourStr}:00`, available: false };
+          }
+        }
+      }
+
+      // 4. Verificar se coincide com bloqueios (ex: férias, licenças)
+      const targetTime = new Date(selectedDate);
+      targetTime.setHours(hourInt, 0, 0, 0);
+
+      const isBlocked = selectedBarberBlocks.some((block: any) => {
+        const blockStart = new Date(block.dataInicio);
+        const blockEnd = new Date(block.dataFim);
+        return targetTime >= blockStart && targetTime < blockEnd;
+      });
+
+      if (isBlocked) {
+        return { hour: hourStr, label: `${hourStr}:00`, available: false };
+      }
+
+      // 5. Verificar se já existe agendamento
       const isBooked = appointments.some((app: any) => {
         const appDate = new Date(app.data);
         return (
