@@ -41,13 +41,31 @@ const STATUS_FILTER_TABS = [
   { value: 'COMPLETED', label: 'Finalizados' },
 ];
 
+const EMOJI_CATEGORIES = [
+  {
+    name: '😀 Carinhas',
+    emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🥸', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🫣', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🫠', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '😵‍💫', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕']
+  },
+  {
+    name: '👍 Gestos',
+    emojis: ['👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🫰', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️', '👅', '👄', '💋', '🩸']
+  },
+  {
+    name: '❤️ Símbolos',
+    emojis: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '🌟', '⭐', '✨', '⚡', '💥', '🔥', '🌈', '☀️', '☁️', '❄️', '💧', '💦', '💨', '💤', '💯', '💢', '💥', '💫', '🕳️', '💣', '💬', '👁️‍🗨️', '🗨️', '🗯️', '💭']
+  },
+  {
+    name: '🎉 Festas',
+    emojis: ['🎉', '🎊', '🎈', '🎁', '🎀', '🧧', '🎂', '🧁', '🍬', '🍭', '🍫', '🍿', '🍩', '🍪', '🍻', '🥂', '🍷', '🍹', '🧉', '🥤', '🔔', '📣', '📢', '🎙️', '📻', '🎷', '🎸', '🎹', '🎺', '🎻', '🥁', '🔮', '🧿', '💈']
+  }
+];
+
 export default function WhatsAppSimulator() {
   const queryClient = useQueryClient();
   const token = useStore((state) => state.token);
   
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [operatorText, setOperatorText] = useState('');
-  const [customerText, setCustomerText] = useState('');
   const [chats, setChats] = useState<any[]>([]);
   const [typing, setTyping] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,6 +88,8 @@ export default function WhatsAppSimulator() {
 
   // Emoji picker & File upload states
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [activeEmojiTab, setActiveEmojiTab] = useState(0);
+  const [hoveredQuickReplyText, setHoveredQuickReplyText] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Edit Client States
@@ -83,7 +103,7 @@ export default function WhatsAppSimulator() {
   const [newTagText, setNewTagText] = useState('');
 
   const chatEndRefOperator = useRef<HTMLDivElement | null>(null);
-  const chatEndRefCustomer = useRef<HTMLDivElement | null>(null);
+  const operatorInputRef = useRef<HTMLInputElement | null>(null);
 
   // Fetch clients
   const { data: rawClients } = useQuery({
@@ -203,25 +223,9 @@ export default function WhatsAppSimulator() {
 
   useEffect(() => {
     chatEndRefOperator.current?.scrollIntoView({ behavior: 'smooth' });
-    chatEndRefCustomer.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chats, typing]);
 
   // Mutations
-  const customerSendMutation = useMutation({
-    mutationFn: (msg: any) =>
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/whatsapp/customer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(msg),
-      }).then((res) => res.json()),
-    onSuccess: () => {
-      setCustomerText('');
-    },
-  });
-
   const operatorSendMutation = useMutation({
     mutationFn: (msg: any) =>
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/whatsapp/operator`, {
@@ -286,15 +290,6 @@ export default function WhatsAppSimulator() {
     },
   });
 
-  const handleCustomerSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customerText.trim() || !selectedClientId) return;
-    customerSendMutation.mutate({
-      clientId: selectedClientId,
-      mensagem: customerText,
-    });
-  };
-
   const handleOperatorSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!operatorText.trim() || !selectedClientId) return;
@@ -302,6 +297,29 @@ export default function WhatsAppSimulator() {
       clientId: selectedClientId,
       mensagem: operatorText,
     });
+    setShowEmojiPicker(false);
+    setShowQuickReplies(false);
+  };
+
+  const insertEmoji = (emoji: string) => {
+    const input = operatorInputRef.current;
+    if (input) {
+      const start = input.selectionStart ?? 0;
+      const end = input.selectionEnd ?? 0;
+      const text = operatorText;
+      const before = text.substring(0, start);
+      const after = text.substring(end, text.length);
+      const newText = before + emoji + after;
+      setOperatorText(newText);
+      
+      const newCursorPos = start + emoji.length;
+      setTimeout(() => {
+        input.focus();
+        input.setSelectionRange(newCursorPos, newCursorPos);
+      }, 0);
+    } else {
+      setOperatorText((prev) => prev + emoji);
+    }
   };
 
   const handleQuickBookSubmit = (e: React.FormEvent) => {
@@ -408,9 +426,7 @@ export default function WhatsAppSimulator() {
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_0.7fr] gap-8 min-h-[650px]">
-      {/* PAINEL ESQUERDO: Whatsapp Web Clone (CRM / Recepção) */}
-      <div className="bg-zinc-100 rounded-2xl overflow-hidden flex flex-col h-[680px] border border-zinc-300 shadow-xl relative">
+    <div className="bg-zinc-100 rounded-2xl overflow-hidden flex flex-col h-[680px] border border-zinc-300 shadow-xl relative w-full">
         <div className="flex-1 grid grid-cols-1 md:grid-cols-[280px_1fr] divide-x divide-zinc-300 overflow-hidden h-full">
           
           {/* Chat List (Sidebar Esquerda Whatsapp) */}
@@ -609,7 +625,10 @@ export default function WhatsAppSimulator() {
                             key={qr.id}
                             type="button"
                             onClick={() => selectQuickReply(qr.conteudo)}
+                            onMouseEnter={() => setHoveredQuickReplyText(qr.conteudo)}
+                            onMouseLeave={() => setHoveredQuickReplyText(null)}
                             className="w-full text-left p-2 hover:bg-zinc-50 rounded-lg text-xs leading-snug border border-zinc-100 hover:border-zinc-200 transition-colors"
+                            title={qr.conteudo}
                           >
                             <strong className="block text-[9px] uppercase text-davinci-gold tracking-wider mb-0.5">{qr.titulo}</strong>
                             <span className="text-davinci-black line-clamp-2">{qr.conteudo}</span>
@@ -619,22 +638,61 @@ export default function WhatsAppSimulator() {
                     </div>
                   )}
 
+                  {/* Quick Replies Tooltip Preview */}
+                  {showQuickReplies && hoveredQuickReplyText && (
+                    <div className="absolute bottom-16 left-[304px] bg-zinc-950/95 text-white border border-zinc-800 rounded-xl p-3 shadow-2xl z-30 w-80 max-h-60 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+                      <div className="text-[9px] font-bold text-davinci-gold uppercase tracking-wider mb-1.5 pb-1 border-b border-zinc-800 flex items-center gap-1.5">
+                        <Sparkles className="h-3 w-3 text-davinci-gold fill-davinci-gold" />
+                        Visualização Completa
+                      </div>
+                      <div className="text-xs font-medium text-zinc-300">{hoveredQuickReplyText}</div>
+                    </div>
+                  )}
+
                   {/* Emoji Picker Popover */}
                   {showEmojiPicker && (
-                    <div className="absolute bottom-16 left-4 bg-white border border-zinc-200 rounded-xl p-3 shadow-2xl z-20 w-56 grid grid-cols-6 gap-2">
-                      {['😀', '😂', '😍', '👍', '🙏', '🎉', '👏', '🔥', '❤️', '🤔', '😎', '😜'].map((emoji) => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          onClick={() => {
-                            setOperatorText((prev) => prev + emoji);
-                            setShowEmojiPicker(false);
-                          }}
-                          className="text-lg hover:scale-125 transition-transform p-1 cursor-pointer hover:bg-zinc-50 rounded"
-                        >
-                          {emoji}
+                    <div className="absolute bottom-16 left-4 bg-white border border-zinc-200 rounded-xl p-3 shadow-2xl z-20 w-72 h-64 flex flex-col">
+                      <div className="flex justify-between items-center pb-2 border-b border-zinc-100 shrink-0">
+                        <span className="text-[10px] font-bold text-davinci-gray uppercase tracking-widest flex items-center gap-1">
+                          <Smile className="h-3.5 w-3.5 text-davinci-gold fill-davinci-gold/20" />
+                          Emojis
+                        </span>
+                        <button onClick={() => setShowEmojiPicker(false)} className="text-davinci-gray hover:text-davinci-black cursor-pointer">
+                          <X className="h-4 w-4" />
                         </button>
-                      ))}
+                      </div>
+                      
+                      {/* Tabs */}
+                      <div className="flex gap-1.5 py-1.5 overflow-x-auto scrollbar-none shrink-0 border-b border-zinc-50">
+                        {EMOJI_CATEGORIES.map((cat, idx) => (
+                          <button
+                            key={cat.name}
+                            type="button"
+                            onClick={() => setActiveEmojiTab(idx)}
+                            className={`px-2 py-0.5 rounded text-[9px] font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                              activeEmojiTab === idx
+                                ? 'bg-davinci-gold/15 text-davinci-gold'
+                                : 'text-davinci-gray hover:bg-zinc-50'
+                            }`}
+                          >
+                            {cat.name}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Emoji Grid */}
+                      <div className="flex-1 overflow-y-auto p-1.5 grid grid-cols-6 gap-2 mt-1.5">
+                        {EMOJI_CATEGORIES[activeEmojiTab].emojis.map((emoji) => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => insertEmoji(emoji)}
+                            className="text-lg hover:scale-125 transition-transform p-1 cursor-pointer hover:bg-zinc-50 rounded flex items-center justify-center h-8 w-8"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -650,7 +708,10 @@ export default function WhatsAppSimulator() {
                   <form onSubmit={handleOperatorSend} className="p-2.5 bg-[#f0f2f5] border-t border-zinc-200 flex gap-2 items-center h-14 shrink-0 z-10">
                     <div className="flex gap-2 text-zinc-500">
                       <Smile
-                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        onClick={() => {
+                          setShowEmojiPicker(!showEmojiPicker);
+                          setShowQuickReplies(false);
+                        }}
                         className={`h-5 w-5 cursor-pointer hover:text-davinci-black transition-colors ${showEmojiPicker ? 'text-davinci-gold' : ''}`}
                       />
                       <Paperclip
@@ -659,7 +720,10 @@ export default function WhatsAppSimulator() {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowQuickReplies(!showQuickReplies)}
+                        onClick={() => {
+                          setShowQuickReplies(!showQuickReplies);
+                          setShowEmojiPicker(false);
+                        }}
                         className={`p-0.5 rounded transition-colors cursor-pointer ${showQuickReplies ? 'text-davinci-gold bg-davinci-gold/15' : 'hover:text-davinci-black'}`}
                         title="Respostas rápidas"
                       >
@@ -668,6 +732,7 @@ export default function WhatsAppSimulator() {
                     </div>
 
                     <input
+                      ref={operatorInputRef}
                       type="text"
                       value={operatorText}
                       onChange={(e) => setOperatorText(e.target.value)}
@@ -691,7 +756,7 @@ export default function WhatsAppSimulator() {
 
             {/* Ficha CRM Rápida Integrada (Whatsapp Web Contact Info) */}
             {selectedClient && showInfoSidebar && (
-              <div className="absolute right-0 top-0 h-full w-[280px] border-l border-zinc-200 bg-white flex flex-col overflow-hidden shrink-0 shadow-2xl z-20 animate-slide-in">
+              <div className="absolute md:relative right-0 top-0 h-full w-[280px] border-l border-zinc-200 bg-white flex flex-col overflow-hidden shrink-0 shadow-2xl md:shadow-none z-20 md:z-auto animate-slide-in">
                 
                 {/* Header info */}
                 <div className="p-3 bg-[#f0f2f5] border-b border-zinc-200 flex justify-between items-center h-14 shrink-0">
@@ -979,113 +1044,5 @@ export default function WhatsAppSimulator() {
           </div>
         </div>
       </div>
-
-      {/* PAINEL DIREITO: Simulador de Celular do Cliente (Estilo Whatsapp Web Test Sandbox) */}
-      <div className="flex flex-col items-center justify-center">
-        <div className="w-[320px] h-[680px] bg-white border-[10px] border-[#D8C3A5] rounded-[48px] shadow-2xl relative overflow-hidden flex flex-col ring-4 ring-zinc-100/50 shrink-0">
-          {/* Speaker / Notch */}
-          <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-28 h-5 bg-white border border-zinc-200 rounded-full z-30 flex items-center justify-center">
-            <div className="w-12 h-1 bg-zinc-300 rounded-full" />
-          </div>
-
-          {/* Screen Content */}
-          <div className="flex-1 flex flex-col pt-8 bg-zinc-50 overflow-hidden text-xs text-davinci-black">
-            {/* Phone Whatsapp Header */}
-            <div className="bg-[#f0f2f5] px-3.5 py-2.5 border-b border-zinc-200 flex items-center justify-between h-14 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-davinci-gold/20 border border-davinci-gold flex items-center justify-center text-[10px] font-bold text-davinci-gold">
-                  EP
-                </div>
-                <div>
-                  <h4 className="text-[10px] font-bold text-davinci-black flex items-center gap-1 leading-none">
-                    Estabelecimento Premium
-                  </h4>
-                  <span className="text-[8px] text-emerald-600 font-bold flex items-center gap-0.5 mt-0.5">
-                    <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                    online
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex gap-3 text-zinc-500">
-                <Phone className="h-3.5 w-3.5" />
-                <Video className="h-3.5 w-3.5" />
-                <MoreVertical className="h-3.5 w-3.5" />
-              </div>
-            </div>
-
-            {/* Sandbox Title */}
-            <div className="bg-davinci-gold/10 border-b border-davinci-gold/20 px-3 py-1.5 text-[8px] text-davinci-gold text-center font-bold uppercase tracking-wider flex items-center justify-center gap-1 shrink-0">
-              <Smartphone className="h-3 w-3" />
-              Sandbox Cliente
-            </div>
-
-            {/* Simulated Chat Messages List */}
-            <div 
-              className="flex-1 p-3 overflow-y-auto space-y-2 relative bg-[#efeae2]"
-              style={{
-                backgroundImage: 'radial-gradient(#d3c3a9 0.5px, transparent 0.5px), radial-gradient(#d3c3a9 0.5px, #efeae2 0.5px)',
-                backgroundSize: '16px 16px',
-                backgroundPosition: '0 0, 8px 8px',
-                opacity: 0.95
-              }}
-            >
-              {chats.map((msg: any) => {
-                const isCustomer = msg.tipo === 'RECEIVED';
-                return (
-                  <div
-                    key={msg.id}
-                    className={`p-2.5 rounded-lg max-w-[80%] text-[11px] leading-relaxed shadow-sm relative ${
-                      isCustomer
-                        ? 'bg-[#d9fdd3] text-davinci-black ml-auto rounded-tr-none'
-                        : 'bg-white text-davinci-black mr-auto rounded-tl-none border border-zinc-200/60'
-                    }`}
-                  >
-                    {renderMessageContent(msg.mensagem)}
-                    <div className="flex justify-end items-center gap-0.5 mt-1 text-[7px] text-davinci-gray select-none leading-none">
-                      <span>{new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                      {isCustomer && <CheckCheck className="h-2.5 w-2.5 text-sky-500 inline" />}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {typing && (
-                <div className="bg-white border border-zinc-200/60 text-davinci-gray mr-auto p-2 rounded-lg text-[10px] italic flex items-center gap-1.5 shadow-sm rounded-tl-none">
-                  <span>Digitando</span>
-                  <span className="flex gap-0.5">
-                    <span className="w-1 h-1 bg-davinci-gold rounded-full animate-bounce" />
-                    <span className="w-1 h-1 bg-davinci-gold rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <span className="w-1 h-1 bg-davinci-gold rounded-full animate-bounce [animation-delay:0.4s]" />
-                  </span>
-                </div>
-              )}
-
-              <div ref={chatEndRefCustomer} />
-            </div>
-
-            {/* Input keyboard Area */}
-            <form onSubmit={handleCustomerSend} className="p-2.5 bg-[#f0f2f5] border-t border-zinc-200 flex gap-2 items-center h-14 shrink-0 z-10">
-              <input
-                type="text"
-                value={customerText}
-                onChange={(e) => setCustomerText(e.target.value)}
-                placeholder="Mensagem do cliente..."
-                className="flex-1 min-w-0 bg-white border border-zinc-200 rounded-full px-4 py-2 text-[11px] text-davinci-black focus:outline-none focus:border-davinci-gold shadow-sm"
-              />
-              <button
-                type="submit"
-                className="p-2 rounded-full bg-davinci-gold text-white hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-md flex items-center justify-center shrink-0"
-              >
-                <Send className="h-3.5 w-3.5" />
-              </button>
-            </form>
-          </div>
-
-          {/* iPhone Home indicator */}
-          <div className="h-1.5 w-28 bg-zinc-300 rounded-full mx-auto mb-2 mt-1 z-30 shrink-0" />
-        </div>
-      </div>
-    </div>
   );
 }
