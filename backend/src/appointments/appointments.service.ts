@@ -93,6 +93,23 @@ export class AppointmentsService {
       },
     });
 
+    // Ensure the service is linked to the professional and the client is linked to the professional
+    try {
+      await this.prisma.barber.update({
+        where: { id: data.barberId },
+        data: {
+          services: {
+            connect: { id: data.serviceId },
+          },
+          assignedClients: {
+            connect: { id: clientId },
+          },
+        },
+      });
+    } catch (err) {
+      console.error('Failed to link service or client to barber:', err);
+    }
+
     this.wsGateway.broadcast('appointment-created', appointment);
     return appointment;
   }

@@ -165,9 +165,7 @@ export default function DashboardCalendar() {
     setSelectedBarberFilter('ALL');
   };
 
-  const allowedServices = selectedCell?.barberId
-    ? services.filter((s: any) => s.barbers?.some((b: any) => b.id === selectedCell.barberId))
-    : services;
+  const allowedServices = services;
 
   // Mutations
   const createMutation = useMutation({
@@ -182,6 +180,8 @@ export default function DashboardCalendar() {
       }).then((res) => res.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['barbers'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
       setIsNewModalOpen(false);
       resetForm();
     },
