@@ -144,7 +144,7 @@ export default function DashboardPage() {
             <div
               id="dashboard-tab-content-calendar"
               data-demo-title="Agenda inteligente"
-              data-demo-description="Esta área centraliza os agendamentos do dia, a ocupação dos profissionais e o andamento dos atendimentos."
+              data-demo-description="Esta área centraliza os agendamentos do dia e permite criar novos horários com busca de cliente, cadastro rápido, seleção de serviço por drilldown e escolha visual do profissional."
             >
               <DashboardCalendar />
             </div>

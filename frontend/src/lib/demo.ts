@@ -72,6 +72,13 @@ export const DEMO_TOUR_CONTENT: Record<
         selector: '#dashboard-tab-content-calendar',
       },
       {
+        title: 'Agendamento Guiado',
+        description: 'Crie agendamentos pela própria grade: busque clientes por compatibilidade, cadastre cliente novo com aniversário, escolha serviço por drilldown e selecione o profissional em popup visual com foto, função e especialidade.',
+        href: '/dashboard?tab=calendar',
+        cta: 'Ver agendamento',
+        selector: '#dashboard-tab-content-calendar',
+      },
+      {
         title: 'Gestão de Clientes',
         description: 'Banco de dados centralizado. Veja o histórico de visitas, ticket médio e preferências de cada cliente para estruturar campanhas de marketing.',
         href: '/dashboard?tab=crm',
@@ -166,6 +173,13 @@ export const DEMO_TOUR_CONTENT: Record<
         description: 'Operação da recepção. Controle a fila de chegada, faça novos agendamentos, adicione encaixes e mude status de andamento.',
         href: '/dashboard?tab=calendar',
         cta: 'Abrir agenda',
+        selector: '#dashboard-tab-content-calendar',
+      },
+      {
+        title: 'Novo Agendamento',
+        description: 'A recepção pode pesquisar clientes cadastrados, criar cliente novo com dia e mês de nascimento, selecionar o serviço em drilldown e escolher o profissional por cards com foto.',
+        href: '/dashboard?tab=calendar',
+        cta: 'Criar agendamento',
         selector: '#dashboard-tab-content-calendar',
       },
       {

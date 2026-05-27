@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, User, Tag, Clock, Plus, CheckCircle, Play, Smile, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, CheckCircle, Play, Smile, XCircle, Search } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 9); // 09h às 20h
@@ -102,6 +102,16 @@ export default function DashboardCalendar() {
   // Form states for new appointment
   const [newClientId, setNewClientId] = useState('');
   const [newServiceId, setNewServiceId] = useState('');
+  const [newBarberId, setNewBarberId] = useState('');
+  const [clientSearch, setClientSearch] = useState('');
+  const [serviceSearch, setServiceSearch] = useState('');
+  const [barberSearch, setBarberSearch] = useState('');
+  const [activeLookup, setActiveLookup] = useState<'client' | 'service' | null>(null);
+  const [isBarberPickerOpen, setIsBarberPickerOpen] = useState(false);
+  const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [newClientName, setNewClientName] = useState('');
+  const [newClientPhone, setNewClientPhone] = useState('');
+  const [newClientBirthday, setNewClientBirthday] = useState('');
 
   // Clock state for live timeline
   const [now, setNow] = useState(new Date());
@@ -167,6 +177,51 @@ export default function DashboardCalendar() {
   };
 
   const allowedServices = services;
+  const normalizeSearch = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  const sortByName = (items: any[], getName: (item: any) => string) =>
+    [...items].sort((a, b) => getName(a).localeCompare(getName(b), 'pt-BR', { sensitivity: 'base' }));
+
+  const filteredClientsForModal = sortByName(clients, (client) => client.nome || '').filter((client: any) => {
+    const search = normalizeSearch(clientSearch);
+    const phone = String(client.telefone || '').replace(/\D/g, '');
+    return (
+      normalizeSearch(client.nome || '').includes(search) ||
+      phone.includes(clientSearch.replace(/\D/g, ''))
+    );
+  });
+
+  const filteredServicesForModal = sortByName(allowedServices, (service) => service.nome || '').filter((service: any) => {
+    const search = normalizeSearch(serviceSearch);
+    return (
+      normalizeSearch(service.nome || '').includes(search) ||
+      normalizeSearch(service.descricao || '').includes(search) ||
+      String(service.preco || '').includes(serviceSearch)
+    );
+  });
+
+  const visibleClientsForModal = filteredClientsForModal.slice(0, 8);
+  const visibleServicesForModal = filteredServicesForModal.slice(0, 8);
+  const shouldShowClientResults = activeLookup === 'client' && clientSearch.trim().length > 0;
+  const shouldShowServiceResults = activeLookup === 'service' && serviceSearch.trim().length > 0;
+  const selectedService = services.find((service: any) => service.id === newServiceId);
+  const selectedBarber = barbers.find((barber: any) => barber.id === newBarberId);
+  const selectedServiceBarberIds = new Set((selectedService?.barbers || []).map((barber: any) => barber.id));
+  const compatibleBarbers = selectedServiceBarberIds.size > 0
+    ? barbers.filter((barber: any) => selectedServiceBarberIds.has(barber.id))
+    : barbers;
+  const filteredCompatibleBarbers = sortByName(compatibleBarbers, (barber) => barber.user?.nome || '').filter((barber: any) => {
+    const search = normalizeSearch(barberSearch);
+    return (
+      normalizeSearch(barber.user?.nome || '').includes(search) ||
+      normalizeSearch(barber.categoria || '').includes(search) ||
+      normalizeSearch(barber.especialidade || '').includes(search)
+    );
+  });
 
   // Mutations
   const createMutation = useMutation({
@@ -207,6 +262,45 @@ export default function DashboardCalendar() {
     },
   });
 
+  const createClientMutation = useMutation({
+    mutationFn: (newClient: any) =>
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/clients`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(newClient),
+      }).then(async (res) => {
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          throw new Error(data?.message || 'Não foi possível cadastrar o cliente.');
+        }
+        return data;
+      }),
+    onSuccess: (client) => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setNewClientId(client.id);
+      setClientSearch(client.nome);
+      setShowNewClientForm(false);
+      setNewClientName('');
+      setNewClientPhone('');
+      setNewClientBirthday('');
+      addNotification({
+        title: 'Cliente cadastrado',
+        description: 'O novo cliente foi selecionado para este agendamento.',
+        type: 'success',
+      });
+    },
+    onError: (err: any) => {
+      addNotification({
+        title: 'Erro ao cadastrar cliente',
+        description: err.message || 'Verifique nome e telefone.',
+        type: 'error',
+      });
+    },
+  });
+
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments/${id}`, {
@@ -227,6 +321,16 @@ export default function DashboardCalendar() {
   const resetForm = () => {
     setNewClientId('');
     setNewServiceId('');
+    setNewBarberId('');
+    setClientSearch('');
+    setServiceSearch('');
+    setBarberSearch('');
+    setActiveLookup(null);
+    setIsBarberPickerOpen(false);
+    setShowNewClientForm(false);
+    setNewClientName('');
+    setNewClientPhone('');
+    setNewClientBirthday('');
   };
 
   const adjustDate = (days: number) => {
@@ -314,13 +418,15 @@ export default function DashboardCalendar() {
       setIsStatusModalOpen(true);
     } else {
       setSelectedCell({ hour, barberId });
+      setNewBarberId(barberId);
+      setBarberSearch('');
       setIsNewModalOpen(true);
     }
   };
 
   const handleCreateAppointment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCell || !newClientId || !newServiceId) return;
+    if (!selectedCell || !newClientId || !newServiceId || !newBarberId) return;
 
     const appointmentDate = new Date(selectedDate);
     appointmentDate.setHours(selectedCell.hour, 0, 0, 0);
@@ -328,9 +434,20 @@ export default function DashboardCalendar() {
     createMutation.mutate({
       clientId: newClientId,
       serviceId: newServiceId,
-      barberId: selectedCell.barberId,
+      barberId: newBarberId,
       data: appointmentDate,
       status: 'CONFIRMED',
+    });
+  };
+
+  const handleCreateClient = () => {
+    if (!newClientName.trim() || !newClientPhone.trim()) return;
+
+    createClientMutation.mutate({
+      nome: newClientName.trim(),
+      telefone: newClientPhone.trim(),
+      aniversario: newClientBirthday.trim() || undefined,
+      origem: 'Agenda',
     });
   };
 
@@ -595,7 +712,7 @@ export default function DashboardCalendar() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white border border-zinc-200 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl"
+              className="bg-white border border-zinc-200 rounded-2xl w-full max-w-xl max-h-[92vh] overflow-hidden shadow-2xl flex flex-col"
             >
               <div className="p-6 border-b border-zinc-200/80 bg-background flex justify-between items-center">
                 <h3 className="text-md font-bold text-davinci-black uppercase tracking-wider flex items-center gap-2">
@@ -610,7 +727,7 @@ export default function DashboardCalendar() {
                 </button>
               </div>
 
-              <form onSubmit={handleCreateAppointment} className="p-6 space-y-6">
+              <form onSubmit={handleCreateAppointment} className="p-6 space-y-5 overflow-y-auto">
                 <div className="bg-background p-3 rounded-lg border border-zinc-200/80 flex items-center justify-between text-xs text-davinci-gray font-semibold">
                   <span>Horário: <strong className="text-davinci-black">{`${selectedCell.hour}:00`}</strong></span>
                   <span>Data: <strong className="text-davinci-black">{selectedDate.toLocaleDateString('pt-BR')}</strong></span>
@@ -619,53 +736,336 @@ export default function DashboardCalendar() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-davinci-gray uppercase tracking-wider mb-2">
-                      Selecionar Cliente
+                      Cliente
                     </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-davinci-gray" />
-                      <select
-                        required
-                        value={newClientId}
-                        onChange={(e) => setNewClientId(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-sm cursor-pointer"
-                      >
-                        <option value="" disabled>-- Escolha o cliente --</option>
-                        {clients.map((c: any) => (
-                          <option key={c.id} value={c.id}>{c.nome} ({c.telefone})</option>
-                        ))}
-                      </select>
+                    <div className="relative mb-2">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-davinci-gray" />
+                      <input
+                        type="search"
+                        value={clientSearch}
+                        onFocus={() => setActiveLookup('client')}
+                        onChange={(e) => {
+                          setClientSearch(e.target.value);
+                          setNewClientId('');
+                          setActiveLookup('client');
+                        }}
+                        placeholder="Pesquisar cliente por nome ou telefone..."
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-sm"
+                      />
                     </div>
+                    {shouldShowClientResults && (
+                      <div className="max-h-44 overflow-y-auto rounded-lg border border-zinc-200 bg-white divide-y divide-zinc-100 shadow-sm">
+                        {visibleClientsForModal.length > 0 ? (
+                          visibleClientsForModal.map((client: any) => (
+                            <button
+                              key={client.id}
+                              type="button"
+                              onClick={() => {
+                                setNewClientId(client.id);
+                                setClientSearch(client.nome);
+                                setActiveLookup(null);
+                              }}
+                              className="w-full px-3 py-2 text-left transition-colors cursor-pointer hover:bg-davinci-gold/10"
+                            >
+                              <span className="block text-xs font-bold text-davinci-black">{client.nome}</span>
+                              <span className="block text-[10px] font-semibold text-davinci-gray">{client.telefone}</span>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="px-3 py-3 text-[11px] font-semibold text-davinci-gray">Nenhum cliente encontrado.</p>
+                        )}
+                      </div>
+                    )}
+                    {newClientId && (
+                      <p className="mt-1 text-[10px] font-bold text-davinci-gold">
+                        Cliente selecionado: {clients.find((client: any) => client.id === newClientId)?.nome}
+                      </p>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const hasLetters = /[A-Za-zÀ-ÿ]/.test(clientSearch);
+                        const digits = clientSearch.replace(/\D/g, '');
+                        setShowNewClientForm(true);
+                        setNewClientName(hasLetters ? clientSearch : '');
+                        setNewClientPhone(digits.length >= 8 ? clientSearch : '');
+                        setNewClientBirthday('');
+                      }}
+                      className="mt-2 text-[11px] font-bold text-davinci-gold hover:underline cursor-pointer"
+                    >
+                      Cliente não cadastrado? Criar novo cliente
+                    </button>
+
+                    {showNewClientForm && (
+                      <div className="mt-3 rounded-xl border border-davinci-gold/30 bg-davinci-gold/5 p-3 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <input
+                            type="text"
+                            value={newClientName}
+                            onChange={(e) => setNewClientName(e.target.value)}
+                            placeholder="Nome do cliente"
+                            className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-sm"
+                          />
+                          <input
+                            type="tel"
+                            value={newClientPhone}
+                            onChange={(e) => setNewClientPhone(e.target.value)}
+                            placeholder="WhatsApp / telefone"
+                            className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-sm"
+                          />
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={newClientBirthday}
+                            onChange={(e) => setNewClientBirthday(e.target.value)}
+                            placeholder="Aniversário DD/MM"
+                            className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-sm"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowNewClientForm(false)}
+                            className="px-3 py-1.5 text-xs font-bold text-davinci-gray hover:text-davinci-black cursor-pointer"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCreateClient}
+                            disabled={createClientMutation.isPending || !newClientName.trim() || !newClientPhone.trim()}
+                            className="px-3 py-1.5 rounded-lg bg-davinci-gold text-white text-xs font-bold cursor-pointer disabled:opacity-50"
+                          >
+                            {createClientMutation.isPending ? 'Cadastrando...' : 'Cadastrar e selecionar'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-davinci-gray uppercase tracking-wider mb-2">
-                      Serviço Premium
+                      Serviço
                     </label>
-                    <div className="relative">
-                      <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-davinci-gray" />
-                      <select
-                        required
-                        value={newServiceId}
-                        onChange={(e) => setNewServiceId(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-sm cursor-pointer"
-                      >
-                        <option value="" disabled>-- Escolha o serviço --</option>
-                        {allowedServices.map((s: any) => (
-                          <option key={s.id} value={s.id}>{s.nome} - R$ {s.preco}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveLookup(activeLookup === 'service' ? null : 'service');
+                        setServiceSearch('');
+                      }}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left hover:border-davinci-gold/60 hover:bg-davinci-gold/5 transition-colors cursor-pointer"
+                    >
+                      {selectedService ? (
+                        <>
+                          <span className="block text-xs font-bold text-davinci-black">{selectedService.nome}</span>
+                          <span className="block text-[10px] font-semibold text-davinci-gray mt-0.5">
+                            R$ {Number(selectedService.preco).toFixed(2)} • {selectedService.duracao} min
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="block text-xs font-bold text-davinci-black">Escolher serviço</span>
+                          <span className="block text-[10px] font-semibold text-davinci-gray mt-0.5">
+                            Abrir catálogo e pesquisar por nome, descrição ou valor
+                          </span>
+                        </>
+                      )}
+                    </button>
+                    {activeLookup === 'service' && (
+                      <div className="mt-2 rounded-xl border border-zinc-200 bg-zinc-50/60 p-3 space-y-2">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-davinci-gray" />
+                          <input
+                            type="search"
+                            value={serviceSearch}
+                            onChange={(e) => {
+                              setServiceSearch(e.target.value);
+                              setNewServiceId('');
+                            }}
+                            placeholder="Pesquisar serviço..."
+                            className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-sm"
+                          />
+                        </div>
+                        {shouldShowServiceResults ? (
+                          <div className="max-h-44 overflow-y-auto rounded-lg border border-zinc-200 bg-white divide-y divide-zinc-100">
+                            {visibleServicesForModal.length > 0 ? (
+                              visibleServicesForModal.map((service: any) => (
+                                <button
+                                  key={service.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setNewServiceId(service.id);
+                                    setServiceSearch('');
+                                    setActiveLookup(null);
+                                  }}
+                                  className="w-full px-3 py-2 text-left transition-colors cursor-pointer hover:bg-davinci-gold/10"
+                                >
+                                  <span className="block text-xs font-bold text-davinci-black">{service.nome}</span>
+                                  <span className="block text-[10px] font-semibold text-davinci-gray">
+                                    R$ {Number(service.preco).toFixed(2)} • {service.duracao} min
+                                  </span>
+                                </button>
+                              ))
+                            ) : (
+                              <p className="px-3 py-3 text-[11px] font-semibold text-davinci-gray">Nenhum serviço encontrado.</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-[10px] font-semibold text-davinci-gray">
+                            Digite para listar serviços compatíveis.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-davinci-gray uppercase tracking-wider mb-2">
+                      Profissional
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsBarberPickerOpen(true)}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left hover:border-davinci-gold/60 hover:bg-davinci-gold/5 transition-colors cursor-pointer"
+                    >
+                      {selectedBarber ? (
+                        <span className="flex items-center gap-3">
+                          <span className="h-10 w-10 rounded-full overflow-hidden bg-davinci-gold/10 border border-davinci-gold/30 flex items-center justify-center text-xs font-bold text-davinci-gold shrink-0">
+                            {selectedBarber.fotoUrl ? (
+                              <img src={selectedBarber.fotoUrl} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              selectedBarber.user.nome.split(' ').map((part: string) => part[0]).join('').slice(0, 2).toUpperCase()
+                            )}
+                          </span>
+                          <span>
+                            <span className="block text-xs font-bold text-davinci-black">{selectedBarber.user.nome}</span>
+                            <span className="block text-[10px] font-semibold text-davinci-gray mt-0.5">
+                              {selectedBarber.categoria || 'Profissional'} • {selectedService ? 'compatível com o serviço' : 'pré-selecionado pelo horário'}
+                            </span>
+                          </span>
+                        </span>
+                      ) : (
+                        <>
+                          <span className="block text-xs font-bold text-davinci-black">Escolher profissional</span>
+                          <span className="block text-[10px] font-semibold text-davinci-gray mt-0.5">
+                            Abrir popup com fotos e especialidades
+                          </span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
 
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="w-full py-3 bg-gold-gradient rounded-lg text-white font-bold text-sm hover:scale-[1.01] active:scale-[0.99] transition-all shadow-[0_4px_15px_rgba(197,168,128,0.25)] cursor-pointer"
+                  className="w-full py-3 bg-gold-gradient rounded-lg text-white font-bold text-sm hover:scale-[1.01] active:scale-[0.99] transition-all shadow-[0_4px_15px_rgba(197,168,128,0.25)] cursor-pointer disabled:opacity-60"
                 >
                   {createMutation.isPending ? 'Agendando...' : 'Confirmar Agendamento'}
                 </button>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isBarberPickerOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.96, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.96, opacity: 0 }}
+              className="bg-white border border-zinc-200 rounded-2xl w-full max-w-3xl max-h-[88vh] overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-5 border-b border-zinc-200/80 bg-background flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-bold text-davinci-black uppercase tracking-wider">
+                    Escolher Profissional
+                  </h3>
+                  <p className="text-[11px] text-davinci-gray font-semibold mt-1">
+                    {selectedService
+                      ? `Profissionais vinculados ao serviço ${selectedService.nome}.`
+                      : 'Selecione um profissional cadastrado para este horário.'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsBarberPickerOpen(false)}
+                  className="text-davinci-gray hover:text-davinci-black cursor-pointer transition-colors"
+                >
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4 overflow-y-auto">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-davinci-gray" />
+                  <input
+                    type="search"
+                    value={barberSearch}
+                    onChange={(e) => setBarberSearch(e.target.value)}
+                    placeholder="Pesquisar por nome, função ou especialidade..."
+                    className="w-full pl-10 pr-4 py-2 bg-white border border-zinc-200 rounded-lg text-davinci-black focus:outline-none focus:border-davinci-gold text-sm"
+                  />
+                </div>
+
+                {filteredCompatibleBarbers.length === 0 ? (
+                  <div className="p-8 text-center bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-davinci-gray font-semibold">
+                    Nenhum profissional compatível encontrado.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {filteredCompatibleBarbers.map((barber: any) => {
+                      const initials = barber.user.nome
+                        .split(' ')
+                        .map((part: string) => part[0])
+                        .join('')
+                        .slice(0, 2)
+                        .toUpperCase();
+
+                      return (
+                        <button
+                          key={barber.id}
+                          type="button"
+                          onClick={() => {
+                            setNewBarberId(barber.id);
+                            setBarberSearch('');
+                            setIsBarberPickerOpen(false);
+                          }}
+                          className={`text-left rounded-xl border p-4 transition-all cursor-pointer hover:border-davinci-gold hover:bg-davinci-gold/5 ${
+                            newBarberId === barber.id
+                              ? 'border-davinci-gold bg-davinci-gold/10'
+                              : 'border-zinc-200 bg-white'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="h-14 w-14 rounded-full overflow-hidden bg-davinci-gold/10 border border-davinci-gold/30 flex items-center justify-center text-sm font-bold text-davinci-gold shrink-0">
+                              {barber.fotoUrl ? (
+                                <img src={barber.fotoUrl} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                initials
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-bold text-davinci-black truncate">{barber.user.nome}</h4>
+                              <p className="text-[10px] text-davinci-gold font-bold uppercase tracking-wider mt-0.5">
+                                {barber.categoria || 'Profissional'}
+                              </p>
+                              <p className="text-[10px] text-davinci-gray font-semibold leading-relaxed mt-2 line-clamp-3">
+                                {barber.miniBio || barber.especialidade || 'Profissional cadastrado.'}
+                              </p>
+                              <p className="text-[10px] text-davinci-gray font-bold mt-2">
+                                Nota {Number(barber.notaMedia || 5).toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </motion.div>
           </div>
         )}
