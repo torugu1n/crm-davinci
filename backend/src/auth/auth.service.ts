@@ -88,19 +88,22 @@ export class AuthService {
           observacoes: 'Cliente cadastrado via portal simplificado.',
         },
       });
-    } else if (
-      client.nome !== normalizedName ||
-      client.telefone !== formattedPhone ||
-      (normalizedBirthday && client.aniversario !== normalizedBirthday)
-    ) {
-      client = await this.prisma.client.update({
-        where: { id: client.id },
-        data: {
-          nome: normalizedName,
-          telefone: formattedPhone,
-          aniversario: normalizedBirthday ?? client.aniversario,
-        },
-      });
+    } else {
+      const isTempName = !client.nome || client.nome.toLowerCase().includes('aguardando');
+      const nameChanged = isTempName && client.nome !== normalizedName;
+      const phoneChanged = client.telefone !== formattedPhone;
+      const birthdayChanged = normalizedBirthday && client.aniversario !== normalizedBirthday;
+
+      if (nameChanged || phoneChanged || birthdayChanged) {
+        client = await this.prisma.client.update({
+          where: { id: client.id },
+          data: {
+            nome: nameChanged ? normalizedName : undefined,
+            telefone: phoneChanged ? formattedPhone : undefined,
+            aniversario: birthdayChanged ? normalizedBirthday : undefined,
+          },
+        });
+      }
     }
 
     const payload = { sub: client.id, phone: client.telefone, role: 'CLIENT' };
