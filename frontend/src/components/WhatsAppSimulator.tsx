@@ -104,6 +104,8 @@ export default function WhatsAppSimulator() {
 
   const chatEndRefOperator = useRef<HTMLDivElement | null>(null);
   const operatorInputRef = useRef<HTMLInputElement | null>(null);
+  const emojiPickerRef = useRef<HTMLDivElement | null>(null);
+  const quickRepliesRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch clients
   const { data: rawClients } = useQuery({
@@ -192,6 +194,24 @@ export default function WhatsAppSimulator() {
       setEditTags(selectedClient.tags || []);
     }
   }, [selectedClientId, selectedClient]);
+
+  // Click outside listener to close popovers
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (showEmojiPicker && emojiPickerRef.current && !emojiPickerRef.current.contains(target)) {
+        setShowEmojiPicker(false);
+      }
+      if (showQuickReplies && quickRepliesRef.current && !quickRepliesRef.current.contains(target)) {
+        setShowQuickReplies(false);
+        setHoveredQuickReplyText(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker, showQuickReplies]);
 
   // WebSockets listener
   useEffect(() => {
@@ -607,7 +627,7 @@ export default function WhatsAppSimulator() {
 
                   {/* Quick Replies Popover */}
                   {showQuickReplies && (
-                    <div className="absolute bottom-16 left-4 bg-white border border-zinc-200 rounded-xl p-3 shadow-2xl z-20 w-72 max-h-48 overflow-y-auto space-y-2">
+                    <div ref={quickRepliesRef} className="absolute bottom-16 left-4 bg-white border border-zinc-200 rounded-xl p-3 shadow-2xl z-20 w-72 max-h-48 overflow-y-auto space-y-2">
                       <div className="flex justify-between items-center pb-2 border-b border-zinc-100">
                         <span className="text-[10px] font-bold text-davinci-gray uppercase tracking-widest flex items-center gap-1">
                           <Zap className="h-3.5 w-3.5 text-davinci-gold fill-davinci-gold" />
@@ -651,7 +671,7 @@ export default function WhatsAppSimulator() {
 
                   {/* Emoji Picker Popover */}
                   {showEmojiPicker && (
-                    <div className="absolute bottom-16 left-4 bg-white border border-zinc-200 rounded-xl p-3 shadow-2xl z-20 w-72 h-64 flex flex-col">
+                    <div ref={emojiPickerRef} className="absolute bottom-16 left-4 bg-white border border-zinc-200 rounded-xl p-3 shadow-2xl z-20 w-72 h-64 flex flex-col">
                       <div className="flex justify-between items-center pb-2 border-b border-zinc-100 shrink-0">
                         <span className="text-[10px] font-bold text-davinci-gray uppercase tracking-widest flex items-center gap-1">
                           <Smile className="h-3.5 w-3.5 text-davinci-gold fill-davinci-gold/20" />
@@ -708,7 +728,8 @@ export default function WhatsAppSimulator() {
                   <form onSubmit={handleOperatorSend} className="p-2.5 bg-[#f0f2f5] border-t border-zinc-200 flex gap-2 items-center h-14 shrink-0 z-10">
                     <div className="flex gap-2 text-zinc-500">
                       <Smile
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setShowEmojiPicker(!showEmojiPicker);
                           setShowQuickReplies(false);
                         }}
@@ -720,7 +741,8 @@ export default function WhatsAppSimulator() {
                       />
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setShowQuickReplies(!showQuickReplies);
                           setShowEmojiPicker(false);
                         }}
