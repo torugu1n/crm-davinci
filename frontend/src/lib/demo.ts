@@ -37,7 +37,7 @@ export const DEMO_PERSONAS: Record<
     description: 'Painel operacional com agenda diária, comissão e ficha de clientes.',
     destination: '/profissional?tab=overview',
     loginType: 'staff',
-    credentials: { login: 'profissional1', senha: 'profissional1' },
+    credentials: { login: 'barbeiro1', senha: 'barbeiro1' },
   },
   client: {
     label: 'Cliente',
