@@ -30,6 +30,7 @@ export interface TenantInfo {
   logoUrl?: string | null;
   primaryColor: string;
   secondaryColor: string;
+  users?: Array<{ id: string; nome: string; email: string }>;
 }
 
 interface StoreState {

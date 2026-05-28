@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class TenantsService {
@@ -7,6 +8,18 @@ export class TenantsService {
 
   async findAll() {
     return this.prisma.tenant.findMany({
+      include: {
+        users: {
+          where: {
+            role: 'ADMIN',
+          },
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -14,6 +27,18 @@ export class TenantsService {
   async findOne(id: string) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id },
+      include: {
+        users: {
+          where: {
+            role: 'ADMIN',
+          },
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+          },
+        },
+      },
     });
     if (!tenant) {
       throw new NotFoundException('Estabelecimento não encontrado');
@@ -40,7 +65,7 @@ export class TenantsService {
 
     const subdomain = data.subdomain.toLowerCase().trim();
     
-    // Check uniqueness
+    // Check uniqueness of tenant
     const existing = await this.prisma.tenant.findFirst({
       where: {
         OR: [
@@ -54,7 +79,21 @@ export class TenantsService {
       throw new BadRequestException('Um estabelecimento com este subdomínio ou domínio personalizado já existe.');
     }
 
-    return this.prisma.tenant.create({
+    // Validate admin credentials if provided
+    let hashedPassword = '';
+    let email = '';
+    if (data.adminEmail && data.adminPassword) {
+      email = data.adminEmail.toLowerCase().trim();
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email }
+      });
+      if (existingUser) {
+        throw new BadRequestException('Já existe um usuário cadastrado com este e-mail.');
+      }
+      hashedPassword = await bcrypt.hash(data.adminPassword, 10);
+    }
+
+    const tenant = await this.prisma.tenant.create({
       data: {
         name: data.name,
         subdomain,
@@ -64,6 +103,27 @@ export class TenantsService {
         secondaryColor: data.secondaryColor || '#18181b',
       },
     });
+
+    if (email && hashedPassword) {
+      try {
+        await this.prisma.user.create({
+          data: {
+            nome: data.adminName || data.name,
+            email,
+            senha: hashedPassword,
+            role: 'ADMIN',
+            roles: ['ADMIN'],
+            tenantId: tenant.id,
+          }
+        });
+      } catch (err: any) {
+        // Rollback tenant creation on user create failure
+        await this.prisma.tenant.delete({ where: { id: tenant.id } });
+        throw new BadRequestException('Falha ao registrar conta de administrador do estabelecimento: ' + err.message);
+      }
+    }
+
+    return tenant;
   }
 
   async update(id: string, data: any) {
@@ -100,6 +160,63 @@ export class TenantsService {
           }
         }
         updateData.customDomain = customDomain;
+      }
+    }
+
+    const existingAdmin = (tenant as any).users?.[0];
+
+    if (data.adminEmail || data.adminPassword || data.adminName) {
+      if (existingAdmin) {
+        const userUpdateData: any = {};
+        if (data.adminName !== undefined) userUpdateData.nome = data.adminName;
+        
+        if (data.adminEmail !== undefined) {
+          const email = data.adminEmail.toLowerCase().trim();
+          if (email !== existingAdmin.email) {
+            const existingUser = await this.prisma.user.findUnique({
+              where: { email },
+            });
+            if (existingUser) {
+              throw new BadRequestException('Já existe um usuário cadastrado com este e-mail.');
+            }
+            userUpdateData.email = email;
+          }
+        }
+
+        if (data.adminPassword) {
+          userUpdateData.senha = await bcrypt.hash(data.adminPassword, 10);
+        }
+
+        if (Object.keys(userUpdateData).length > 0) {
+          await this.prisma.user.update({
+            where: { id: existingAdmin.id },
+            data: userUpdateData,
+          });
+        }
+      } else {
+        if (!data.adminEmail || !data.adminPassword) {
+          throw new BadRequestException('Para cadastrar o administrador principal deste estabelecimento, o e-mail e a senha são obrigatórios.');
+        }
+
+        const email = data.adminEmail.toLowerCase().trim();
+        const existingUser = await this.prisma.user.findUnique({
+          where: { email },
+        });
+        if (existingUser) {
+          throw new BadRequestException('Já existe um usuário cadastrado com este e-mail.');
+        }
+
+        const hashedPassword = await bcrypt.hash(data.adminPassword, 10);
+        await this.prisma.user.create({
+          data: {
+            nome: data.adminName || data.name || tenant.name,
+            email,
+            senha: hashedPassword,
+            role: 'ADMIN',
+            roles: ['ADMIN'],
+            tenantId: tenant.id,
+          },
+        });
       }
     }
 

@@ -17,7 +17,8 @@ import {
   ShieldAlert,
   Loader2,
   Paintbrush,
-  Upload
+  Upload,
+  User
 } from 'lucide-react';
 
 export default function SuperAdminPage() {
@@ -40,7 +41,10 @@ export default function SuperAdminPage() {
     customDomain: '',
     primaryColor: '#C5A880',
     secondaryColor: '#18181b',
-    logoUrl: ''
+    logoUrl: '',
+    adminName: '',
+    adminEmail: '',
+    adminPassword: ''
   });
 
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -131,14 +135,17 @@ export default function SuperAdminPage() {
       customDomain: '',
       primaryColor: '#C5A880',
       secondaryColor: '#18181b',
-      logoUrl: ''
+      logoUrl: '',
+      adminName: '',
+      adminEmail: '',
+      adminPassword: ''
     });
     setError('');
     setModalOpen(true);
   };
 
   // Open Modal for Edit
-  const handleOpenEdit = (tenant: TenantInfo) => {
+  const handleOpenEdit = (tenant: any) => {
     setEditingTenant(tenant);
     setFormData({
       name: tenant.name,
@@ -146,7 +153,10 @@ export default function SuperAdminPage() {
       customDomain: tenant.customDomain || '',
       primaryColor: tenant.primaryColor,
       secondaryColor: tenant.secondaryColor,
-      logoUrl: tenant.logoUrl || ''
+      logoUrl: tenant.logoUrl || '',
+      adminName: tenant.users?.[0]?.nome || '',
+      adminEmail: tenant.users?.[0]?.email || '',
+      adminPassword: ''
     });
     setError('');
     setModalOpen(true);
@@ -163,11 +173,38 @@ export default function SuperAdminPage() {
       return;
     }
 
-    const payload = {
-      ...formData,
+    const existingAdmin = (editingTenant as any)?.users?.[0];
+    const needsAdminCredentials = !editingTenant || !existingAdmin;
+    
+    if (needsAdminCredentials && (!formData.adminEmail || !formData.adminPassword)) {
+      setError('E-mail e senha do administrador principal são obrigatórios.');
+      return;
+    }
+
+    const payload: any = {
+      name: formData.name,
+      subdomain: formData.subdomain,
       customDomain: formData.customDomain.trim() || null,
-      logoUrl: formData.logoUrl.trim() || null
+      logoUrl: formData.logoUrl.trim() || null,
+      primaryColor: formData.primaryColor,
+      secondaryColor: formData.secondaryColor,
     };
+
+    if (needsAdminCredentials) {
+      payload.adminName = formData.adminName.trim();
+      payload.adminEmail = formData.adminEmail.trim();
+      payload.adminPassword = formData.adminPassword;
+    } else {
+      if (formData.adminName.trim() !== (existingAdmin.nome || '')) {
+        payload.adminName = formData.adminName.trim();
+      }
+      if (formData.adminEmail.trim() !== (existingAdmin.email || '')) {
+        payload.adminEmail = formData.adminEmail.trim();
+      }
+      if (formData.adminPassword) {
+        payload.adminPassword = formData.adminPassword;
+      }
+    }
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
@@ -400,7 +437,7 @@ export default function SuperAdminPage() {
                       </div>
                     </div>
 
-                    {/* Domain Meta */}
+                    {/* Domain Meta & Admin User */}
                     <div className="space-y-2 mb-6">
                       <div className="flex items-center text-xs text-zinc-400 bg-zinc-950/60 px-3 py-2 rounded-lg border border-zinc-800/40">
                         <Globe className="h-3.5 w-3.5 mr-2 text-[#C5A880]" />
@@ -412,9 +449,23 @@ export default function SuperAdminPage() {
                       {tenant.customDomain && (
                         <div className="flex items-center text-xs text-zinc-400 bg-zinc-950/60 px-3 py-2 rounded-lg border border-zinc-800/40">
                           <Globe className="h-3.5 w-3.5 mr-2 text-blue-400" />
-                          <span className="font-mono text-zinc-300 overflow-hidden text-ellipsis whitespace-nowrap">
+                          <span className="font-mono text-zinc-300 overflow-hidden text-ellipsis whitespace-nowrap font-semibold">
                             {tenant.customDomain}
                           </span>
+                        </div>
+                      )}
+
+                      {tenant.users?.[0] ? (
+                        <div className="flex items-center text-xs text-zinc-400 bg-zinc-950/60 px-3 py-2 rounded-lg border border-zinc-800/40">
+                          <User className="h-3.5 w-3.5 mr-2 text-green-400" />
+                          <span className="font-mono text-zinc-300 overflow-hidden text-ellipsis whitespace-nowrap">
+                            Admin: {tenant.users[0].email}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center text-xs text-red-400 bg-red-950/20 px-3 py-2 rounded-lg border border-red-800/30">
+                          <AlertTriangle className="h-3.5 w-3.5 mr-2 text-red-500 animate-pulse" />
+                          <span className="font-semibold">Sem administrador cadastrado</span>
                         </div>
                       )}
                     </div>
@@ -622,6 +673,63 @@ export default function SuperAdminPage() {
                       </button>
                     </div>
                   )}
+                </div>
+
+                {/* Administrator Credentials */}
+                <div className="border border-zinc-800 bg-zinc-950/20 p-4 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="block text-xs font-bold text-[#C5A880] uppercase tracking-wider">Conta do Administrador Principal</span>
+                    {editingTenant && (
+                      <span className="text-[9px] bg-zinc-800 text-zinc-300 font-mono px-2 py-0.5 rounded-full">
+                        {((editingTenant as any)?.users?.[0]) ? 'Conta Existente' : 'Sem Conta'}
+                      </span>
+                    )}
+                  </div>
+
+                  {editingTenant && !((editingTenant as any)?.users?.[0]) && (
+                    <div className="p-3 bg-red-950/20 border border-red-800/40 text-red-300 rounded-lg text-[11px] flex items-start space-x-2">
+                      <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5 text-red-500 animate-pulse" />
+                      <span>Este estabelecimento não possui uma conta de acesso vinculada. Cadastre os dados abaixo para habilitar o login do administrador.</span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Nome do Administrador</label>
+                      <input
+                        type="text"
+                        required={!editingTenant || !((editingTenant as any)?.users?.[0])}
+                        value={formData.adminName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, adminName: e.target.value }))}
+                        className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition"
+                        placeholder="Ex: Carlos Silva"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">E-mail de Login</label>
+                      <input
+                        type="email"
+                        required={!editingTenant || !((editingTenant as any)?.users?.[0])}
+                        value={formData.adminEmail}
+                        onChange={(e) => setFormData(prev => ({ ...prev, adminEmail: e.target.value }))}
+                        className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition font-mono"
+                        placeholder="carlos@email.com"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-zinc-400 mb-1.5 uppercase">
+                      {editingTenant && ((editingTenant as any)?.users?.[0]) ? 'Nova Senha do Administrador' : 'Senha de Acesso'}
+                    </label>
+                    <input
+                      type="password"
+                      required={!editingTenant || !((editingTenant as any)?.users?.[0])}
+                      value={formData.adminPassword}
+                      onChange={(e) => setFormData(prev => ({ ...prev, adminPassword: e.target.value }))}
+                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition font-mono"
+                      placeholder={editingTenant && ((editingTenant as any)?.users?.[0]) ? 'Deixe em branco para não alterar' : '••••••••'}
+                    />
+                  </div>
                 </div>
 
                 {/* Theme Colors */}
