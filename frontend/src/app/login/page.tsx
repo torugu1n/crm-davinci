@@ -480,7 +480,7 @@ export default function LoginPage() {
                       <div className="h-4 w-4 border-2 border-davinci-black border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
-                        Entrar no Sistema
+                        Entrar
                         <ShieldCheck className="h-4 w-4 text-davinci-black" />
                       </>
                     )}
