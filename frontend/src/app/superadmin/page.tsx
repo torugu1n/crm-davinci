@@ -26,6 +26,7 @@ export default function SuperAdminPage() {
   const router = useRouter();
 
   const [tenants, setTenants] = useState<TenantInfo[]>([]);
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -100,12 +101,17 @@ export default function SuperAdminPage() {
   };
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
     if (!token || !user || user.role !== 'SUPER_ADMIN') {
       router.push('/login');
       return;
     }
     fetchTenants();
-  }, [token, user]);
+  }, [mounted, token, user, router]);
 
   // Handle Tenant Name changes to slugify subdomain
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -270,6 +276,14 @@ export default function SuperAdminPage() {
     router.push('/login');
   };
 
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-[#09090b] text-[#fafafa] flex items-center justify-center p-6">
+        <Loader2 className="h-10 w-10 text-[#C5A880] animate-spin" />
+      </div>
+    );
+  }
+
   if (!token || !user || user.role !== 'SUPER_ADMIN') {
     return (
       <div className="min-h-screen bg-[#09090b] text-[#fafafa] flex items-center justify-center p-6">
@@ -279,7 +293,7 @@ export default function SuperAdminPage() {
           <p className="text-gray-400 text-sm mb-6">Você precisa estar logado como Super Administrador para acessar esta área.</p>
           <button 
             onClick={() => router.push('/login')}
-            className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition duration-250 font-medium"
+            className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition duration-250 font-medium cursor-pointer"
           >
             Ir para Login
           </button>
