@@ -1,13 +1,13 @@
 <claude-mem-context>
 # Memory Context
 
-# [crm-davinci] recent context, 2026-05-27 4:58pm GMT-3
+# [crm-davinci] recent context, 2026-05-28 9:34am GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 22 obs (6,588t read) | 205,251t work | 97% savings
+Stats: 27 obs (10,089t read) | 598,500t work | 98% savings
 
 ### May 23, 2026
 413 2:12p 🔵 crm-davinci — not a git repository, has .env files
@@ -33,6 +33,12 @@ Stats: 22 obs (6,588t read) | 205,251t work | 97% savings
 569 12:15p 🟣 crm-davinci seedDemoData() completed — work schedules, quick replies, goals, and audit logs added; seed.ts synced with service commissions
 572 12:16p 🔵 crm-davinci build verification started — backend Prisma client generated successfully
 576 12:18p 🔵 crm-davinci frontend production build fails with Turbopack OS error 1 — sandbox port binding restriction
+### May 28, 2026
+578 12:20a 🟣 crm-davinci — full security audit initiated with three specialized skills
+580 12:21a 🔵 crm-davinci — critical security vulnerabilities mapped across backend API surface
+582 12:24a 🔵 crm-davinci — publicly accessible API endpoints without authentication confirmed
+583 " 🔵 crm-davinci — sensitive data exposure and configuration security issues mapped
+584 " 🔵 crm-davinci — webhook security, enumeration risks, and chatbot vulnerabilities confirmed
 
-Access 205k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 599k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

@@ -40,7 +40,7 @@ export class BarbersController {
 
   @Put(':id/profile')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'BARBER', 'SUPER_ADMIN')
+  @Roles('ADMIN', 'BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE', 'SUPER_ADMIN')
   async updateProfile(
     @Param('id') id: string,
     @Body() body: { miniBio?: string; fotoUrl?: string; especialidade?: string },
@@ -66,7 +66,10 @@ export class BarbersController {
   }
 
   @Get(':id/dashboard')
-  async getDashboard(@Param('id') id: string, @ActiveTenantId() tenantId: string) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE', 'SUPER_ADMIN')
+  async getDashboard(@Param('id') id: string, @Request() req: any, @ActiveTenantId() tenantId: string) {
+    this.ensureOwnProfessionalOrAdmin(id, req.user);
     return this.barbersService.getBarberDashboard(id, tenantId);
   }
 
@@ -77,8 +80,9 @@ export class BarbersController {
 
   @Put(':id/schedule')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'BARBER', 'SUPER_ADMIN')
-  async updateSchedule(@Param('id') id: string, @Body() body: any, @ActiveTenantId() tenantId: string) {
+  @Roles('ADMIN', 'BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE', 'SUPER_ADMIN')
+  async updateSchedule(@Param('id') id: string, @Body() body: any, @Request() req: any, @ActiveTenantId() tenantId: string) {
+    this.ensureOwnProfessionalOrAdmin(id, req.user);
     return this.barbersService.updateSchedule(id, body, tenantId);
   }
 
@@ -89,19 +93,28 @@ export class BarbersController {
 
   @Post(':id/blocks')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'BARBER', 'SUPER_ADMIN')
+  @Roles('ADMIN', 'BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE', 'SUPER_ADMIN')
   async createBlock(
     @Param('id') id: string,
     @Body() body: { titulo: string; dataInicio: string; dataFim: string },
+    @Request() req: any,
     @ActiveTenantId() tenantId: string
   ) {
+    this.ensureOwnProfessionalOrAdmin(id, req.user);
     return this.barbersService.createBlock(id, body, tenantId);
   }
 
   @Delete('blocks/:blockId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'BARBER', 'SUPER_ADMIN')
-  async deleteBlock(@Param('blockId') blockId: string, @ActiveTenantId() tenantId: string) {
-    return this.barbersService.deleteBlock(blockId, tenantId);
+  @Roles('ADMIN', 'BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE', 'SUPER_ADMIN')
+  async deleteBlock(@Param('blockId') blockId: string, @Request() req: any, @ActiveTenantId() tenantId: string) {
+    return this.barbersService.deleteBlock(blockId, tenantId, req.user);
+  }
+
+  private ensureOwnProfessionalOrAdmin(barberId: string, user: any) {
+    const isAdminOrSuper = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' || user.roles?.includes('ADMIN') || user.roles?.includes('SUPER_ADMIN');
+    if (!isAdminOrSuper && user.barberId !== barberId) {
+      throw new ForbiddenException('Você não tem permissão para acessar dados de outro profissional.');
+    }
   }
 }

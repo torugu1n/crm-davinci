@@ -12,7 +12,14 @@ export class ClientsService {
       include: {
         assignedBarber: {
           include: {
-            user: true,
+            user: {
+              select: {
+                id: true,
+                nome: true,
+                role: true,
+                roles: true,
+              },
+            },
           },
         },
       },
@@ -29,13 +36,31 @@ export class ClientsService {
       include: {
         assignedBarber: {
           include: {
-            user: true,
+            user: {
+              select: {
+                id: true,
+                nome: true,
+                role: true,
+                roles: true,
+              },
+            },
           },
         },
         appointments: {
           include: {
             service: true,
-            barber: { include: { user: true } },
+            barber: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    nome: true,
+                    role: true,
+                    roles: true,
+                  },
+                },
+              },
+            },
             feedback: true,
           },
           orderBy: { data: 'desc' },
@@ -69,8 +94,9 @@ export class ClientsService {
     });
   }
 
-  async update(id: string, data: any, tenantId?: string) {
+  async update(id: string, data: any, tenantId?: string, currentUser?: any) {
     await this.findOne(id, tenantId); // verify exists and belongs to tenant
+    const isClient = currentUser?.role === 'CLIENT';
 
     return this.prisma.client.update({
       where: { id },
@@ -79,14 +105,14 @@ export class ClientsService {
         telefone: data.telefone ? normalizePhone(data.telefone) : undefined,
         email: data.email !== undefined ? data.email : undefined,
         aniversario: data.aniversario !== undefined ? (data.aniversario ? normalizeBirthday(data.aniversario) : null) : undefined,
-        observacoes: data.observacoes !== undefined ? data.observacoes : undefined,
+        observacoes: !isClient && data.observacoes !== undefined ? data.observacoes : undefined,
         preferences: data.preferences !== undefined ? data.preferences : undefined,
-        frequency: data.frequency !== undefined ? data.frequency : undefined,
-        ticketMedio: data.ticketMedio !== undefined ? data.ticketMedio : undefined,
-        chatStatus: data.chatStatus !== undefined ? data.chatStatus : undefined,
-        origem: data.origem !== undefined ? data.origem : undefined,
-        tags: data.tags !== undefined ? data.tags : undefined,
-        assignedBarberId: data.assignedBarberId !== undefined ? data.assignedBarberId : undefined,
+        frequency: !isClient && data.frequency !== undefined ? data.frequency : undefined,
+        ticketMedio: !isClient && data.ticketMedio !== undefined ? data.ticketMedio : undefined,
+        chatStatus: !isClient && data.chatStatus !== undefined ? data.chatStatus : undefined,
+        origem: !isClient && data.origem !== undefined ? data.origem : undefined,
+        tags: !isClient && data.tags !== undefined ? data.tags : undefined,
+        assignedBarberId: !isClient && data.assignedBarberId !== undefined ? data.assignedBarberId : undefined,
       },
     });
   }

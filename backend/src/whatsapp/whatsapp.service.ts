@@ -9,6 +9,15 @@ interface BookingState {
   barberId?: string;
 }
 
+const safeUserSelect = {
+  id: true,
+  nome: true,
+  email: true,
+  role: true,
+  roles: true,
+  tenantId: true,
+};
+
 @Injectable()
 export class WhatsappService {
   // Estado simples na memória para rastrear o fluxo de conversa de cada cliente
@@ -50,6 +59,7 @@ export class WhatsappService {
 
     // Notificar frontend da nova mensagem
     this.wsGateway.broadcast('new-message', {
+      tenantId,
       clientId,
       message: customerMsg,
     });
@@ -75,6 +85,7 @@ export class WhatsappService {
 
     // Notificar frontend
     this.wsGateway.broadcast('new-message', {
+      tenantId,
       clientId,
       message: operatorMsg,
     });
@@ -138,8 +149,8 @@ export class WhatsappService {
     }
   }
 
-  async handleEvolutionWebhook(body: any) {
-    console.log('[Webhook] Recebido payload da Evolution API:', JSON.stringify(body, null, 2));
+  async handleEvolutionWebhook(body: any, tenantId?: string) {
+    console.log('[Webhook] Recebido evento da Evolution API.');
 
     const event = body.event || body.type;
     // O evento de mensagem recebida na Evolution API v2 é 'messages.upsert'
@@ -183,7 +194,9 @@ export class WhatsappService {
 
     // Tentar casar o cliente no CRM usando os últimos 8 dígitos do telefone
     const last8 = cleanedPhone.substring(cleanedPhone.length - 8);
-    const clients = await this.prisma.client.findMany();
+    const clients = await this.prisma.client.findMany({
+      where: tenantId ? { tenantId } : undefined,
+    });
     let client = clients.find((c) => {
       const cPhoneCleaned = c.telefone.replace(/\D/g, '');
       return cPhoneCleaned.endsWith(last8);
@@ -203,6 +216,7 @@ export class WhatsappService {
           nome: tempName,
           telefone: formattedPhone,
           observacoes: 'Cadastrado temporariamente via recepção de WhatsApp. Aguardando o nome.',
+          tenantId: tenantId || null,
         },
       });
 
@@ -211,6 +225,7 @@ export class WhatsappService {
 
       // Notificar dashboard que um novo lead iniciou o contato
       this.wsGateway.broadcast('dashboard-notification', {
+        tenantId,
         title: 'Novo Contato WhatsApp',
         description: `Nova conversa iniciada pelo número ${formattedPhone}. Aguardando o nome.`,
         type: 'info',
@@ -218,17 +233,17 @@ export class WhatsappService {
       });
 
       // Salvar a mensagem recebida sem acionar o processamento de chatbot (pois ainda vamos perguntar o nome)
-      await this.receiveCustomerMessage(client.id, text, true);
+      await this.receiveCustomerMessage(client.id, text, true, tenantId);
 
       // Enviar mensagem de saudação e perguntar o nome
       const replyText = `Olá! Sou o atendimento virtual deste estabelecimento.\n\nIdentifiquei que este número de WhatsApp ainda não está cadastrado em nosso sistema.\n\nComo posso te chamar? Por favor, digite seu nome completo para iniciarmos seu atendimento.`;
-      await this.delayAndReply(client.id, replyText);
+      await this.delayAndReply(client.id, replyText, tenantId);
 
       return { status: 'success', clientId: client.id };
     }
 
     // Se o cliente já existia, processar a mensagem normalmente (aciona o chatbot)
-    await this.receiveCustomerMessage(client.id, text);
+    await this.receiveCustomerMessage(client.id, text, false, tenantId);
 
     return { status: 'success', clientId: client.id };
   }
@@ -241,23 +256,33 @@ export class WhatsappService {
     const client = await this.prisma.client.findUnique({ where: { id: clientId } });
     if (!client) return;
 
-    const service = await this.prisma.service.findFirst() || await this.prisma.service.create({
-      data: { nome: 'Corte Premium', preco: 80.0, duracao: 45 },
+    const scopedTenantId = client.tenantId || undefined;
+
+    const service = await this.prisma.service.findFirst({
+      where: scopedTenantId ? { tenantId: scopedTenantId } : undefined,
+    }) || await this.prisma.service.create({
+      data: { nome: 'Corte Premium', preco: 80.0, duracao: 45, tenantId: scopedTenantId || null },
     });
 
-    const barber = await this.prisma.barber.findFirst({ include: { user: true } });
+    const barber = await this.prisma.barber.findFirst({
+      where: scopedTenantId ? { user: { tenantId: scopedTenantId } } : undefined,
+      include: { user: { select: safeUserSelect } },
+    });
     if (!barber) return;
 
     if (state && state.step === 'AWAITING_NAME') {
       const clientName = text.trim();
       if (clientName.length < 2) {
-        await this.delayAndReply(clientId, 'Por favor, digite seu nome completo para que possamos te cadastrar.');
+        await this.delayAndReply(clientId, 'Por favor, digite seu nome completo para que possamos te cadastrar.', scopedTenantId);
         return;
       }
 
       // Buscar se já existe um cliente com esse mesmo nome no banco (case-insensitive)
       const existingClient = await this.prisma.client.findFirst({
-        where: { nome: { equals: clientName, mode: 'insensitive' } },
+        where: {
+          nome: { equals: clientName, mode: 'insensitive' },
+          tenantId: scopedTenantId,
+        },
       });
 
       let finalClientId = clientId;
@@ -308,7 +333,7 @@ export class WhatsappService {
 
       // Enviar mensagem de boas vindas com link do catálogo digital
       const replyText = `Prazer em falar com você, ${finalName}! Realizei o vínculo do seu WhatsApp com sucesso.\n\nComo posso ajudar você hoje?\n\nSe quiser agendar um horário diretamente, digite algo como "Quero agendar um corte".\n\nSe quiser conhecer nossos serviços, valores e produtos à venda, acesse o catálogo digital: https://crm-davinci-production.up.railway.app/catalogo`;
-      await this.delayAndReply(finalClientId, replyText);
+      await this.delayAndReply(finalClientId, replyText, scopedTenantId);
       return;
     }
 
@@ -333,11 +358,11 @@ export class WhatsappService {
 
         // Responder com opções de horários
         const replyText = `Olá, ${client.nome}!\n\nIdentifiquei que você deseja realizar um agendamento para ${service.nome} (R$ ${service.preco.toFixed(2)}).\n\nTemos as seguintes vagas com o profissional ${barber.user.nome} para amanhã:\n\n10:00\n14:00\n16:00\n\nPor favor, digite o horário desejado para confirmarmos seu agendamento.`;
-        await this.delayAndReply(clientId, replyText);
+        await this.delayAndReply(clientId, replyText, scopedTenantId);
       } else {
         // Resposta padrão
         const replyText = `Olá! Como posso ajudar?\n\nSe você gostaria de agendar um serviço, basta digitar algo como "Quero agendar um corte amanhã".`;
-        await this.delayAndReply(clientId, replyText);
+        await this.delayAndReply(clientId, replyText, scopedTenantId);
       }
     } else if (state.step === 'AWAITING_TIME') {
       // Tentar casar horários
@@ -359,10 +384,11 @@ export class WhatsappService {
             data: appointmentDate,
             status: 'CONFIRMED', // Confirmado automaticamente
             valor: service.preco,
+            tenantId: scopedTenantId || null,
           },
           include: {
             client: true,
-            barber: { include: { user: true } },
+            barber: { include: { user: { select: safeUserSelect } } },
             service: true,
           },
         });
@@ -374,6 +400,7 @@ export class WhatsappService {
         this.wsGateway.broadcast('appointment-created', appointment);
 
         this.wsGateway.broadcast('dashboard-notification', {
+          tenantId: scopedTenantId,
           title: 'Agendamento Automatizado',
           description: `${client.nome} agendou corte com ${barber.user.nome} para às ${targetHour}:00 via WhatsApp.`,
           type: 'success',
@@ -382,15 +409,15 @@ export class WhatsappService {
 
         // Responder confirmando
         const replyText = `Excelente escolha, ${client.nome}!\n\nSeu agendamento para ${service.nome} está confirmado:\n\nData: amanhã às ${targetHour}:00\nProfissional: ${barber.user.nome}\n\nSeu atendimento já está registrado no sistema.`;
-        await this.delayAndReply(clientId, replyText);
+        await this.delayAndReply(clientId, replyText, scopedTenantId);
       } else {
         const replyText = `Não consegui identificar esse horário. 🧐\n\nPor favor, escolha uma das opções válidas:\n\n👉 **10:00**\n👉 **14:00**\n👉 **16:00**\n\nDigite apenas o número correspondente.`;
-        await this.delayAndReply(clientId, replyText);
+        await this.delayAndReply(clientId, replyText, scopedTenantId);
       }
     }
   }
 
-  private async delayAndReply(clientId: string, text: string) {
+  private async delayAndReply(clientId: string, text: string, tenantId?: string) {
     // Simular digitação humana/atraso da API
     setTimeout(async () => {
       const autoMsg = await this.prisma.message.create({
@@ -402,6 +429,7 @@ export class WhatsappService {
       });
 
       this.wsGateway.broadcast('new-message', {
+        tenantId,
         clientId,
         message: autoMsg,
       });

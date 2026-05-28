@@ -5,6 +5,20 @@ import { PrismaService } from '../prisma.service';
 export class ServicesService {
   constructor(private prisma: PrismaService) {}
 
+  private async ensureBarbersBelongToTenant(barberIds: string[] = [], tenantId?: string) {
+    const uniqueIds = Array.from(new Set(barberIds.filter(Boolean)));
+    if (uniqueIds.length === 0 || !tenantId) return;
+    const count = await this.prisma.barber.count({
+      where: {
+        id: { in: uniqueIds },
+        user: { tenantId },
+      },
+    });
+    if (count !== uniqueIds.length) {
+      throw new Error('Profissional inválido para este estabelecimento');
+    }
+  }
+
   async findAll(tenantId?: string) {
     return this.prisma.service.findMany({
       where: tenantId ? { tenantId } : undefined,
@@ -19,13 +33,17 @@ export class ServicesService {
             },
           },
         },
-        customCommissions: true,
       },
       orderBy: { nome: 'asc' },
     });
   }
 
   async create(data: any, currentUser?: any, tenantId?: string) {
+    await this.ensureBarbersBelongToTenant([
+      ...(data.barberIds || []),
+      ...((data.customCommissions || []).map((cc: any) => cc.barberId)),
+    ], tenantId);
+
     const service = await this.prisma.service.create({
       data: {
         nome: data.nome,
@@ -54,7 +72,6 @@ export class ServicesService {
             },
           },
         },
-        customCommissions: true,
       },
     });
 
@@ -80,6 +97,10 @@ export class ServicesService {
     if (!existing) {
       throw new Error('Serviço não encontrado neste estabelecimento');
     }
+    await this.ensureBarbersBelongToTenant([
+      ...(data.barberIds || []),
+      ...((data.customCommissions || []).map((cc: any) => cc.barberId)),
+    ], tenantId);
     
     const updateData: any = {
       nome: data.nome,

@@ -49,6 +49,7 @@ export class AuthService {
       role: user.role, 
       roles: user.roles, 
       isActive: user.isActive,
+      barberId: user.barber?.id || null,
       tenantId: user.tenantId,
     };
     return {

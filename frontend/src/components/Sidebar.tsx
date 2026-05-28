@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Users, DollarSign, MessageSquare, Star, Scissors, UserCog, ShieldCheck, Zap } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
 import { canAccessDashboardTab } from '@/lib/auth';
+import { getLogoUrl } from '@/lib/logo-helper';
 
 interface SidebarProps {
   activeTab: string;
@@ -14,8 +15,15 @@ interface SidebarProps {
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const router = useRouter();
   const user = useStore((state) => state.user);
+  const tenant = useStore((state) => state.tenant);
   const mobileMenuOpen = useStore((state) => state.mobileMenuOpen);
   const setMobileMenuOpen = useStore((state) => state.setMobileMenuOpen);
+
+  const [logoFailed, setLogoFailed] = useState(false);
+
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [tenant?.logoUrl]);
 
   const allMenuItems = [
     { id: 'calendar', label: 'Agenda', icon: Calendar },
@@ -47,15 +55,24 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       >
         {/* Brand Logo */}
         <div className="p-6 border-b border-zinc-200/80 flex items-center gap-3 shrink-0">
-          <div className="p-2 rounded-lg bg-background border border-davinci-gold/20">
-            <Scissors className="h-5 w-5 text-davinci-gold" />
-          </div>
+          {tenant?.logoUrl && !logoFailed ? (
+            <img 
+              src={getLogoUrl(tenant.logoUrl)} 
+              alt={tenant.name || 'Logo'} 
+              className="h-9 w-9 object-contain rounded bg-zinc-50/50 border border-zinc-200/60 p-0.5"
+              onError={() => setLogoFailed(true)}
+            />
+          ) : (
+            <div className="p-2 rounded-lg bg-background border border-davinci-gold/20">
+              <Scissors className="h-5 w-5 text-davinci-gold" />
+            </div>
+          )}
           <div>
-            <h2 className="text-md font-bold text-davinci-black uppercase tracking-wider text-glow">
-              Gestão de Beleza
+            <h2 className="text-sm font-bold text-davinci-black uppercase tracking-wider truncate max-w-[140px]">
+              {tenant?.name || 'Gestão de Beleza'}
             </h2>
             <p className="text-[8px] text-davinci-gold uppercase tracking-[0.05em] font-semibold">
-              Salões, barbearias e estética
+              {tenant?.name ? 'Estabelecimento Parceiro' : 'Salões, barbearias e estética'}
             </p>
           </div>
         </div>

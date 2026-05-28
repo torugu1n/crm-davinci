@@ -66,7 +66,9 @@ export default function DashboardPage() {
   // WebSocket para notificações globais em tempo real no Dashboard
   useEffect(() => {
     if (!token) return;
-    const socket = io((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'));
+    const socket = io((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'), {
+      auth: { token },
+    });
 
     socket.on('dashboard-notification', (notif: { title: string; description: string; type: any }) => {
       addNotification({

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Param, Query } from '@nestjs/common';
 import { FeedbacksService } from './feedbacks.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -19,5 +19,10 @@ export class FeedbacksController {
   @Post()
   async create(@Body() body: any, @ActiveTenantId() tenantId: string) {
     return this.feedbacksService.create(body, tenantId);
+  }
+
+  @Get('appointment/:appointmentId')
+  async findPublicAppointment(@Param('appointmentId') appointmentId: string, @Query('token') token: string) {
+    return this.feedbacksService.findPublicAppointment(appointmentId, token);
   }
 }

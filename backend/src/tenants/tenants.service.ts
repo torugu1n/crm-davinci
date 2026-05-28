@@ -101,6 +101,7 @@ export class TenantsService {
         logoUrl: data.logoUrl || null,
         primaryColor: data.primaryColor || '#C5A880',
         secondaryColor: data.secondaryColor || '#18181b',
+        loginStyle: data.loginStyle || 'split',
       },
     });
 
@@ -134,6 +135,7 @@ export class TenantsService {
     if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl;
     if (data.primaryColor !== undefined) updateData.primaryColor = data.primaryColor;
     if (data.secondaryColor !== undefined) updateData.secondaryColor = data.secondaryColor;
+    if (data.loginStyle !== undefined) updateData.loginStyle = data.loginStyle;
 
     if (data.subdomain !== undefined) {
       const subdomain = data.subdomain.toLowerCase().trim();

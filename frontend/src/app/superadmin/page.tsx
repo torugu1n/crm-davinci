@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore, TenantInfo } from '@/store/useStore';
+import { getLogoUrl } from '@/lib/logo-helper';
 import { 
   Building, 
   Plus, 
@@ -18,7 +19,8 @@ import {
   Loader2,
   Paintbrush,
   Upload,
-  User
+  User,
+  Eye
 } from 'lucide-react';
 
 export default function SuperAdminPage() {
@@ -28,6 +30,9 @@ export default function SuperAdminPage() {
   const [tenants, setTenants] = useState<TenantInfo[]>([]);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [failedLogos, setFailedLogos] = useState<Record<string, boolean>>({});
+  const [logoPreviewFailed, setLogoPreviewFailed] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -43,6 +48,7 @@ export default function SuperAdminPage() {
     primaryColor: '#C5A880',
     secondaryColor: '#18181b',
     logoUrl: '',
+    loginStyle: 'split',
     adminName: '',
     adminEmail: '',
     adminPassword: ''
@@ -73,6 +79,7 @@ export default function SuperAdminPage() {
       if (!res.ok) throw new Error(data.message || 'Erro ao enviar arquivo da logomarca');
 
       setFormData(prev => ({ ...prev, logoUrl: data.url }));
+      setLogoPreviewFailed(false);
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar logomarca.');
     } finally {
@@ -142,11 +149,13 @@ export default function SuperAdminPage() {
       primaryColor: '#C5A880',
       secondaryColor: '#18181b',
       logoUrl: '',
+      loginStyle: 'split',
       adminName: '',
       adminEmail: '',
       adminPassword: ''
     });
     setError('');
+    setLogoPreviewFailed(false);
     setModalOpen(true);
   };
 
@@ -160,11 +169,13 @@ export default function SuperAdminPage() {
       primaryColor: tenant.primaryColor,
       secondaryColor: tenant.secondaryColor,
       logoUrl: tenant.logoUrl || '',
+      loginStyle: tenant.loginStyle || 'split',
       adminName: tenant.users?.[0]?.nome || '',
       adminEmail: tenant.users?.[0]?.email || '',
       adminPassword: ''
     });
     setError('');
+    setLogoPreviewFailed(false);
     setModalOpen(true);
   };
 
@@ -194,6 +205,7 @@ export default function SuperAdminPage() {
       logoUrl: formData.logoUrl.trim() || null,
       primaryColor: formData.primaryColor,
       secondaryColor: formData.secondaryColor,
+      loginStyle: formData.loginStyle,
     };
 
     if (needsAdminCredentials) {
@@ -429,14 +441,13 @@ export default function SuperAdminPage() {
                     {/* Header Card */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        {tenant.logoUrl ? (
+                        {tenant.logoUrl && !failedLogos[tenant.id] ? (
                           <img 
-                            src={tenant.logoUrl} 
+                            src={getLogoUrl(tenant.logoUrl)} 
                             alt={tenant.name} 
                             className="h-10 w-10 rounded-lg object-cover bg-zinc-800 border border-zinc-700"
-                            onError={(e) => {
-                              // If image fails to load, replace with building icon
-                              (e.target as HTMLElement).style.display = 'none';
+                            onError={() => {
+                              setFailedLogos(prev => ({ ...prev, [tenant.id]: true }));
                             }}
                           />
                         ) : (
@@ -503,6 +514,16 @@ export default function SuperAdminPage() {
                         <span className="text-zinc-500">Logo:</span>{' '}
                         <span className={tenant.logoUrl ? 'text-green-400' : 'text-zinc-500'}>
                           {tenant.logoUrl ? 'Ativa' : 'Padrão'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">Login:</span>{' '}
+                        <span className="text-zinc-300 font-semibold">
+                          {tenant.loginStyle === 'split' && 'Split'}
+                          {tenant.loginStyle === 'centered' && 'Centrado'}
+                          {tenant.loginStyle === 'minimalist' && 'Minimalista'}
+                          {tenant.loginStyle === 'glassmorphism' && 'Vidro'}
+                          {!tenant.loginStyle && 'Split'}
                         </span>
                       </div>
                     </div>
@@ -657,21 +678,24 @@ export default function SuperAdminPage() {
                       <input
                         type="text"
                         value={formData.logoUrl}
-                        onChange={(e) => setFormData(prev => ({ ...prev, logoUrl: e.target.value }))}
+                        onChange={(e) => {
+                          setFormData(prev => ({ ...prev, logoUrl: e.target.value }));
+                          setLogoPreviewFailed(false);
+                        }}
                         className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs focus:outline-none focus:border-[#C5A880] transition"
                         placeholder="https://site.com/logo.png"
                       />
                     </div>
                   </div>
                   {/* Uploaded Logo Preview */}
-                  {formData.logoUrl && (
+                  {formData.logoUrl && !logoPreviewFailed && (
                     <div className="flex items-center justify-between bg-zinc-950 p-2.5 rounded-lg border border-zinc-800 mt-2">
                       <div className="flex items-center space-x-3 min-w-0">
                         <img 
-                          src={formData.logoUrl} 
+                          src={getLogoUrl(formData.logoUrl)} 
                           alt="Preview" 
                           className="h-9 w-9 object-cover bg-zinc-800 border border-zinc-700 rounded" 
-                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                          onError={() => { setLogoPreviewFailed(true); }}
                         />
                         <div className="min-w-0">
                           <span className="block text-[9px] font-semibold text-zinc-500 uppercase leading-none">Arquivo da Logo</span>
@@ -785,6 +809,31 @@ export default function SuperAdminPage() {
                   </div>
                 </div>
 
+                {/* Login Screen Theme Selector */}
+                <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-zinc-300 uppercase tracking-wider leading-none">Estilo da Tela de Login</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowPreviewModal(true)}
+                      className="flex items-center gap-1.5 text-[9px] text-[#C5A880] hover:text-white font-bold uppercase tracking-wider bg-[#C5A880]/10 border border-[#C5A880]/30 hover:border-white/30 px-2 py-1 rounded transition cursor-pointer"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      Visualizar Modelos
+                    </button>
+                  </div>
+                  <select
+                    value={formData.loginStyle}
+                    onChange={(e) => setFormData(prev => ({ ...prev, loginStyle: e.target.value }))}
+                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-300 focus:outline-none focus:border-[#C5A880] transition cursor-pointer"
+                  >
+                    <option value="split">Lado a Lado (Padrão Split)</option>
+                    <option value="centered">Centralizado Clássico (Centered)</option>
+                    <option value="minimalist">Minimalista Escuro (Dark Minimalist)</option>
+                    <option value="glassmorphism">Vidro Espelhado (Glassmorphism Glow)</option>
+                  </select>
+                </div>
+
                 {/* Real-time Theme Preview */}
                 <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl">
                   <span className="block text-[10px] font-semibold text-zinc-500 mb-2 uppercase">Pré-visualização do Tema</span>
@@ -831,6 +880,178 @@ export default function SuperAdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Login Templates Preview Modal */}
+      {showPreviewModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4 transition-all duration-300">
+          <div className="bg-[#0c0c0e] border border-zinc-855/90 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+            <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white font-outfit">Modelos de Tela de Login</h3>
+                <p className="text-xs text-zinc-500">Selecione o modelo desejado clicando diretamente em qualquer miniatura</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPreviewModal(false)}
+                className="text-zinc-400 hover:text-white transition text-xs font-semibold px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto max-h-[70vh]">
+              {/* 1. Split Screen */}
+              <div 
+                onClick={() => {
+                  setFormData(prev => ({ ...prev, loginStyle: 'split' }));
+                  setShowPreviewModal(false);
+                }}
+                className={`group border rounded-xl overflow-hidden cursor-pointer transition-all duration-300 p-4 bg-zinc-950 flex flex-col justify-between h-72 ${
+                  formData.loginStyle === 'split' ? 'border-[#C5A880] ring-1 ring-[#C5A880]/50 shadow-lg shadow-[#C5A880]/5' : 'border-zinc-800/60 hover:border-zinc-700'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-white group-hover:text-[#C5A880] transition-colors">1. Lado a Lado (Split)</span>
+                    {formData.loginStyle === 'split' && <span className="text-[9px] bg-[#C5A880]/20 border border-[#C5A880]/45 text-[#C5A880] px-2 py-0.5 rounded-full font-bold">Ativo</span>}
+                  </div>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed mb-4">Design moderno corporativo. Banner com imagem e diferenciais na esquerda e formulário na direita.</p>
+                </div>
+                
+                {/* CSS Mockup Split */}
+                <div className="flex-1 rounded-lg border border-zinc-800 overflow-hidden bg-zinc-900 flex">
+                  {/* Left Hero */}
+                  <div className="w-[45%] bg-[#C5A880]/10 border-r border-zinc-800 p-2 flex flex-col justify-between">
+                    <div className="space-y-1">
+                      <div className="h-2 w-8 bg-[#C5A880] rounded" />
+                      <div className="h-3 w-16 bg-white rounded" />
+                      <div className="h-1.5 w-12 bg-zinc-500 rounded" />
+                    </div>
+                    <div className="flex gap-1">
+                      <div className="h-2 w-2 rounded bg-zinc-700" />
+                      <div className="h-2 w-2 rounded bg-zinc-700" />
+                      <div className="h-2 w-2 rounded bg-zinc-700" />
+                    </div>
+                  </div>
+                  {/* Right Form */}
+                  <div className="flex-1 bg-zinc-900 p-2 flex items-center justify-center">
+                    <div className="w-[75%] bg-white rounded border border-zinc-200/50 p-2 space-y-1.5 shadow-sm">
+                      <div className="h-1.5 w-8 bg-zinc-300 rounded mx-auto" />
+                      <div className="h-2.5 w-full bg-zinc-100 rounded" />
+                      <div className="h-2.5 w-full bg-zinc-100 rounded" />
+                      <div className="h-3.5 w-full bg-[#C5A880] rounded" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Centered Layout */}
+              <div 
+                onClick={() => {
+                  setFormData(prev => ({ ...prev, loginStyle: 'centered' }));
+                  setShowPreviewModal(false);
+                }}
+                className={`group border rounded-xl overflow-hidden cursor-pointer transition-all duration-300 p-4 bg-zinc-950 flex flex-col justify-between h-72 ${
+                  formData.loginStyle === 'centered' ? 'border-[#C5A880] ring-1 ring-[#C5A880]/50 shadow-lg shadow-[#C5A880]/5' : 'border-zinc-800/60 hover:border-zinc-700'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-white group-hover:text-[#C5A880] transition-colors">2. Centralizado Clássico (Centered)</span>
+                    {formData.loginStyle === 'centered' && <span className="text-[9px] bg-[#C5A880]/20 border border-[#C5A880]/45 text-[#C5A880] px-2 py-0.5 rounded-full font-bold">Ativo</span>}
+                  </div>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed mb-4">Layout focado em branding. Logotipo grande e centralizado acima do card, com fundo claro e leve.</p>
+                </div>
+                
+                {/* CSS Mockup Centered */}
+                <div className="flex-1 rounded-lg border border-zinc-800 overflow-hidden bg-zinc-50 flex flex-col items-center justify-center p-3 relative">
+                  {/* Logo mockup */}
+                  <div className="flex flex-col items-center space-y-1 mb-2">
+                    <div className="h-5 w-5 rounded-full bg-zinc-300 flex items-center justify-center border border-[#C5A880]/30 p-0.5">
+                      <div className="h-3 w-3 bg-[#C5A880] rounded-full" />
+                    </div>
+                    <div className="h-1.5 w-10 bg-zinc-800 rounded" />
+                  </div>
+                  {/* Card mockup */}
+                  <div className="w-[65%] bg-white rounded border border-zinc-200/50 p-2 space-y-1.5 shadow-md">
+                    <div className="h-2.5 w-full bg-zinc-100 rounded" />
+                    <div className="h-2.5 w-full bg-zinc-100 rounded" />
+                    <div className="h-3.5 w-full bg-[#C5A880] rounded" />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Minimalist Dark */}
+              <div 
+                onClick={() => {
+                  setFormData(prev => ({ ...prev, loginStyle: 'minimalist' }));
+                  setShowPreviewModal(false);
+                }}
+                className={`group border rounded-xl overflow-hidden cursor-pointer transition-all duration-300 p-4 bg-zinc-950 flex flex-col justify-between h-72 ${
+                  formData.loginStyle === 'minimalist' ? 'border-[#C5A880] ring-1 ring-[#C5A880]/50 shadow-lg shadow-[#C5A880]/5' : 'border-zinc-800/60 hover:border-zinc-700'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-white group-hover:text-[#C5A880] transition-colors">3. Minimalista Escuro (Minimalist)</span>
+                    {formData.loginStyle === 'minimalist' && <span className="text-[9px] bg-[#C5A880]/20 border border-[#C5A880]/45 text-[#C5A880] px-2 py-0.5 rounded-full font-bold">Ativo</span>}
+                  </div>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed mb-4">Elegância e alto contraste em Dark Mode. Fundo preto absoluto com inputs escuros e detalhes dourados.</p>
+                </div>
+                
+                {/* CSS Mockup Minimalist */}
+                <div className="flex-1 rounded-lg border border-zinc-800 overflow-hidden bg-black flex flex-col items-center justify-center p-3">
+                  <div className="flex flex-col items-center space-y-1.5 mb-2">
+                    <div className="h-4 w-4 bg-[#C5A880]/20 rounded border border-[#C5A880] flex items-center justify-center" />
+                    <div className="h-1.5 w-10 bg-white rounded" />
+                  </div>
+                  <div className="w-[65%] bg-zinc-900 border border-zinc-800 p-2 rounded space-y-1.5">
+                    <div className="h-2.5 w-full bg-zinc-950 border border-zinc-800 rounded" />
+                    <div className="h-2.5 w-full bg-zinc-950 border border-[#C5A880]/40 rounded" />
+                    <div className="h-3.5 w-full bg-[#C5A880] rounded" />
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Glassmorphism */}
+              <div 
+                onClick={() => {
+                  setFormData(prev => ({ ...prev, loginStyle: 'glassmorphism' }));
+                  setShowPreviewModal(false);
+                }}
+                className={`group border rounded-xl overflow-hidden cursor-pointer transition-all duration-300 p-4 bg-zinc-950 flex flex-col justify-between h-72 ${
+                  formData.loginStyle === 'glassmorphism' ? 'border-[#C5A880] ring-1 ring-[#C5A880]/50 shadow-lg shadow-[#C5A880]/5' : 'border-zinc-800/60 hover:border-zinc-700'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-white group-hover:text-[#C5A880] transition-colors">4. Vidro Espelhado (Glassmorphism)</span>
+                    {formData.loginStyle === 'glassmorphism' && <span className="text-[9px] bg-[#C5A880]/20 border border-[#C5A880]/45 text-[#C5A880] px-2 py-0.5 rounded-full font-bold">Ativo</span>}
+                  </div>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed mb-4">Visual futurista premium. Card translúcido com forte efeito de blur sobre esferas coloridas brilhando ao fundo.</p>
+                </div>
+                
+                {/* CSS Mockup Glass */}
+                <div className="flex-1 rounded-lg border border-zinc-800 overflow-hidden bg-[#0d0e12] flex flex-col items-center justify-center p-3 relative">
+                  {/* Glowing spheres in background */}
+                  <div className="absolute top-1/4 right-1/4 w-12 h-12 rounded-full bg-[#C5A880]/30 blur-md pointer-events-none" />
+                  <div className="absolute bottom-1/4 left-1/4 w-14 h-14 rounded-full bg-blue-500/20 blur-md pointer-events-none" />
+                  
+                  <div className="flex flex-col items-center space-y-1.5 mb-2 z-10">
+                    <div className="h-4 w-4 bg-white/20 rounded-full border border-white/30 flex items-center justify-center" />
+                    <div className="h-1.5 w-12 bg-white/95 rounded" />
+                  </div>
+                  <div className="w-[65%] backdrop-blur-md bg-white/5 border border-white/10 p-2 rounded-xl space-y-1.5 z-10 shadow-lg">
+                    <div className="h-2.5 w-full bg-white/5 border border-white/5 rounded" />
+                    <div className="h-2.5 w-full bg-white/5 border border-white/5 rounded" />
+                    <div className="h-3.5 w-full bg-[#C5A880]/90 rounded" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

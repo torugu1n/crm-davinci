@@ -16,6 +16,9 @@ export class TenantsController {
   @Roles('SUPER_ADMIN')
   @UseInterceptors(
     FileInterceptor('file', {
+      limits: {
+        fileSize: 2 * 1024 * 1024,
+      },
       storage: diskStorage({
         destination: './uploads/logos',
         filename: (req, file, cb) => {
@@ -25,8 +28,9 @@ export class TenantsController {
         },
       }),
       fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif|svg|webp)$/i)) {
-          return cb(new BadRequestException('Apenas arquivos de imagem são permitidos (jpg, jpeg, png, gif, svg, webp)'), false);
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/i) || !allowedMimeTypes.includes(file.mimetype)) {
+          return cb(new BadRequestException('Apenas imagens jpg, jpeg, png, gif ou webp são permitidas.'), false);
         }
         cb(null, true);
       },
@@ -36,9 +40,8 @@ export class TenantsController {
     if (!file) {
       throw new BadRequestException('Nenhum arquivo enviado.');
     }
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5001';
     return {
-      url: `${backendUrl}/uploads/logos/${file.filename}`,
+      url: `/uploads/logos/${file.filename}`,
     };
   }
 

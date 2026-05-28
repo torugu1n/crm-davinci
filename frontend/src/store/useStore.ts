@@ -30,6 +30,7 @@ export interface TenantInfo {
   logoUrl?: string | null;
   primaryColor: string;
   secondaryColor: string;
+  loginStyle?: string | null;
   users?: Array<{ id: string; nome: string; email: string }>;
 }
 
@@ -89,7 +90,6 @@ export const useStore = create<StoreState>((set) => ({
     set({
       token: null,
       user: null,
-      tenant: null,
       demoMode: false,
       demoPersona: null,
       activeClientForSimulator: null,

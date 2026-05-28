@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcryptjs';
 
 const PROFESSIONAL_ROLES = ['BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE'];
+const ALLOWED_STAFF_ROLES = ['ADMIN', 'ATTENDANT', 'BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE', 'SUPER_ADMIN'];
 
 @Injectable()
 export class UsersService {
@@ -13,7 +14,24 @@ export class UsersService {
     if (merged.length === 0) {
       throw new BadRequestException('Ao menos uma permissão deve ser informada');
     }
+    const invalidRole = merged.find((item) => !ALLOWED_STAFF_ROLES.includes(item));
+    if (invalidRole) {
+      throw new BadRequestException(`Permissão inválida: ${invalidRole}`);
+    }
     return merged;
+  }
+
+  private sanitizeUser(user: any) {
+    if (!user) return user;
+    const { senha, ...safeUser } = user;
+    return safeUser;
+  }
+
+  private ensureCanManageRoles(currentUser: any, roles: string[]) {
+    const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.roles?.includes('SUPER_ADMIN');
+    if (!isSuperAdmin && roles.includes('SUPER_ADMIN')) {
+      throw new BadRequestException('Apenas super administradores podem conceder permissão SUPER_ADMIN');
+    }
   }
 
   private hasProfessionalRole(roles: string[]) {
@@ -27,7 +45,7 @@ export class UsersService {
   }
 
   async findAll(tenantId?: string) {
-    return this.prisma.user.findMany({
+    const users = await this.prisma.user.findMany({
       where: tenantId ? { tenantId } : undefined,
       include: {
         barber: true,
@@ -36,6 +54,7 @@ export class UsersService {
         nome: 'asc',
       },
     });
+    return users.map((user) => this.sanitizeUser(user));
   }
 
   async findOne(id: string, tenantId?: string) {
@@ -48,15 +67,16 @@ export class UsersService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    return user;
+    return this.sanitizeUser(user);
   }
 
-  async create(data: any, tenantId?: string) {
+  async create(data: any, tenantId?: string, currentUser?: any) {
     if (!data.nome || !data.email || !data.senha || !data.role) {
       throw new BadRequestException('Nome, e-mail, senha e perfil principal são obrigatórios');
     }
 
     const roles = this.normalizeRoles(data.role, data.roles);
+    this.ensureCanManageRoles(currentUser, roles);
     const senhaHash = await bcrypt.hash(data.senha, 10);
 
     const user = await this.prisma.user.create({
@@ -90,11 +110,12 @@ export class UsersService {
     return this.findOne(user.id, tenantId);
   }
 
-  async update(id: string, data: any, tenantId?: string) {
+  async update(id: string, data: any, tenantId?: string, currentUser?: any) {
     const existing = await this.findOne(id, tenantId);
 
     const nextRole = data.role || existing.role;
     const roles = this.normalizeRoles(nextRole, data.roles || existing.roles);
+    this.ensureCanManageRoles(currentUser, roles);
 
     const userData: Record<string, any> = {
       nome: data.nome,

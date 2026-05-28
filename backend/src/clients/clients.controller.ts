@@ -37,7 +37,7 @@ export class ClientsController {
     if (isClient && req.user.id !== id) {
       throw new ForbiddenException('Você não tem permissão para atualizar os dados de outro cliente.');
     }
-    return this.clientsService.update(id, body, tenantId);
+    return this.clientsService.update(id, body, tenantId, req.user);
   }
 
   @Delete(':id')

@@ -31,12 +31,15 @@ export class WhatsappController {
   }
 
   @Post('webhook/:event?')
-  async handleWebhook(@Query('token') token: string, @Body() body: any) {
+  async handleWebhook(@Query('token') token: string, @Body() body: any, @ActiveTenantId() tenantId: string) {
     const webhookSecret = process.env.WEBHOOK_SECRET_KEY;
-    if (webhookSecret && token !== webhookSecret) {
+    if (!webhookSecret || token !== webhookSecret) {
       throw new UnauthorizedException('Token de segurança do Webhook inválido ou ausente.');
     }
-    return this.whatsappService.handleEvolutionWebhook(body);
+    if (!tenantId) {
+      throw new UnauthorizedException('Tenant não identificado para o Webhook.');
+    }
+    return this.whatsappService.handleEvolutionWebhook(body, tenantId);
   }
 
   @Get('debug-integration')

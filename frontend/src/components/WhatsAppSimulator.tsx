@@ -107,6 +107,71 @@ export default function WhatsAppSimulator() {
   const emojiPickerRef = useRef<HTMLDivElement | null>(null);
   const quickRepliesRef = useRef<HTMLDivElement | null>(null);
 
+  // Simular Novo Contato States
+  const [showNewContactModal, setShowNewContactModal] = useState(false);
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
+  const [newContactMessage, setNewContactMessage] = useState('Olá! Gostaria de fazer um agendamento.');
+  const [creatingContact, setCreatingContact] = useState(false);
+
+  const handleCreateContactAndSimulate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newContactName.trim() || !newContactPhone.trim() || !newContactMessage.trim()) return;
+
+    setCreatingContact(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+      
+      // 1. Create client
+      const clientRes = await fetch(`${apiUrl}/clients`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          nome: newContactName.trim(),
+          telefone: newContactPhone.trim(),
+        }),
+      });
+
+      const clientData = await clientRes.json();
+      if (!clientRes.ok) {
+        throw new Error(clientData.message || 'Falha ao criar cliente');
+      }
+
+      // 2. Simulate client message
+      const msgRes = await fetch(`${apiUrl}/whatsapp/customer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          clientId: clientData.id,
+          mensagem: newContactMessage.trim(),
+        }),
+      });
+
+      const msgData = await msgRes.json();
+      if (!msgRes.ok) {
+        throw new Error(msgData.message || 'Falha ao enviar mensagem de simulação');
+      }
+
+      // 3. Invalidate queries & reset states
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setSelectedClientId(clientData.id);
+      setNewContactName('');
+      setNewContactPhone('');
+      setNewContactMessage('Olá! Gostaria de fazer um agendamento.');
+      setShowNewContactModal(false);
+    } catch (err: any) {
+      alert(err.message || 'Erro durante a simulação.');
+    } finally {
+      setCreatingContact(false);
+    }
+  };
+
   // Fetch clients
   const { data: rawClients } = useQuery({
     queryKey: ['clients'],
@@ -215,7 +280,9 @@ export default function WhatsAppSimulator() {
 
   // WebSockets listener
   useEffect(() => {
-    const socket = io((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'));
+    const socket = io((process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'), {
+      auth: { token },
+    });
 
     socket.on('new-message', (data: { clientId: string; message: any }) => {
       if (data.clientId === selectedClientId) {
@@ -465,6 +532,15 @@ export default function WhatsAppSimulator() {
                   </span>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setShowNewContactModal(true)}
+                className="flex items-center gap-1 text-[9px] bg-[#C5A880] hover:bg-[#B39268] text-black font-bold px-2 py-1.5 rounded-lg transition-colors cursor-pointer shadow-sm"
+                title="Simular mensagem de novo contato"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Simular Novo
+              </button>
             </div>
 
             {/* Abas de Filtros por Status */}
@@ -1065,6 +1141,86 @@ export default function WhatsAppSimulator() {
             )}
           </div>
         </div>
+
+        {/* New Contact Simulation Modal */}
+        {showNewContactModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div className="bg-[#0c0c0e] border border-zinc-800 w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl relative">
+              <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950/20">
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">Simular Novo Contato</h3>
+                  <p className="text-[9px] text-zinc-500">Cria um cliente e simula uma mensagem de WhatsApp recebida.</p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setShowNewContactModal(false)}
+                  className="text-zinc-500 hover:text-white transition text-xs font-bold bg-transparent border-0 cursor-pointer"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateContactAndSimulate} className="p-4 space-y-3.5">
+                <div>
+                  <label className="block text-[9px] uppercase tracking-wider font-bold text-zinc-400 mb-1">Nome Completo</label>
+                  <input
+                    type="text"
+                    required
+                    value={newContactName}
+                    onChange={(e) => setNewContactName(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-[#C5A880]"
+                    placeholder="Ex: Pedro Alencar"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[9px] uppercase tracking-wider font-bold text-zinc-400 mb-1">WhatsApp / Celular</label>
+                  <input
+                    type="text"
+                    required
+                    value={newContactPhone}
+                    onChange={(e) => setNewContactPhone(formatPhoneInput(e.target.value))}
+                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-[#C5A880]"
+                    placeholder="Ex: (86) 99999-8888"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[9px] uppercase tracking-wider font-bold text-zinc-400 mb-1">Mensagem Inicial</label>
+                  <textarea
+                    required
+                    rows={2}
+                    value={newContactMessage}
+                    onChange={(e) => setNewContactMessage(e.target.value)}
+                    className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-white focus:outline-none focus:border-[#C5A880] resize-none leading-relaxed"
+                    placeholder="Mensagem enviada pelo cliente..."
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewContactModal(false)}
+                    className="px-3 py-1.5 text-zinc-400 hover:text-white text-[10px] font-bold uppercase tracking-wider transition-colors bg-transparent border-0 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creatingContact}
+                    className="px-4 py-1.5 bg-[#C5A880] text-black font-bold text-[10px] uppercase tracking-wider rounded-lg hover:bg-[#B39268] transition-colors flex items-center gap-1 shadow cursor-pointer border-0"
+                  >
+                    {creatingContact ? (
+                      <span className="h-3 w-3 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      'Iniciar Simulação'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
   );
 }

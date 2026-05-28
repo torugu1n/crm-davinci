@@ -2,6 +2,16 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { PrismaService } from '../prisma.service';
 import { WebsocketGateway } from '../websocket/websocket.gateway';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { createFeedbackToken } from '../feedbacks/feedback-token';
+
+const safeUserSelect = {
+  id: true,
+  nome: true,
+  email: true,
+  role: true,
+  roles: true,
+  tenantId: true,
+};
 
 @Injectable()
 export class AppointmentsService {
@@ -13,11 +23,20 @@ export class AppointmentsService {
 
   async findAll(currentUser: any, tenantId?: string) {
     const isClient = currentUser.role === 'CLIENT';
+    const isProfessional = ['BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE'].some((role) =>
+      currentUser.role === role || currentUser.roles?.includes(role),
+    );
+    if (isProfessional && !currentUser.barberId) {
+      return [];
+    }
     const appointments = await this.prisma.appointment.findMany({
-      where: tenantId ? { tenantId } : undefined,
+      where: {
+        ...(tenantId ? { tenantId } : {}),
+        ...(isProfessional && currentUser.barberId ? { barberId: currentUser.barberId } : {}),
+      },
       include: {
         client: !isClient,
-        barber: { include: { user: true } },
+        barber: { include: { user: { select: safeUserSelect } } },
         service: true,
         feedback: !isClient,
       },
@@ -55,7 +74,7 @@ export class AppointmentsService {
       },
       include: {
         client: true,
-        barber: { include: { user: true } },
+        barber: { include: { user: { select: safeUserSelect } } },
         service: true,
         feedback: true,
       },
@@ -66,18 +85,36 @@ export class AppointmentsService {
     if (isClient && appointment.clientId !== currentUser.id) {
       throw new ForbiddenException('Você não tem permissão para visualizar o agendamento de outro cliente.');
     }
+    const isProfessional = ['BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE'].some((role) =>
+      currentUser.role === role || currentUser.roles?.includes(role),
+    );
+    if (isProfessional && appointment.barberId !== currentUser.barberId) {
+      throw new ForbiddenException('Você não tem permissão para visualizar o agendamento de outro profissional.');
+    }
 
     return appointment;
   }
 
   async create(data: any, currentUser: any, tenantId?: string) {
     const isClient = currentUser.role === 'CLIENT';
+    const isProfessional = ['BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE'].some((role) =>
+      currentUser.role === role || currentUser.roles?.includes(role),
+    );
     const clientId = isClient ? currentUser.id : data.clientId;
     if (!clientId) throw new BadRequestException('ID do cliente é obrigatório');
     if (!data.barberId) throw new BadRequestException('ID do profissional é obrigatório');
     if (!data.serviceId) throw new BadRequestException('ID do serviço é obrigatório');
+    if (isProfessional && data.barberId !== currentUser.barberId) {
+      throw new ForbiddenException('Você não tem permissão para criar agendamento para outro profissional.');
+    }
 
-    const [service, barber] = await Promise.all([
+    const [client, service, barber] = await Promise.all([
+      this.prisma.client.findFirst({
+        where: {
+          id: clientId,
+          tenantId: tenantId ? tenantId : undefined,
+        },
+      }),
       this.prisma.service.findFirst({ 
         where: { 
           id: data.serviceId,
@@ -91,6 +128,7 @@ export class AppointmentsService {
         } 
       }),
     ]);
+    if (!client) throw new NotFoundException('Cliente não encontrado');
     if (!service) throw new NotFoundException('Serviço não encontrado');
     if (!barber) throw new NotFoundException('Profissional não encontrado');
 
@@ -110,7 +148,7 @@ export class AppointmentsService {
         },
         include: {
           client: true,
-          barber: { include: { user: true } },
+          barber: { include: { user: { select: safeUserSelect } } },
           service: true,
         },
       });
@@ -147,16 +185,26 @@ export class AppointmentsService {
       include: {
         client: true,
         service: true,
-        barber: { include: { user: true } },
+        barber: { include: { user: { select: safeUserSelect } } },
       },
     });
     if (!existing) throw new NotFoundException('Agendamento não encontrado');
 
     const isClient = currentUser.role === 'CLIENT';
+    const isProfessional = ['BARBER', 'HAIRDRESSER', 'MANICURE_PEDICURE'].some((role) =>
+      currentUser.role === role || currentUser.roles?.includes(role),
+    );
     const isAdminOrSuper = currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN' || currentUser.roles?.includes('ADMIN') || currentUser.roles?.includes('SUPER_ADMIN');
 
     if (isClient && existing.clientId !== currentUser.id) {
       throw new ForbiddenException('Você não tem permissão para alterar o agendamento de outro cliente.');
+    }
+    if (isProfessional && existing.barberId !== currentUser.barberId) {
+      throw new ForbiddenException('Você não tem permissão para alterar o agendamento de outro profissional.');
+    }
+
+    if (isClient && (data.barberId || data.serviceId || data.data)) {
+      throw new ForbiddenException('Clientes só podem cancelar agendamentos pelo portal.');
     }
 
     let finalStatus = data.status;
@@ -219,7 +267,7 @@ export class AppointmentsService {
       },
       include: {
         client: true,
-        barber: { include: { user: true } },
+        barber: { include: { user: { select: safeUserSelect } } },
         service: true,
         feedback: true,
       },
@@ -260,6 +308,7 @@ export class AppointmentsService {
 
     // Enviar notificação imediata de conclusão no dashboard
     this.wsGateway.broadcast('dashboard-notification', {
+      tenantId,
       title: 'Atendimento Concluído',
       description: `O profissional ${appointment.barber.user.nome} finalizou o atendimento de ${appointment.client.nome}. Feedback será solicitado em breve.`,
       type: 'success',
@@ -269,12 +318,15 @@ export class AppointmentsService {
     // 4. Enviar mensagem de feedback simulada via WhatsApp com atraso (delay)
     setTimeout(async () => {
       try {
-        const messageContent = `Olá, ${appointment.client.nome}! Como foi sua experiência hoje? Deixe sua avaliação em: http://localhost:3000/feedback/${appointment.id}`;
+        const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+        const feedbackToken = createFeedbackToken(appointment.id);
+        const messageContent = `Olá, ${appointment.client.nome}! Como foi sua experiência hoje? Deixe sua avaliação em: ${frontendUrl}/feedback/${appointment.id}?token=${encodeURIComponent(feedbackToken)}`;
         
-        await this.whatsappService.sendOperatorMessage(clientId, messageContent);
+        await this.whatsappService.sendOperatorMessage(clientId, messageContent, tenantId);
 
         // Enviar notificação geral de feedback solicitado no dashboard
         this.wsGateway.broadcast('dashboard-notification', {
+          tenantId,
           title: 'Feedback Solicitado',
           description: `Mensagem de feedback enviada via WhatsApp para ${appointment.client.nome}.`,
           type: 'info',
@@ -295,7 +347,7 @@ export class AppointmentsService {
       include: {
         client: true,
         service: true,
-        barber: { include: { user: true } },
+        barber: { include: { user: { select: safeUserSelect } } },
       },
     });
     if (!existing) throw new NotFoundException('Agendamento não encontrado');

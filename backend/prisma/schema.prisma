@@ -15,6 +15,7 @@ model Tenant {
   logoUrl        String?       @map("logo_url")
   primaryColor   String        @default("#C5A880") @map("primary_color")
   secondaryColor String        @default("#18181b") @map("secondary_color")
+  loginStyle     String        @default("split") @map("login_style")
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 

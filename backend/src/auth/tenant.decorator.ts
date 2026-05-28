@@ -21,12 +21,6 @@ export const ActiveTenantId = createParamDecorator(
       return request.tenant.id;
     }
     
-    // Fallback: Check header directly in case middleware was bypassed
-    const tenantIdHeaderDirect = request.headers['x-tenant-id'] || request.headers['x-tenant-subdomain'];
-    if (tenantIdHeaderDirect) {
-      return tenantIdHeaderDirect as string;
-    }
-
     return null;
   },
 );

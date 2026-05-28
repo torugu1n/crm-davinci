@@ -2,15 +2,17 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, ShieldAlert, CheckCircle2, Award, Sparkles, Smile } from 'lucide-react';
 
 export default function FeedbackRatingPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const appointmentId = params.id as string;
+  const feedbackToken = searchParams.get('token') || '';
 
   const [nota, setNota] = useState(5);
   const [ratingBarber, setRatingBarber] = useState(5);
@@ -22,13 +24,13 @@ export default function FeedbackRatingPage() {
 
   // Fetch appointment info
   const { data: app, isLoading, error } = useQuery({
-    queryKey: ['feedbackAppointment', appointmentId],
+    queryKey: ['feedbackAppointment', appointmentId, feedbackToken],
     queryFn: () =>
-      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/appointments/${appointmentId}`).then((res) => {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/feedbacks/appointment/${appointmentId}?token=${encodeURIComponent(feedbackToken)}`).then((res) => {
         if (!res.ok) throw new Error('Agendamento não encontrado');
         return res.json();
       }),
-    enabled: !!appointmentId,
+    enabled: !!appointmentId && !!feedbackToken,
   });
 
   const submitMutation = useMutation({
@@ -56,6 +58,7 @@ export default function FeedbackRatingPage() {
     setErrorMsg('');
     submitMutation.mutate({
       appointmentId,
+      feedbackToken,
       nota,
       comentario,
       ratingBarber,

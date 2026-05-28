@@ -5,17 +5,29 @@ import { PrismaService } from '../prisma.service';
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
+  private async ensureBarbersBelongToTenant(barberIds: string[] = [], tenantId?: string) {
+    const uniqueIds = Array.from(new Set(barberIds.filter(Boolean)));
+    if (uniqueIds.length === 0 || !tenantId) return;
+    const count = await this.prisma.barber.count({
+      where: {
+        id: { in: uniqueIds },
+        user: { tenantId },
+      },
+    });
+    if (count !== uniqueIds.length) {
+      throw new Error('Profissional inválido para este estabelecimento');
+    }
+  }
+
   async findAll(tenantId?: string) {
     return this.prisma.product.findMany({
       where: tenantId ? { tenantId } : undefined,
-      include: {
-        customCommissions: true,
-      },
       orderBy: { nome: 'asc' },
     });
   }
 
   async create(data: any, tenantId?: string) {
+    await this.ensureBarbersBelongToTenant((data.customCommissions || []).map((cc: any) => cc.barberId), tenantId);
     const commissionRate = data.commissionRate ? parseFloat(data.commissionRate) : 0;
     return this.prisma.product.create({
       data: {
@@ -47,6 +59,7 @@ export class ProductsService {
     if (!existing) {
       throw new Error('Produto não encontrado neste estabelecimento');
     }
+    await this.ensureBarbersBelongToTenant((data.customCommissions || []).map((cc: any) => cc.barberId), tenantId);
 
     const updateData: any = {
       nome: data.nome,

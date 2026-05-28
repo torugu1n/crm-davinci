@@ -27,7 +27,6 @@ export class BarbersService {
           select: {
             id: true,
             nome: true,
-            email: true,
             role: true,
             roles: true,
             tenantId: true,
@@ -53,7 +52,6 @@ export class BarbersService {
           select: {
             id: true,
             nome: true,
-            email: true,
             role: true,
             roles: true,
             tenantId: true,
@@ -328,12 +326,16 @@ export class BarbersService {
     });
   }
 
-  async deleteBlock(id: string, tenantId?: string) {
+  async deleteBlock(id: string, tenantId?: string, currentUser?: any) {
     const block = await this.prisma.agendaBlock.findUnique({ 
       where: { id },
       include: { barber: { include: { user: true } } }
     });
     if (!block || (tenantId && block.barber.user.tenantId !== tenantId)) {
+      throw new NotFoundException('Bloqueio não encontrado');
+    }
+    const isAdminOrSuper = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN' || currentUser?.roles?.includes('ADMIN') || currentUser?.roles?.includes('SUPER_ADMIN');
+    if (!isAdminOrSuper && currentUser?.barberId !== block.barberId) {
       throw new NotFoundException('Bloqueio não encontrado');
     }
     return this.prisma.agendaBlock.delete({ where: { id } });
