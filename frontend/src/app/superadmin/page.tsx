@@ -16,7 +16,8 @@ import {
   AlertTriangle, 
   ShieldAlert,
   Loader2,
-  Paintbrush
+  Paintbrush,
+  Upload
 } from 'lucide-react';
 
 export default function SuperAdminPage() {
@@ -41,6 +42,38 @@ export default function SuperAdminPage() {
     secondaryColor: '#18181b',
     logoUrl: ''
   });
+
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fd = new FormData();
+    fd.append('file', file);
+
+    setUploadingLogo(true);
+    setError('');
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/tenants/upload-logo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: fd
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Erro ao enviar arquivo da logomarca');
+
+      setFormData(prev => ({ ...prev, logoUrl: data.url }));
+    } catch (err: any) {
+      setError(err.message || 'Erro ao carregar logomarca.');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   // Load Tenants
   const fetchTenants = async () => {
@@ -528,16 +561,67 @@ export default function SuperAdminPage() {
                   />
                 </div>
 
-                {/* Logo URL */}
-                <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1.5 uppercase">URL da Logomarca (Opcional)</label>
-                  <input
-                    type="text"
-                    value={formData.logoUrl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, logoUrl: e.target.value }))}
-                    className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm focus:outline-none focus:border-[#C5A880] transition"
-                    placeholder="https://sua-logo.com/imagem.png"
-                  />
+                {/* Logo Upload & URL */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1.5 uppercase">Logomarca (Upload ou URL)</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* File Upload Input Area */}
+                    <div className="border border-dashed border-zinc-800 bg-zinc-950/60 p-4 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#C5A880]/30 transition relative min-h-[90px]">
+                      {uploadingLogo ? (
+                        <>
+                          <Loader2 className="h-5 w-5 text-[#C5A880] animate-spin mb-1.5" />
+                          <span className="text-[10px] text-zinc-400">Enviando arquivo...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-5 w-5 text-zinc-500 mb-1.5" />
+                          <span className="text-xs text-zinc-300 font-medium">Enviar Imagem</span>
+                          <span className="text-[9px] text-zinc-500 mt-0.5">PNG, JPG, SVG, WEBP</span>
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                          />
+                        </>
+                      )}
+                    </div>
+                    {/* Direct URL input */}
+                    <div className="flex flex-col justify-center space-y-1.5">
+                      <span className="text-[10px] text-zinc-500 font-semibold uppercase">Ou link direto da logo</span>
+                      <input
+                        type="text"
+                        value={formData.logoUrl}
+                        onChange={(e) => setFormData(prev => ({ ...prev, logoUrl: e.target.value }))}
+                        className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs focus:outline-none focus:border-[#C5A880] transition"
+                        placeholder="https://site.com/logo.png"
+                      />
+                    </div>
+                  </div>
+                  {/* Uploaded Logo Preview */}
+                  {formData.logoUrl && (
+                    <div className="flex items-center justify-between bg-zinc-950 p-2.5 rounded-lg border border-zinc-800 mt-2">
+                      <div className="flex items-center space-x-3 min-w-0">
+                        <img 
+                          src={formData.logoUrl} 
+                          alt="Preview" 
+                          className="h-9 w-9 object-cover bg-zinc-800 border border-zinc-700 rounded" 
+                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                        />
+                        <div className="min-w-0">
+                          <span className="block text-[9px] font-semibold text-zinc-500 uppercase leading-none">Arquivo da Logo</span>
+                          <span className="block text-[10px] font-mono text-zinc-400 truncate mt-0.5 max-w-[240px]">{formData.logoUrl}</span>
+                        </div>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => setFormData(prev => ({ ...prev, logoUrl: '' }))}
+                        className="text-[10px] text-red-400 hover:text-red-300 font-medium px-2 py-1 hover:bg-red-950/20 rounded transition"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Theme Colors */}

@@ -1,12 +1,46 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @Controller('tenants')
 export class TenantsController {
   constructor(private tenantsService: TenantsService) {}
+
+  @Post('upload-logo')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/logos',
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, `logo-${uniqueSuffix}${ext}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif|svg|webp)$/i)) {
+          return cb(new BadRequestException('Apenas arquivos de imagem são permitidos (jpg, jpeg, png, gif, svg, webp)'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadLogo(@UploadedFile() file: any) {
+    if (!file) {
+      throw new BadRequestException('Nenhum arquivo enviado.');
+    }
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5001';
+    return {
+      url: `${backendUrl}/uploads/logos/${file.filename}`,
+    };
+  }
 
   @Get('public/:subdomain')
   async findPublicBySubdomain(@Param('subdomain') subdomain: string) {
