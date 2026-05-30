@@ -58,12 +58,33 @@ export class TenantsService {
     });
   }
 
+  private validateSubdomainFormat(subdomain: string) {
+    const subdomainRegex = /^[a-z0-9-]+$/;
+    if (!subdomainRegex.test(subdomain)) {
+      throw new BadRequestException('O subdomínio deve conter apenas letras minúsculas, números e hífens.');
+    }
+
+    const baseDomain = process.env.BASE_DOMAIN || 'vtecsolutions.online';
+    const baseDomainName = baseDomain.split('.')[0].toLowerCase();
+    
+    const reserved = [
+      'www', 'app', 'superadmin', 'admin', 'localhost', '127', '127.0.0.1', 
+      'davinci', 'api', 'auth', 'mail', 'test', 'dev', 'prod', 'staging',
+      baseDomainName
+    ];
+
+    if (reserved.includes(subdomain)) {
+      throw new BadRequestException(`O subdomínio "${subdomain}" é reservado pelo sistema e não pode ser utilizado.`);
+    }
+  }
+
   async create(data: any) {
     if (!data.name || !data.subdomain) {
       throw new BadRequestException('Nome e subdomínio são obrigatórios');
     }
 
     const subdomain = data.subdomain.toLowerCase().trim();
+    this.validateSubdomainFormat(subdomain);
     
     // Check uniqueness of tenant
     const existing = await this.prisma.tenant.findFirst({
@@ -139,6 +160,7 @@ export class TenantsService {
 
     if (data.subdomain !== undefined) {
       const subdomain = data.subdomain.toLowerCase().trim();
+      this.validateSubdomainFormat(subdomain);
       if (subdomain !== tenant.subdomain) {
         const existing = await this.prisma.tenant.findUnique({
           where: { subdomain },

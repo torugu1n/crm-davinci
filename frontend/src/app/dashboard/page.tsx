@@ -17,6 +17,7 @@ import ServicesProductsManager from '@/components/ServicesProductsManager';
 import EmployeesManager from '@/components/EmployeesManager';
 import UsersManager from '@/components/UsersManager';
 import QuickRepliesManager from '@/components/QuickRepliesManager';
+import ReportsManager from '@/components/ReportsManager';
 import { canAccessDashboard, canAccessDashboardTab, getAllowedDashboardTabs, isAdminUser, isClientUser, isProfessionalUser } from '@/lib/auth';
 
 export default function DashboardPage() {
@@ -114,6 +115,13 @@ export default function DashboardPage() {
         return 'Dashboard Financeiro';
       case 'feedbacks':
         return 'Central de Feedbacks';
+      case 'reports': {
+        const sub = searchParams.get('subtab');
+        if (sub === 'financial') return 'Relatório Financeiro';
+        if (sub === 'appointments') return 'Relatório de Atendimentos';
+        if (sub === 'clients') return 'Relatório de Clientes';
+        return 'Painel de Relatórios';
+      }
       default:
         return 'Painel de Gestão';
     }
@@ -298,6 +306,16 @@ export default function DashboardPage() {
               data-demo-description="Aqui a gestão acompanha percepção do cliente e sinais de qualidade do atendimento entregue pela equipe."
             >
               <AdminFeedbacks />
+            </div>
+          )}
+
+          {activeTab === 'reports' && isAdminUser(user) && (
+            <div
+              id="dashboard-tab-content-reports"
+              data-demo-title="Painel de Relatórios"
+              data-demo-description="Aqui a gestão acompanha relatórios detalhados e inteligência de negócios."
+            >
+              <ReportsManager />
             </div>
           )}
         </main>

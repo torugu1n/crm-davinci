@@ -13,6 +13,7 @@ import { WebsocketModule } from './websocket/websocket.module';
 import { PrismaService } from './prisma.service';
 import { TenantMiddleware } from './auth/tenant.middleware';
 import { TenantsModule } from './tenants/tenants.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { TenantsModule } from './tenants/tenants.module';
     FinanceModule,
     WhatsappModule,
     TenantsModule,
+    ReportsModule,
   ],
   providers: [PrismaService],
 })

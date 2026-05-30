@@ -19,6 +19,10 @@ model Tenant {
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
+  whatsAppInstance String?       @unique @map("whatsapp_instance")
+  whatsAppToken    String?       @map("whatsapp_token")
+  whatsAppStatus   String        @default("DISCONNECTED") @map("whatsapp_status")
+
   users          User[]
   clients        Client[]
   services       Service[]

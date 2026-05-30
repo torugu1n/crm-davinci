@@ -12,18 +12,29 @@ export class TenantMiddleware implements NestMiddleware {
     if (!subdomain) {
       const host = req.headers.host || '';
       const parts = host.split('.');
-      // Support domains like: tenant.vtecsolutions.online or tenant.localhost:3000
-      if (parts.length > 2 && !host.includes('localhost')) {
-        subdomain = parts[0];
-      } else if (host.includes('localhost') && parts.length > 1) {
-        subdomain = parts[0];
+      const baseDomain = process.env.BASE_DOMAIN || 'vtecsolutions.online';
+      const basePartsCount = baseDomain.split('.').length;
+
+      if (host.includes('localhost') || host.includes('127.0.0.1')) {
+        if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== '127') {
+          subdomain = parts[0];
+        }
+      } else if (host.includes(baseDomain)) {
+        if (parts.length > basePartsCount) {
+          subdomain = parts[0];
+        }
+      } else {
+        // Custom domain
+        subdomain = host;
       }
     }
 
     if (subdomain) {
       const cleanSubdomain = subdomain.toLowerCase().trim();
-      const ignoredSubdomains = ['www', 'app', 'vtecsolutions', 'localhost', '127', '127.0.0.1'];
-      
+      const baseDomain = process.env.BASE_DOMAIN || 'vtecsolutions.online';
+      const baseDomainName = baseDomain.split('.')[0];
+      const ignoredSubdomains = ['www', 'app', baseDomainName, 'localhost', '127', '127.0.0.1'];
+
       if (!ignoredSubdomains.includes(cleanSubdomain)) {
         const tenant = await this.prisma.tenant.findFirst({
           where: {

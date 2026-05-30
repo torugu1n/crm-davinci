@@ -50,13 +50,36 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
-  const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000,http://davinci.localhost:3000,http://barbearia-vip.localhost:3000')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
   app.enableCors({
-    origin: allowedOrigins,
-    credentials: false,
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000,http://davinci.localhost:3000,http://barbearia-vip.localhost:3000')
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean);
+
+      const baseDomain = process.env.BASE_DOMAIN || 'vtecsolutions.online';
+      const escapedBaseDomain = baseDomain.replace(/\./g, '\\.');
+      const prodRegex = new RegExp(`^https?:\\/\\/([a-zA-Z0-9-]+\\.)?${escapedBaseDomain}(:\\d+)?$`);
+      const devRegex = /^https?:\/\/([a-zA-Z0-9-]+\.)?localhost(:\d+)?$/;
+      const devIpRegex = /^https?:\/\/([a-zA-Z0-9-]+\.)?127\.0\.0\.1(:\d+)?$/;
+
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        prodRegex.test(origin) ||
+        devRegex.test(origin) ||
+        devIpRegex.test(origin);
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(null, false); // Block other domains gracefully
+      }
+    },
+    credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   const port = process.env.PORT || 5001;

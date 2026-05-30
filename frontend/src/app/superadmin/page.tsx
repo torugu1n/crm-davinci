@@ -35,6 +35,7 @@ export default function SuperAdminPage() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [baseDomain, setBaseDomain] = useState('vtecsolutions.online');
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -109,6 +110,24 @@ export default function SuperAdminPage() {
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const envDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
+      if (envDomain) {
+        setBaseDomain(envDomain);
+      } else if (!host.includes('localhost') && !host.includes('127.0.0.1')) {
+        const parts = host.split('.');
+        if (parts.length >= 2) {
+          if (['superadmin', 'app', 'www'].includes(parts[0])) {
+            setBaseDomain(parts.slice(1).join('.'));
+          } else if (parts.length > 2) {
+            setBaseDomain(parts.slice(1).join('.'));
+          } else {
+            setBaseDomain(host);
+          }
+        }
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -421,7 +440,7 @@ export default function SuperAdminPage() {
         ) : (
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {tenants.map((tenant) => {
-              const mainDomain = 'vtecsolutions.online';
+              const mainDomain = baseDomain;
               const demoUrl = `http://${tenant.subdomain}.localhost:3000`;
               const prodUrl = `https://${tenant.subdomain}.${mainDomain}`;
               const activeUrl = tenant.customDomain ? `https://${tenant.customDomain}` : prodUrl;
@@ -467,7 +486,7 @@ export default function SuperAdminPage() {
                       <div className="flex items-center text-xs text-zinc-400 bg-zinc-950/60 px-3 py-2 rounded-lg border border-zinc-800/40">
                         <Globe className="h-3.5 w-3.5 mr-2 text-[#C5A880]" />
                         <span className="font-mono text-zinc-300 overflow-hidden text-ellipsis whitespace-nowrap">
-                          {tenant.subdomain}.vtecsolutions.online
+                          {tenant.subdomain}.{baseDomain}
                         </span>
                       </div>
                       
@@ -630,7 +649,7 @@ export default function SuperAdminPage() {
                       placeholder="subdominio"
                     />
                     <span className="inline-flex items-center px-4 rounded-r-xl border border-l-0 border-zinc-800 bg-zinc-900 text-zinc-400 text-xs font-mono">
-                      .vtecsolutions.online
+                      .{baseDomain}
                     </span>
                   </div>
                 </div>
@@ -846,7 +865,7 @@ export default function SuperAdminPage() {
                     </div>
                     <div className="flex-1">
                       <div className="text-sm font-semibold">{formData.name || 'Nova Barbearia'}</div>
-                      <div className="text-xs text-zinc-400">{formData.subdomain || 'subdominio'}.vtecsolutions.online</div>
+                      <div className="text-xs text-zinc-400">{formData.subdomain || 'subdominio'}.{baseDomain}</div>
                     </div>
                     <button
                       type="button"

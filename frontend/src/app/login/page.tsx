@@ -112,9 +112,11 @@ export default function LoginPage() {
         if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== '127') return parts[0];
         return 'davinci';
       }
-      if (host.includes('vtecsolutions.online')) {
+      const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'vtecsolutions.online';
+      const basePartsCount = baseDomain.split('.').length;
+      if (host.includes(baseDomain)) {
         const parts = host.split('.');
-        if (parts.length > 2) return parts[0];
+        if (parts.length > basePartsCount) return parts[0];
         return 'davinci';
       }
       return host;

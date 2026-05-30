@@ -31,15 +31,49 @@ export class WhatsappController {
   }
 
   @Post('webhook/:event?')
-  async handleWebhook(@Query('token') token: string, @Body() body: any, @ActiveTenantId() tenantId: string) {
-    const webhookSecret = process.env.WEBHOOK_SECRET_KEY;
-    if (!webhookSecret || token !== webhookSecret) {
+  async handleWebhook(
+    @Query('token') token: string,
+    @Query('tenantId') queryTenantId: string,
+    @Body() body: any,
+    @ActiveTenantId() headerTenantId: string,
+  ) {
+    const webhookSecret = process.env.WEBHOOK_SECRET_KEY || 'default_secret';
+    if (token !== webhookSecret) {
       throw new UnauthorizedException('Token de segurança do Webhook inválido ou ausente.');
     }
-    if (!tenantId) {
+    const finalTenantId = queryTenantId || headerTenantId || (body.instance && body.instance.startsWith('instance-') ? body.instance.replace('instance-', '') : null);
+    if (!finalTenantId) {
       throw new UnauthorizedException('Tenant não identificado para o Webhook.');
     }
-    return this.whatsappService.handleEvolutionWebhook(body, tenantId);
+    return this.whatsappService.handleEvolutionWebhook(body, finalTenantId);
+  }
+
+  @Post('instance/connect')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'ATTENDANT', 'SUPER_ADMIN')
+  async connectInstance(@ActiveTenantId() tenantId: string) {
+    return this.whatsappService.connectInstance(tenantId);
+  }
+
+  @Post('instance/disconnect')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'ATTENDANT', 'SUPER_ADMIN')
+  async disconnectInstance(@ActiveTenantId() tenantId: string) {
+    return this.whatsappService.disconnectInstance(tenantId);
+  }
+
+  @Get('instance/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'ATTENDANT', 'SUPER_ADMIN')
+  async checkInstanceStatus(@ActiveTenantId() tenantId: string) {
+    return this.whatsappService.checkInstanceStatus(tenantId);
+  }
+
+  @Post('instance/simulate-success')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'ATTENDANT', 'SUPER_ADMIN')
+  async simulateSuccess(@ActiveTenantId() tenantId: string) {
+    return this.whatsappService.simulateConnectionSuccess(tenantId);
   }
 
   @Get('debug-integration')

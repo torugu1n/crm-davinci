@@ -362,7 +362,7 @@ export class AppointmentsService {
     });
 
     const deleted = await this.prisma.appointment.delete({ where: { id } });
-    this.wsGateway.broadcast('appointment-deleted', { id });
+    this.wsGateway.broadcast('appointment-deleted', { id, tenantId: existing.tenantId });
     return deleted;
   }
 }

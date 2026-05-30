@@ -7,12 +7,39 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 
-const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+@WebSocketGateway({
+  cors: {
+    origin: (origin: string, callback: (err: Error | null, allow?: boolean) => void) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000')
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean);
 
-@WebSocketGateway({ cors: { origin: allowedOrigins } })
+      const baseDomain = process.env.BASE_DOMAIN || 'vtecsolutions.online';
+      const escapedBaseDomain = baseDomain.replace(/\./g, '\\.');
+      const prodRegex = new RegExp(`^https?:\\/\\/([a-zA-Z0-9-]+\\.)?${escapedBaseDomain}(:\\d+)?$`);
+      const devRegex = /^https?:\/\/([a-zA-Z0-9-]+\.)?localhost(:\d+)?$/;
+      const devIpRegex = /^https?:\/\/([a-zA-Z0-9-]+\.)?127\.0\.0\.1(:\d+)?$/;
+
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        prodRegex.test(origin) ||
+        devRegex.test(origin) ||
+        devIpRegex.test(origin);
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    credentials: true,
+  }
+})
 export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;

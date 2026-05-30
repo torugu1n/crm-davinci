@@ -97,19 +97,29 @@ export class WhatsappService {
   }
 
   async sendRealWhatsApp(clientId: string, text: string) {
-    const apiUrl = process.env.EVOLUTION_API_URL;
-    const apiKey = process.env.EVOLUTION_API_KEY || process.env.GLOBAL_API_KEY;
-    const instanceName = process.env.EVOLUTION_INSTANCE_NAME;
-
-    if (!apiUrl || !apiKey || !instanceName) {
-      console.log('Evolution API não configurada. Ignorando envio real do WhatsApp.');
-      return;
-    }
-
     try {
-      const client = await this.prisma.client.findUnique({ where: { id: clientId } });
+      const client = await this.prisma.client.findUnique({
+        where: { id: clientId },
+        include: { tenant: true },
+      });
       if (!client || !client.telefone) {
         console.warn(`Cliente não encontrado ou sem telefone para envio real do WhatsApp.`);
+        return;
+      }
+
+      const tenant = client.tenant;
+      const apiUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-67e4.up.railway.app';
+      const apiKey = process.env.EVOLUTION_API_KEY || process.env.GLOBAL_API_KEY;
+      const instanceName = tenant?.whatsAppInstance;
+      const status = tenant?.whatsAppStatus;
+
+      if (!instanceName || status !== 'CONNECTED') {
+        console.log('Instância WhatsApp do tenant não conectada ou nula. Ignorando envio real.');
+        return;
+      }
+
+      if (!apiUrl || !apiKey) {
+        console.log('Evolution API não configurada globalmente no .env. Ignorando envio real.');
         return;
       }
 
@@ -123,7 +133,7 @@ export class WhatsappService {
         cleanedPhone = `5511${cleanedPhone}`;
       }
 
-      const url = `${apiUrl}/message/sendText/${instanceName}`;
+      const url = `${apiUrl.replace(/\/$/, '')}/message/sendText/${instanceName}`;
       const payload = {
         number: cleanedPhone,
         text: text,
@@ -147,6 +157,211 @@ export class WhatsappService {
     } catch (error) {
       console.error('Erro na conexão com a Evolution API:', error);
     }
+  }
+
+  async connectInstance(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Estabelecimento não encontrado');
+
+    const apiUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-67e4.up.railway.app';
+    const apiKey = process.env.EVOLUTION_API_KEY || process.env.GLOBAL_API_KEY;
+    const instanceName = `instance-${tenantId}`;
+
+    // SE NÃO HOUVER API_KEY NO ENV, ENTRA EM MODO SIMULADOR AUTOMATICAMENTE
+    if (!apiKey) {
+      console.log('[WhatsApp] Sem Evolution API Key. Ativando simulação.');
+      await this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: {
+          whatsAppInstance: instanceName,
+          whatsAppStatus: 'CONNECTING',
+        },
+      });
+      return {
+        simulated: true,
+        qrcode: 'MOCK_QR_CODE_DATA',
+        instanceName,
+      };
+    }
+
+    try {
+      const sanitizedUrl = apiUrl.replace(/\/$/, '');
+
+      // 1. Verificar se a instância já existe
+      const checkRes = await fetch(`${sanitizedUrl}/instance/connectionState/${instanceName}`, {
+        headers: { 'apikey': apiKey },
+      });
+
+      let instanceExists = checkRes.status === 200;
+
+      if (!instanceExists) {
+        // Criar instância
+        const createRes = await fetch(`${sanitizedUrl}/instance/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': apiKey,
+          },
+          body: JSON.stringify({
+            instanceName,
+            token: `token-${tenantId}`,
+            qrcode: true,
+          }),
+        });
+
+        if (!createRes.ok) {
+          throw new Error(`Falha ao criar instância: ${await createRes.text()}`);
+        }
+      }
+
+      // 2. Buscar/Gerar QR Code
+      const connectRes = await fetch(`${sanitizedUrl}/instance/connect/${instanceName}`, {
+        headers: { 'apikey': apiKey },
+      });
+
+      if (!connectRes.ok) {
+        throw new Error(`Falha ao obter QR code da instância: ${await connectRes.text()}`);
+      }
+
+      const connectData = await connectRes.json();
+
+      // Salvar instância e token no banco do Tenant, com status CONNECTING
+      await this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: {
+          whatsAppInstance: instanceName,
+          whatsAppToken: `token-${tenantId}`,
+          whatsAppStatus: 'CONNECTING',
+        },
+      });
+
+      // 3. Configurar o Webhook de forma automática
+      const webhookSecret = process.env.WEBHOOK_SECRET_KEY || 'default_secret';
+      const backendUrl = process.env.BACKEND_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+      const webhookUrl = `${backendUrl}/whatsapp/webhook?token=${webhookSecret}&tenantId=${tenantId}`;
+
+      await fetch(`${sanitizedUrl}/webhook/set/${instanceName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': apiKey,
+        },
+        body: JSON.stringify({
+          enabled: true,
+          url: webhookUrl,
+          events: ['MESSAGES_UPSERT'],
+        }),
+      });
+
+      return {
+        simulated: false,
+        qrcode: connectData.code || connectData.base64 || connectData.qrcode || '',
+        instanceName,
+      };
+
+    } catch (err: any) {
+      console.error('[WhatsApp Connect Error]', err);
+      // Fallback para simulação se der erro na rede/Evolution API
+      await this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: {
+          whatsAppInstance: instanceName,
+          whatsAppStatus: 'CONNECTING',
+        },
+      });
+      return {
+        simulated: true,
+        qrcode: 'MOCK_QR_CODE_DATA',
+        instanceName,
+        error: err.message,
+      };
+    }
+  }
+
+  async checkInstanceStatus(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Estabelecimento não encontrado');
+
+    const apiKey = process.env.EVOLUTION_API_KEY || process.env.GLOBAL_API_KEY;
+    if (!apiKey) {
+      return { status: tenant.whatsAppStatus || 'DISCONNECTED', instanceName: tenant.whatsAppInstance };
+    }
+
+    if (!tenant.whatsAppInstance) {
+      return { status: 'DISCONNECTED' };
+    }
+
+    try {
+      const apiUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-67e4.up.railway.app';
+      const sanitizedUrl = apiUrl.replace(/\/$/, '');
+      const res = await fetch(`${sanitizedUrl}/instance/connectionState/${tenant.whatsAppInstance}`, {
+        headers: { 'apikey': apiKey },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const status = data.instance?.state === 'open' ? 'CONNECTED' : 'DISCONNECTED';
+        
+        if (tenant.whatsAppStatus !== status) {
+          await this.prisma.tenant.update({
+            where: { id: tenantId },
+            data: { whatsAppStatus: status },
+          });
+        }
+        return { status, instanceName: tenant.whatsAppInstance };
+      }
+
+      return { status: tenant.whatsAppStatus || 'DISCONNECTED', instanceName: tenant.whatsAppInstance };
+    } catch (err) {
+      console.error('[WhatsApp Status Error]', err);
+      return { status: tenant.whatsAppStatus || 'DISCONNECTED', instanceName: tenant.whatsAppInstance };
+    }
+  }
+
+  async simulateConnectionSuccess(tenantId: string) {
+    const status = 'CONNECTED';
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { whatsAppStatus: status },
+    });
+    this.wsGateway.broadcast('whatsapp-connected', { tenantId, status });
+    return { status };
+  }
+
+  async disconnectInstance(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (!tenant) throw new NotFoundException('Estabelecimento não encontrado');
+
+    const apiKey = process.env.EVOLUTION_API_KEY || process.env.GLOBAL_API_KEY;
+    const apiUrl = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-67e4.up.railway.app';
+
+    if (apiKey && tenant.whatsAppInstance) {
+      try {
+        const sanitizedUrl = apiUrl.replace(/\/$/, '');
+        await fetch(`${sanitizedUrl}/instance/logout/${tenant.whatsAppInstance}`, {
+          method: 'DELETE',
+          headers: { 'apikey': apiKey },
+        });
+        await fetch(`${sanitizedUrl}/instance/delete/${tenant.whatsAppInstance}`, {
+          method: 'DELETE',
+          headers: { 'apikey': apiKey },
+        });
+      } catch (err) {
+        console.error('[WhatsApp Disconnect API Error]', err);
+      }
+    }
+
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: {
+        whatsAppInstance: null,
+        whatsAppToken: null,
+        whatsAppStatus: 'DISCONNECTED',
+      },
+    });
+
+    this.wsGateway.broadcast('whatsapp-disconnected', { tenantId, status: 'DISCONNECTED' });
+    return { status: 'DISCONNECTED' };
   }
 
   async handleEvolutionWebhook(body: any, tenantId?: string) {

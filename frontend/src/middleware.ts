@@ -6,12 +6,15 @@ export function middleware(request: NextRequest) {
   const parts = host.split('.');
   let subdomain = '';
 
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'vtecsolutions.online';
+  const basePartsCount = baseDomain.split('.').length;
+
   if (host.includes('localhost') || host.includes('127.0.0.1')) {
     if (parts.length > 1 && parts[0] !== 'localhost' && parts[0] !== '127') {
       subdomain = parts[0];
     }
-  } else if (host.includes('vtecsolutions.online')) {
-    if (parts.length > 2) {
+  } else if (host.includes(baseDomain)) {
+    if (parts.length > basePartsCount) {
       subdomain = parts[0];
     }
   } else {
