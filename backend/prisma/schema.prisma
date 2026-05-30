@@ -23,6 +23,17 @@ model Tenant {
   whatsAppToken    String?       @map("whatsapp_token")
   whatsAppStatus   String        @default("DISCONNECTED") @map("whatsapp_status")
 
+  footerSlogan    String?       @map("footer_slogan")
+  footerInstagram String?       @map("footer_instagram")
+  footerWhatsapp  String?       @map("footer_whatsapp")
+  footerFacebook  String?       @map("footer_facebook")
+  footerHours     String?       @map("footer_hours")
+  footerAddress   String?       @map("footer_address")
+  footerPhone     String?       @map("footer_phone")
+  footerEmail     String?       @map("footer_email")
+  footerCopyright String?       @map("footer_copyright")
+  footerPoweredBy String?       @map("footer_powered_by")
+
   users          User[]
   clients        Client[]
   services       Service[]

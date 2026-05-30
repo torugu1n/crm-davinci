@@ -50,7 +50,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   const allMenuItems = [
     { id: 'calendar', label: 'Agenda', icon: Calendar },
     { id: 'crm', label: 'Meus Clientes', icon: Users },
-    { id: 'whatsapp', label: 'Mensagens WhatsApp', icon: MessageSquare },
+    { id: 'whatsapp', label: 'Atendimento', icon: MessageSquare },
     { id: 'quick-replies', label: 'Respostas Rápidas', icon: Zap },
     { id: 'services', label: 'Serviços & Produtos', icon: Scissors },
     { id: 'reports', label: 'Relatórios', icon: BarChart3 },

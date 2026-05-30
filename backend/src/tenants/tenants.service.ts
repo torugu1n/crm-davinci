@@ -123,6 +123,16 @@ export class TenantsService {
         primaryColor: data.primaryColor || '#C5A880',
         secondaryColor: data.secondaryColor || '#18181b',
         loginStyle: data.loginStyle || 'split',
+        footerSlogan: data.footerSlogan || null,
+        footerInstagram: data.footerInstagram || null,
+        footerWhatsapp: data.footerWhatsapp || null,
+        footerFacebook: data.footerFacebook || null,
+        footerHours: data.footerHours || null,
+        footerAddress: data.footerAddress || null,
+        footerPhone: data.footerPhone || null,
+        footerEmail: data.footerEmail || null,
+        footerCopyright: data.footerCopyright || null,
+        footerPoweredBy: data.footerPoweredBy || null,
       },
     });
 
@@ -157,6 +167,17 @@ export class TenantsService {
     if (data.primaryColor !== undefined) updateData.primaryColor = data.primaryColor;
     if (data.secondaryColor !== undefined) updateData.secondaryColor = data.secondaryColor;
     if (data.loginStyle !== undefined) updateData.loginStyle = data.loginStyle;
+
+    if (data.footerSlogan !== undefined) updateData.footerSlogan = data.footerSlogan;
+    if (data.footerInstagram !== undefined) updateData.footerInstagram = data.footerInstagram;
+    if (data.footerWhatsapp !== undefined) updateData.footerWhatsapp = data.footerWhatsapp;
+    if (data.footerFacebook !== undefined) updateData.footerFacebook = data.footerFacebook;
+    if (data.footerHours !== undefined) updateData.footerHours = data.footerHours;
+    if (data.footerAddress !== undefined) updateData.footerAddress = data.footerAddress;
+    if (data.footerPhone !== undefined) updateData.footerPhone = data.footerPhone;
+    if (data.footerEmail !== undefined) updateData.footerEmail = data.footerEmail;
+    if (data.footerCopyright !== undefined) updateData.footerCopyright = data.footerCopyright;
+    if (data.footerPoweredBy !== undefined) updateData.footerPoweredBy = data.footerPoweredBy;
 
     if (data.subdomain !== undefined) {
       const subdomain = data.subdomain.toLowerCase().trim();
