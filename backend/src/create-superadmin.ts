@@ -4,10 +4,9 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  // CONFIGURAÇÃO DOS DADOS DO NOVO SUPER ADMIN
-  const email = 'seu-email@dominio.com'.toLowerCase().trim();
-  const senha = 'sua-senha-segura'; 
-  const nome = 'Super Admin Vtec';
+  const email = 'victorhugo@vtecsolutions.online'.toLowerCase().trim();
+  const senha = 'Torugo123%'; 
+  const nome = 'Victor Hugo';
 
   const existing = await prisma.user.findUnique({
     where: { email }
@@ -31,7 +30,7 @@ async function main() {
     },
   });
 
-  console.log('Super Admin criado com sucesso no banco!');
+  console.log('Super Admin criado com sucesso no banco local!');
   console.log('ID:', user.id);
   console.log('E-mail:', user.email);
 }

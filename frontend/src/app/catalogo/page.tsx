@@ -449,7 +449,7 @@ export default function CatalogoPublicoPage() {
               {tenant?.footerCopyright || `© ${new Date().getFullYear()} ${tenant?.name || 'Estabelecimento'}. Todos os direitos reservados.`}
             </span>
             <span className="flex items-center gap-1 text-zinc-500">
-              {tenant?.footerPoweredBy || 'Powered by DaVinci'}
+              {tenant?.footerPoweredBy || 'Desenvolvido por VTRX Solutions'}
             </span>
           </div>
         </div>

@@ -1004,7 +1004,7 @@ export default function SuperAdminPage() {
                         value={formData.footerPoweredBy}
                         onChange={(e) => setFormData(prev => ({ ...prev, footerPoweredBy: e.target.value }))}
                         className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition"
-                        placeholder="Ex: Desenvolvido por Vtec"
+                        placeholder="Ex: Desenvolvido por VTRX Solutions"
                       />
                     </div>
                   </div>

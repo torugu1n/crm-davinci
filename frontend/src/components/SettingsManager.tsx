@@ -309,7 +309,7 @@ export default function SettingsManager() {
                   value={formData.footerPoweredBy}
                   onChange={(e) => setFormData({ ...formData, footerPoweredBy: e.target.value })}
                   className="w-full px-3 py-2.5 bg-background border border-zinc-200 rounded-xl text-xs focus:outline-none focus:border-davinci-gold transition"
-                  placeholder="Ex: Desenvolvido por Vtec Solutions"
+                  placeholder="Ex: Desenvolvido por VTRX Solutions"
                 />
               </div>
             </div>
@@ -481,7 +481,7 @@ export default function SettingsManager() {
                 <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] text-zinc-500 font-light">
                   <span>{formData.footerCopyright || `© ${new Date().getFullYear()} ${tenant?.name || 'Estabelecimento'}. Todos os direitos reservados.`}</span>
                   <span className="flex items-center gap-1">
-                    {formData.footerPoweredBy || 'Powered by DaVinci'}
+                    {formData.footerPoweredBy || 'Desenvolvido por VTRX Solutions'}
                   </span>
                 </div>
               </footer>
