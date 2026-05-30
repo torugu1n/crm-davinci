@@ -18,6 +18,7 @@ import EmployeesManager from '@/components/EmployeesManager';
 import UsersManager from '@/components/UsersManager';
 import QuickRepliesManager from '@/components/QuickRepliesManager';
 import ReportsManager from '@/components/ReportsManager';
+import SettingsManager from '@/components/SettingsManager';
 import { canAccessDashboard, canAccessDashboardTab, getAllowedDashboardTabs, isAdminUser, isClientUser, isProfessionalUser } from '@/lib/auth';
 
 export default function DashboardPage() {
@@ -115,6 +116,8 @@ export default function DashboardPage() {
         return 'Dashboard Financeiro';
       case 'feedbacks':
         return 'Central de Feedbacks';
+      case 'settings':
+        return 'Configurações';
       case 'reports': {
         const sub = searchParams.get('subtab');
         if (sub === 'financial') return 'Relatório Financeiro';
@@ -316,6 +319,12 @@ export default function DashboardPage() {
               data-demo-description="Aqui a gestão acompanha relatórios detalhados e inteligência de negócios."
             >
               <ReportsManager />
+            </div>
+          )}
+
+          {activeTab === 'settings' && isAdminUser(user) && (
+            <div id="dashboard-tab-content-settings">
+              <SettingsManager />
             </div>
           )}
         </main>

@@ -567,8 +567,8 @@ export default function LoginPage() {
 
         {/* Footer */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9, duration: 0.5 }} className="space-y-1 text-[9px] text-davinci-gray font-bold uppercase tracking-widest hidden lg:block">
-          <div>© 2026 {tenant?.name || 'Gestão de Beleza'}. Todos os direitos reservados.</div>
-          <div className="text-davinci-gold">Desenvolvido por VTRX Solutions</div>
+          <div>{tenant?.footerCopyright || `© 2026 ${tenant?.name || 'Gestão de Beleza'}. Todos os direitos reservados.`}</div>
+          <div className="text-davinci-gold">{tenant?.footerPoweredBy || 'Desenvolvido por VTRX Solutions'}</div>
         </motion.div>
       </div>
 
@@ -624,8 +624,8 @@ export default function LoginPage() {
         transition={{ delay: 0.4 }}
         className="mt-8 text-center text-[9px] text-davinci-gray font-bold uppercase tracking-widest z-10 space-y-1"
       >
-        <div>© 2026 {tenant?.name || 'DaVinci CRM'}. Todos os direitos reservados.</div>
-        <div className="text-davinci-gold">Parceiro Oficial VTRX Solutions</div>
+        <div>{tenant?.footerCopyright || `© 2026 ${tenant?.name || 'DaVinci CRM'}. Todos os direitos reservados.`}</div>
+        <div className="text-davinci-gold">{tenant?.footerPoweredBy || 'Parceiro Oficial VTRX Solutions'}</div>
       </motion.div>
     </div>
   );
@@ -669,8 +669,8 @@ export default function LoginPage() {
         transition={{ delay: 0.4 }}
         className="mt-10 text-center text-[9px] text-zinc-500 font-bold uppercase tracking-widest z-10 space-y-1"
       >
-        <div>© 2026 {tenant?.name || 'DaVinci CRM'}. Todos os direitos reservados.</div>
-        <div className="text-davinci-gold/80">Desenvolvido por VTRX Solutions</div>
+        <div>{tenant?.footerCopyright || `© 2026 ${tenant?.name || 'DaVinci CRM'}. Todos os direitos reservados.`}</div>
+        <div className="text-davinci-gold/80">{tenant?.footerPoweredBy || 'Desenvolvido por VTRX Solutions'}</div>
       </motion.div>
     </div>
   );
@@ -751,8 +751,8 @@ export default function LoginPage() {
         transition={{ delay: 0.5 }}
         className="mt-10 text-center text-[9px] text-zinc-400 font-bold uppercase tracking-widest z-10 space-y-1"
       >
-        <div>© 2026 {tenant?.name || 'CRM DaVinci'}. Todos os direitos autorais.</div>
-        <div className="text-transparent bg-clip-text bg-gradient-to-r from-davinci-gold to-zinc-400">Powered by VTRX Solutions</div>
+        <div>{tenant?.footerCopyright || `© 2026 ${tenant?.name || 'CRM DaVinci'}. Todos os direitos autorais.`}</div>
+        <div className="text-transparent bg-clip-text bg-gradient-to-r from-davinci-gold to-zinc-400">{tenant?.footerPoweredBy || 'Powered by VTRX Solutions'}</div>
       </motion.div>
     </div>
   );

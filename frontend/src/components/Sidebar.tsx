@@ -14,6 +14,7 @@ import {
   BarChart3,
   ChevronDown,
   ChevronRight,
+  Settings,
 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -58,6 +59,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     { id: 'users', label: 'Usuários & Permissões', icon: ShieldCheck },
     { id: 'employees', label: 'Equipe', icon: UserCog },
     { id: 'feedbacks', label: 'Feedbacks & Ratings', icon: Star },
+    { id: 'settings', label: 'Configurações', icon: Settings },
   ];
 
   const menuItems = allMenuItems.filter((item) => canAccessDashboardTab(user, item.id));

@@ -52,7 +52,17 @@ export default function SuperAdminPage() {
     loginStyle: 'split',
     adminName: '',
     adminEmail: '',
-    adminPassword: ''
+    adminPassword: '',
+    footerSlogan: '',
+    footerInstagram: '',
+    footerWhatsapp: '',
+    footerFacebook: '',
+    footerHours: '',
+    footerAddress: '',
+    footerPhone: '',
+    footerEmail: '',
+    footerCopyright: '',
+    footerPoweredBy: ''
   });
 
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -171,7 +181,17 @@ export default function SuperAdminPage() {
       loginStyle: 'split',
       adminName: '',
       adminEmail: '',
-      adminPassword: ''
+      adminPassword: '',
+      footerSlogan: '',
+      footerInstagram: '',
+      footerWhatsapp: '',
+      footerFacebook: '',
+      footerHours: '',
+      footerAddress: '',
+      footerPhone: '',
+      footerEmail: '',
+      footerCopyright: '',
+      footerPoweredBy: ''
     });
     setError('');
     setLogoPreviewFailed(false);
@@ -191,7 +211,17 @@ export default function SuperAdminPage() {
       loginStyle: tenant.loginStyle || 'split',
       adminName: tenant.users?.[0]?.nome || '',
       adminEmail: tenant.users?.[0]?.email || '',
-      adminPassword: ''
+      adminPassword: '',
+      footerSlogan: tenant.footerSlogan || '',
+      footerInstagram: tenant.footerInstagram || '',
+      footerWhatsapp: tenant.footerWhatsapp || '',
+      footerFacebook: tenant.footerFacebook || '',
+      footerHours: tenant.footerHours || '',
+      footerAddress: tenant.footerAddress || '',
+      footerPhone: tenant.footerPhone || '',
+      footerEmail: tenant.footerEmail || '',
+      footerCopyright: tenant.footerCopyright || '',
+      footerPoweredBy: tenant.footerPoweredBy || ''
     });
     setError('');
     setLogoPreviewFailed(false);
@@ -225,6 +255,16 @@ export default function SuperAdminPage() {
       primaryColor: formData.primaryColor,
       secondaryColor: formData.secondaryColor,
       loginStyle: formData.loginStyle,
+      footerSlogan: formData.footerSlogan.trim() || null,
+      footerInstagram: formData.footerInstagram.trim() || null,
+      footerWhatsapp: formData.footerWhatsapp.trim() || null,
+      footerFacebook: formData.footerFacebook.trim() || null,
+      footerHours: formData.footerHours.trim() || null,
+      footerAddress: formData.footerAddress.trim() || null,
+      footerPhone: formData.footerPhone.trim() || null,
+      footerEmail: formData.footerEmail.trim() || null,
+      footerCopyright: formData.footerCopyright.trim() || null,
+      footerPoweredBy: formData.footerPoweredBy.trim() || null,
     };
 
     if (needsAdminCredentials) {
@@ -263,7 +303,7 @@ export default function SuperAdminPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Erro ao salvar estabelecimento');
 
-      setSuccess(editingTenant ? 'Barbearia atualizada com sucesso!' : 'Nova barbearia cadastrada com sucesso!');
+      setSuccess(editingTenant ? 'Estabelecimento atualizado com sucesso!' : 'Novo estabelecimento cadastrado com sucesso!');
       setModalOpen(false);
       fetchTenants();
 
@@ -275,7 +315,7 @@ export default function SuperAdminPage() {
 
   // Delete Tenant
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`ATENÇÃO: Você tem certeza que deseja excluir "${name}"?\nTodos os usuários, clientes, agendamentos e dados desta barbearia serão apagados permanentemente!`)) {
+    if (!window.confirm(`ATENÇÃO: Você tem certeza que deseja excluir "${name}"?\nTodos os usuários, clientes, agendamentos e dados deste estabelecimento serão apagados permanentemente!`)) {
       return;
     }
 
@@ -383,7 +423,7 @@ export default function SuperAdminPage() {
         {/* Stats Grid */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
           <div className="bg-zinc-900/40 border border-zinc-800 p-6 rounded-2xl relative overflow-hidden">
-            <p className="text-xs text-zinc-400 font-semibold tracking-wider uppercase mb-1">Total Barbearias</p>
+            <p className="text-xs text-zinc-400 font-semibold tracking-wider uppercase mb-1">Total Estabelecimentos</p>
             <p className="text-4xl font-bold font-outfit">{tenants.length}</p>
             <div className="absolute right-4 bottom-4 h-12 w-12 bg-zinc-800/30 rounded-xl flex items-center justify-center text-zinc-500">
               <Building className="h-6 w-6" />
@@ -408,7 +448,7 @@ export default function SuperAdminPage() {
         {/* Top Control Bar */}
         <section className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-xl font-bold font-outfit">Gerenciamento de Barbearias (SaaS)</h2>
+            <h2 className="text-xl font-bold font-outfit">Gerenciamento de Estabelecimentos (SaaS)</h2>
             <p className="text-zinc-400 text-xs mt-1">Crie, ative e configure marcas de clientes em tempo real.</p>
           </div>
           <button
@@ -416,7 +456,7 @@ export default function SuperAdminPage() {
             className="flex items-center justify-center space-x-2 bg-[#C5A880] hover:bg-[#B39268] text-black font-semibold px-5 py-2.5 rounded-xl transition duration-200 shadow-md shadow-gold/5"
           >
             <Plus className="h-5 w-5" />
-            <span>Cadastrar Barbearia</span>
+            <span>Cadastrar Estabelecimento</span>
           </button>
         </section>
 
@@ -429,12 +469,12 @@ export default function SuperAdminPage() {
         ) : tenants.length === 0 ? (
           <div className="text-center py-16 bg-zinc-900/20 border border-dashed border-zinc-800 rounded-2xl">
             <Building className="h-12 w-12 text-zinc-600 mx-auto mb-3" />
-            <p className="text-zinc-400 text-sm mb-4">Nenhuma barbearia cadastrada no sistema.</p>
+            <p className="text-zinc-400 text-sm mb-4">Nenhum estabelecimento cadastrado no sistema.</p>
             <button 
               onClick={handleOpenCreate}
               className="text-xs bg-zinc-800 hover:bg-zinc-700 text-white font-medium px-4 py-2 rounded-lg transition"
             >
-              Adicionar Primeira Barbearia
+              Adicionar Primeiro Estabelecimento
             </button>
           </div>
         ) : (
@@ -564,7 +604,7 @@ export default function SuperAdminPage() {
                         <button
                           onClick={() => handleDelete(tenant.id, tenant.name)}
                           className="p-2 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition"
-                          title="Excluir Barbearia"
+                          title="Excluir Estabelecimento"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -607,9 +647,9 @@ export default function SuperAdminPage() {
           <div className="bg-[#0c0c0e] border border-zinc-800 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative">
             <div className="p-6 border-b border-zinc-800">
               <h3 className="text-lg font-bold font-outfit">
-                {editingTenant ? `Editar Barbearia: ${editingTenant.name}` : 'Cadastrar Nova Barbearia'}
+                {editingTenant ? `Editar Estabelecimento: ${editingTenant.name}` : 'Cadastrar Novo Estabelecimento'}
               </h3>
-              <p className="text-zinc-400 text-xs mt-1">Configure o subdomínio, domínio personalizado e cores do cliente.</p>
+              <p className="text-zinc-400 text-xs mt-1">Configure o subdomínio, domínio personalizado, cores e rodapé do cliente.</p>
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -624,14 +664,14 @@ export default function SuperAdminPage() {
 
                 {/* Name */}
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-300 mb-1.5 uppercase">Nome da Barbearia</label>
+                  <label className="block text-xs font-semibold text-zinc-300 mb-1.5 uppercase">Nome do Estabelecimento</label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={handleNameChange}
                     className="w-full px-4 py-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-sm focus:outline-none focus:border-[#C5A880] transition"
-                    placeholder="Ex: Barbearia Premium, Classic Club"
+                    placeholder="Ex: Estabelecimento Premium, Classic Club"
                   />
                 </div>
 
@@ -853,6 +893,123 @@ export default function SuperAdminPage() {
                   </select>
                 </div>
 
+                {/* Custom Footer Fields */}
+                <div className="border border-zinc-800 bg-zinc-950/20 p-4 rounded-xl space-y-3">
+                  <span className="block text-xs font-bold text-[#C5A880] uppercase tracking-wider">Configurações de Rodapé</span>
+                  
+                  <div>
+                    <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Slogan do Rodapé</label>
+                    <input
+                      type="text"
+                      value={formData.footerSlogan}
+                      onChange={(e) => setFormData(prev => ({ ...prev, footerSlogan: e.target.value }))}
+                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition"
+                      placeholder="Ex: O melhor corte e atendimento da região"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Instagram</label>
+                      <input
+                        type="text"
+                        value={formData.footerInstagram}
+                        onChange={(e) => setFormData(prev => ({ ...prev, footerInstagram: e.target.value }))}
+                        className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition"
+                        placeholder="@perfil"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">WhatsApp</label>
+                      <input
+                        type="text"
+                        value={formData.footerWhatsapp}
+                        onChange={(e) => setFormData(prev => ({ ...prev, footerWhatsapp: e.target.value }))}
+                        className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition"
+                        placeholder="Ex: 5511999999999"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Facebook</label>
+                      <input
+                        type="text"
+                        value={formData.footerFacebook}
+                        onChange={(e) => setFormData(prev => ({ ...prev, footerFacebook: e.target.value }))}
+                        className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition"
+                        placeholder="Ex: facebook.com/pagina"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Horário de Funcionamento</label>
+                    <textarea
+                      value={formData.footerHours}
+                      onChange={(e) => setFormData(prev => ({ ...prev, footerHours: e.target.value }))}
+                      rows={2}
+                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition resize-none"
+                      placeholder="Ex: Seg a Sex: 9h às 20h&#10;Sáb: 9h às 18h"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Telefone de Contato</label>
+                      <input
+                        type="text"
+                        value={formData.footerPhone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, footerPhone: e.target.value }))}
+                        className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition"
+                        placeholder="Ex: (11) 99999-9999"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">E-mail de Contato</label>
+                      <input
+                        type="email"
+                        value={formData.footerEmail}
+                        onChange={(e) => setFormData(prev => ({ ...prev, footerEmail: e.target.value }))}
+                        className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition"
+                        placeholder="Ex: contato@estabelecimento.com"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Endereço do Local</label>
+                    <input
+                      type="text"
+                      value={formData.footerAddress}
+                      onChange={(e) => setFormData(prev => ({ ...prev, footerAddress: e.target.value }))}
+                      className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition"
+                      placeholder="Rua Exemplo, 123 - Centro, São Paulo - SP"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Copyright Texto</label>
+                      <input
+                        type="text"
+                        value={formData.footerCopyright}
+                        onChange={(e) => setFormData(prev => ({ ...prev, footerCopyright: e.target.value }))}
+                        className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition"
+                        placeholder="Ex: © 2026 Estabelecimento. Todos os direitos reservados."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-zinc-400 mb-1 uppercase">Powered By Texto</label>
+                      <input
+                        type="text"
+                        value={formData.footerPoweredBy}
+                        onChange={(e) => setFormData(prev => ({ ...prev, footerPoweredBy: e.target.value }))}
+                        className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-xs focus:outline-none focus:border-[#C5A880] transition"
+                        placeholder="Ex: Desenvolvido por Vtec"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Real-time Theme Preview */}
                 <div className="bg-zinc-950 border border-zinc-800 p-4 rounded-xl">
                   <span className="block text-[10px] font-semibold text-zinc-500 mb-2 uppercase">Pré-visualização do Tema</span>
@@ -864,7 +1021,7 @@ export default function SuperAdminPage() {
                       <Building className="h-5 w-5" style={{ color: formData.secondaryColor }} />
                     </div>
                     <div className="flex-1">
-                      <div className="text-sm font-semibold">{formData.name || 'Nova Barbearia'}</div>
+                      <div className="text-sm font-semibold">{formData.name || 'Novo Estabelecimento'}</div>
                       <div className="text-xs text-zinc-400">{formData.subdomain || 'subdominio'}.{baseDomain}</div>
                     </div>
                     <button
@@ -895,7 +1052,7 @@ export default function SuperAdminPage() {
                   type="submit"
                   className="bg-[#C5A880] hover:bg-[#B39268] text-black font-semibold px-5 py-2 rounded-xl text-sm transition"
                 >
-                  {editingTenant ? 'Salvar Alterações' : 'Cadastrar Barbearia'}
+                  {editingTenant ? 'Salvar Alterações' : 'Cadastrar Estabelecimento'}
                 </button>
               </div>
             </form>

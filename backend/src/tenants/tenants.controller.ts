@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Req } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -73,8 +73,22 @@ export class TenantsController {
 
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN')
-  async update(@Param('id') id: string, @Body() body: any) {
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  async update(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    const user = req.user;
+    const isSuperAdmin = user.role === 'SUPER_ADMIN' || (user.roles && user.roles.includes('SUPER_ADMIN'));
+    
+    if (!isSuperAdmin) {
+      if (user.tenantId !== id) {
+        throw new BadRequestException('Você não tem permissão para alterar as configurações deste estabelecimento.');
+      }
+      // Bloquear alteração de campos de infraestrutura ou administração global por ADMIN local
+      delete body.subdomain;
+      delete body.customDomain;
+      delete body.adminEmail;
+      delete body.adminPassword;
+      delete body.adminName;
+    }
     return this.tenantsService.update(id, body);
   }
 

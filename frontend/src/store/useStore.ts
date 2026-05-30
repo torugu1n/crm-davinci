@@ -32,6 +32,16 @@ export interface TenantInfo {
   secondaryColor: string;
   loginStyle?: string | null;
   users?: Array<{ id: string; nome: string; email: string }>;
+  footerSlogan?: string | null;
+  footerInstagram?: string | null;
+  footerWhatsapp?: string | null;
+  footerFacebook?: string | null;
+  footerHours?: string | null;
+  footerAddress?: string | null;
+  footerPhone?: string | null;
+  footerEmail?: string | null;
+  footerCopyright?: string | null;
+  footerPoweredBy?: string | null;
 }
 
 interface StoreState {

@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Scissors, ShoppingBag, Clock, DollarSign, Phone, MapPin, MessageSquare, Calendar, ChevronRight, X, Sparkles } from 'lucide-react';
+import { Scissors, ShoppingBag, Clock, DollarSign, Phone, MapPin, MessageSquare, Calendar, ChevronRight, X, Sparkles, Instagram, Facebook, Mail, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useStore } from '@/store/useStore';
+import { getLogoUrl } from '@/lib/logo-helper';
 
 export default function CatalogoPublicoPage() {
   const [activeTab, setActiveTab] = useState<'services' | 'products'>('services');
@@ -11,6 +13,7 @@ export default function CatalogoPublicoPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+  const tenant = useStore((state) => state.tenant);
 
   // Fetch services and products
   const { data: services = [], isLoading: isLoadingServices } = useQuery({
@@ -37,13 +40,21 @@ export default function CatalogoPublicoPage() {
   const handleWhatsAppAction = () => {
     if (!selectedItem) return;
     const isService = 'duracao' in selectedItem;
-    const phone = '5511999999999';
+    
+    // Clean and retrieve phone number from tenant config or use default fallback
+    const tenantPhone = tenant?.footerWhatsapp || tenant?.footerPhone || '5511999999999';
+    const cleanPhone = tenantPhone.replace(/\D/g, '');
+    
+    // Prefix Brazil country code if not present and is local number length
+    const finalPhone = (cleanPhone.length === 10 || cleanPhone.length === 11) 
+      ? `55${cleanPhone}` 
+      : cleanPhone;
 
     const text = isService
       ? `Olá! Gostaria de agendar o serviço "${selectedItem.nome}" (R$ ${selectedItem.preco.toFixed(2)}).`
       : `Olá! Tenho interesse no produto "${selectedItem.nome}" (R$ ${selectedItem.preco.toFixed(2)}).`;
 
-    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+    const waUrl = `https://wa.me/${finalPhone}?text=${encodeURIComponent(text)}`;
     window.open(waUrl, '_blank');
     handleCloseModal();
   };
@@ -76,15 +87,35 @@ export default function CatalogoPublicoPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2 text-[11px] text-davinci-gray font-semibold">
-            <div className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-davinci-gold" />
-              <span>Endereço do estabelecimento</span>
-            </div>
-            <div className="hidden sm:block text-zinc-300">|</div>
-            <div className="flex items-center gap-1.5">
-              <Phone className="h-4 w-4 text-davinci-gold" />
-              <span>(00) 00000-0000</span>
-            </div>
+            {tenant?.footerAddress && (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tenant.footerAddress)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 hover:text-davinci-black transition-colors"
+              >
+                <MapPin className="h-4 w-4 text-davinci-gold" />
+                <span>{tenant.footerAddress}</span>
+              </a>
+            )}
+            {tenant?.footerAddress && tenant?.footerPhone && (
+              <div className="hidden sm:block text-zinc-300">|</div>
+            )}
+            {tenant?.footerPhone && (
+              <a
+                href={`tel:${tenant.footerPhone.replace(/\D/g, '')}`}
+                className="flex items-center gap-1.5 hover:text-davinci-black transition-colors"
+              >
+                <Phone className="h-4 w-4 text-davinci-gold" />
+                <span>{tenant.footerPhone}</span>
+              </a>
+            )}
+            {!tenant?.footerAddress && !tenant?.footerPhone && (
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-davinci-gold" />
+                <span>Seja bem-vindo(a) ao nosso catálogo!</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -259,6 +290,170 @@ export default function CatalogoPublicoPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Footer */}
+      <footer
+        style={{ backgroundColor: tenant?.secondaryColor || '#18181b' }}
+        className="w-full text-white mt-16 border-t border-zinc-800"
+      >
+        <div className="max-w-6xl mx-auto px-6 py-12">
+          {/* Main columns grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-12 border-b border-zinc-800">
+            {/* Column 1: Brand Info */}
+            <div className="space-y-4">
+              {tenant?.logoUrl ? (
+                <img
+                  src={getLogoUrl(tenant.logoUrl)}
+                  alt={tenant.name}
+                  className="h-10 w-auto object-contain max-w-[150px] filter brightness-100"
+                />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold"
+                    style={{ backgroundColor: tenant?.primaryColor || '#C5A880', color: tenant?.secondaryColor || '#18181b' }}
+                  >
+                    {tenant?.name?.charAt(0).toUpperCase() || 'E'}
+                  </div>
+                  <span className="font-bold text-sm font-outfit uppercase tracking-wider">{tenant?.name || 'Estabelecimento'}</span>
+                </div>
+              )}
+              <p className="text-zinc-400 text-xs leading-relaxed font-light">
+                {tenant?.footerSlogan || 'Slogan ou descrição curta do seu estabelecimento.'}
+              </p>
+              
+              {/* Social Icons */}
+              <div className="flex items-center gap-3 pt-2">
+                {tenant?.footerInstagram && (
+                  <a
+                    href={`https://instagram.com/${tenant.footerInstagram.replace('@', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-lg bg-zinc-850 hover:bg-zinc-700 flex items-center justify-center transition border border-zinc-700 hover:border-white"
+                    style={{ color: tenant?.primaryColor || '#C5A880' }}
+                    title="Instagram"
+                  >
+                    <Instagram className="h-4 w-4" />
+                  </a>
+                )}
+                {tenant?.footerWhatsapp && (
+                  <a
+                    href={`https://wa.me/${(tenant.footerWhatsapp.replace(/\D/g, '').length === 10 || tenant.footerWhatsapp.replace(/\D/g, '').length === 11) ? '55' + tenant.footerWhatsapp.replace(/\D/g, '') : tenant.footerWhatsapp.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-lg bg-zinc-850 hover:bg-zinc-700 flex items-center justify-center transition border border-zinc-700 hover:border-white"
+                    style={{ color: tenant?.primaryColor || '#C5A880' }}
+                    title="WhatsApp"
+                  >
+                    <Phone className="h-4 w-4" />
+                  </a>
+                )}
+                {tenant?.footerFacebook && (
+                  <a
+                    href={`https://facebook.com/${tenant.footerFacebook}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-lg bg-zinc-850 hover:bg-zinc-700 flex items-center justify-center transition border border-zinc-700 hover:border-white"
+                    style={{ color: tenant?.primaryColor || '#C5A880' }}
+                    title="Facebook"
+                  >
+                    <Facebook className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Column 2: Hours */}
+            <div className="space-y-4 md:pl-4">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Funcionamento</h4>
+              {tenant?.footerHours ? (
+                <div className="text-zinc-300 text-xs space-y-1.5 whitespace-pre-line font-light leading-relaxed">
+                  {tenant.footerHours}
+                </div>
+              ) : (
+                <p className="text-zinc-500 text-xs italic">Horários não informados.</p>
+              )}
+            </div>
+
+            {/* Column 3: Contact details */}
+            <div className="space-y-4 md:pl-4">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Contatos e Local</h4>
+              <ul className="space-y-3 text-xs text-zinc-300 font-light">
+                {tenant?.footerAddress && (
+                  <li>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tenant.footerAddress)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-2 hover:text-white transition group"
+                    >
+                      <MapPin className="h-4 w-4 flex-shrink-0 group-hover:scale-110 transition-transform" style={{ color: tenant?.primaryColor || '#C5A880' }} />
+                      <span className="hover:underline text-left leading-normal">{tenant.footerAddress}</span>
+                    </a>
+                  </li>
+                )}
+                {tenant?.footerPhone && (
+                  <li>
+                    <a
+                      href={`tel:${tenant.footerPhone.replace(/\D/g, '')}`}
+                      className="flex items-center gap-2 hover:text-white transition group"
+                    >
+                      <Phone className="h-4 w-4 flex-shrink-0 group-hover:scale-110 transition-transform" style={{ color: tenant?.primaryColor || '#C5A880' }} />
+                      <span className="hover:underline">{tenant.footerPhone}</span>
+                    </a>
+                  </li>
+                )}
+                {tenant?.footerEmail && (
+                  <li>
+                    <a
+                      href={`mailto:${tenant.footerEmail}`}
+                      className="flex items-center gap-2 hover:text-white transition group"
+                    >
+                      <Mail className="h-4 w-4 flex-shrink-0 group-hover:scale-110 transition-transform" style={{ color: tenant?.primaryColor || '#C5A880' }} />
+                      <span className="hover:underline truncate">{tenant.footerEmail}</span>
+                    </a>
+                  </li>
+                )}
+              </ul>
+            </div>
+
+            {/* Column 4: Quick Links */}
+            <div className="space-y-4 md:pl-4">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Atendimento</h4>
+              <ul className="space-y-2 text-xs text-zinc-300 font-light">
+                <li>
+                  <a
+                    href="/login"
+                    className="hover:underline hover:text-white transition flex items-center gap-1.5"
+                  >
+                    <span>Acessar Portal do Cliente</span>
+                    <ExternalLink className="h-3 w-3 opacity-60" />
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/login?tab=admin"
+                    className="hover:underline hover:text-white transition flex items-center gap-1.5"
+                  >
+                    <span>Área Administrativa</span>
+                    <ExternalLink className="h-3 w-3 opacity-60" />
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Lower section */}
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] text-zinc-500 font-light">
+            <span>
+              {tenant?.footerCopyright || `© ${new Date().getFullYear()} ${tenant?.name || 'Estabelecimento'}. Todos os direitos reservados.`}
+            </span>
+            <span className="flex items-center gap-1 text-zinc-500">
+              {tenant?.footerPoweredBy || 'Powered by DaVinci'}
+            </span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
