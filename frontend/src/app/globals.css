@@ -1,0 +1,331 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #7C3AED;
+  --primary-hover-color: #6D28D9;
+  --primary-light-color: #C084FC;
+  --primary-contrast-color: #FFFFFF;
+  --secondary-color: #0F172A;
+  --secondary-contrast-color: #FFFFFF;
+  --background-color: #FAF9FF;
+  --background-light-color: #FFFFFF;
+  --primary-color-rgb: 124, 58, 237;
+  --background-light-color-rgb: 255, 255, 255;
+
+  /* WhatsApp Simulator Layout Variables */
+  --wa-wallpaper-bg: #efeae2;
+  --wa-wallpaper-dots: rgba(0, 0, 0, 0.08);
+  --wa-bubble-sent-bg: var(--primary-light-color, #d9fdd3);
+  --wa-bubble-sent-text: var(--secondary-color, #111b21);
+  --wa-bubble-recv-bg: var(--background-light-color, #ffffff);
+  --wa-bubble-recv-text: var(--secondary-color, #111b21);
+  --wa-header-bg: #f0f2f5;
+  --wa-search-bg: #f6f6f6;
+  --wa-input-container-bg: #f0f2f5;
+  --wa-sidebar-bg: #ffffff;
+  --wa-border-color: rgba(0, 0, 0, 0.08);
+}
+
+@layer base {
+  body {
+    background-color: var(--background-color);
+    color: var(--secondary-color);
+    font-family: "Barlow", var(--font-barlow), sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Instrument Sans", var(--font-instrument), sans-serif;
+  }
+}
+
+/* Custom premium scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F3F0FA;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover-color);
+}
+
+/* Premium Glassmorphism styling - responsive to selected brand colors */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(var(--primary-color-rgb, 124, 58, 237), 0.2);
+  box-shadow: 0 8px 32px 0 rgba(var(--primary-color-rgb, 124, 58, 237), 0.05);
+}
+
+.glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-hover:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(var(--primary-color-rgb, 124, 58, 237), 0.45);
+  box-shadow: 0 12px 40px 0 rgba(var(--primary-color-rgb, 124, 58, 237), 0.12);
+  transform: translateY(-2px);
+}
+
+.text-glow {
+  text-shadow: 0 0 10px rgba(var(--primary-color-rgb, 124, 58, 237), 0.2);
+}
+
+/* Smooth custom transitions */
+.transition-gold {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html[data-demo-mode='true'] [data-demo-title] {
+  position: relative;
+  cursor: pointer;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+}
+
+html[data-demo-mode='true'] [data-demo-title]:hover {
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 124, 58, 237), 0.35), 0 12px 30px rgba(var(--primary-color-rgb, 124, 58, 237), 0.12);
+}
+
+/* Premium Floating and Pulsing Animations */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1.5deg); }
+}
+
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(-1.5deg); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.15); }
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: float-medium 6s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 4s ease-in-out infinite;
+}
+
+@keyframes message-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-message-slide-up {
+  animation: message-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Dynamic Branding Color Override Safeguards */
+.bg-davinci-gold {
+  background-color: var(--primary-color, #C5A880) !important;
+  color: var(--primary-contrast-color, #FFFFFF) !important;
+}
+
+.text-davinci-gold {
+  color: var(--primary-color, #C5A880) !important;
+}
+
+.border-davinci-gold {
+  border-color: var(--primary-color, #C5A880) !important;
+}
+
+.bg-gold-gradient {
+  background: var(--gold-gradient, linear-gradient(135deg, var(--primary-color, #C5A880) 0%, var(--primary-light-color, #D8C3A5) 100%)) !important;
+  color: var(--primary-contrast-color, #FFFFFF) !important;
+}
+
+.bg-davinci-gold-hover:hover {
+  background-color: var(--primary-hover-color, #B39268) !important;
+  color: var(--primary-contrast-color, #FFFFFF) !important;
+}
+
+.text-davinci-gold-contrast {
+  color: var(--primary-contrast-color, #FFFFFF) !important;
+}
+
+.bg-davinci-gold-contrast {
+  background-color: var(--primary-contrast-color, #FFFFFF) !important;
+}
+
+/* Dynamic Dark Mode Overrides based on HTML theme attribute */
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+html[data-theme='dark'] .bg-white {
+  background-color: var(--background-light-color) !important;
+}
+
+html[data-theme='dark'] .bg-zinc-50,
+html[data-theme='dark'] .bg-zinc-50\/50 {
+  background-color: var(--background-color) !important;
+}
+
+html[data-theme='dark'] .bg-zinc-100 {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme='dark'] .border-zinc-200,
+html[data-theme='dark'] .border-zinc-200\/80,
+html[data-theme='dark'] .border-zinc-200\/60,
+html[data-theme='dark'] .border-zinc-100,
+html[data-theme='dark'] .border-zinc-300 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html[data-theme='dark'] .text-davinci-black {
+  color: var(--secondary-color) !important;
+}
+
+html[data-theme='dark'] .text-davinci-gray {
+  color: #a1a1aa !important; /* Zinc 400 */
+}
+
+html[data-theme='dark'] .text-zinc-600 {
+  color: #e4e4e7 !important; /* Zinc 200 */
+}
+
+html[data-theme='dark'] .text-zinc-700 {
+  color: #e4e4e7 !important;
+}
+
+html[data-theme='dark'] .text-zinc-500 {
+  color: #a1a1aa !important;
+}
+
+html[data-theme='dark'] .text-zinc-400 {
+  color: #a1a1aa !important;
+}
+
+html[data-theme='dark'] input,
+html[data-theme='dark'] select,
+html[data-theme='dark'] textarea {
+  background-color: var(--background-color) !important;
+  color: var(--secondary-color) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html[data-theme='dark'] select option {
+  background-color: var(--background-color) !important;
+  color: var(--secondary-color) !important;
+}
+
+html[data-theme='dark'] .hover\:bg-zinc-50:hover,
+html[data-theme='dark'] .hover\:bg-zinc-100:hover,
+html[data-theme='dark'] .hover\:bg-davinci-gold\/10:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Translucent Overlay Overrides in Dark Mode */
+html[data-theme='dark'] .bg-white\/70 {
+  background-color: rgba(var(--background-light-color-rgb, 32, 44, 51), 0.7) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html[data-theme='dark'] .bg-white\/90 {
+  background-color: var(--background-light-color) !important;
+}
+
+/* Dark Mode Semantic Badges (Emerald, Amber, Blue, Red, Purple) */
+html[data-theme='dark'] .bg-emerald-50, 
+html[data-theme='dark'] .bg-emerald-100 { 
+  background-color: rgba(16, 185, 129, 0.15) !important; 
+}
+html[data-theme='dark'] .text-emerald-700, 
+html[data-theme='dark'] .text-emerald-800, 
+html[data-theme='dark'] .text-emerald-600 { 
+  color: #34d399 !important; 
+}
+html[data-theme='dark'] .border-emerald-200, 
+html[data-theme='dark'] .border-emerald-300 { 
+  border-color: rgba(16, 185, 129, 0.3) !important; 
+}
+
+html[data-theme='dark'] .bg-amber-50, 
+html[data-theme='dark'] .bg-amber-100 { 
+  background-color: rgba(245, 158, 11, 0.15) !important; 
+}
+html[data-theme='dark'] .text-amber-700, 
+html[data-theme='dark'] .text-amber-800, 
+html[data-theme='dark'] .text-amber-600 { 
+  color: #fbbf24 !important; 
+}
+html[data-theme='dark'] .border-amber-200, 
+html[data-theme='dark'] .border-amber-300 { 
+  border-color: rgba(245, 158, 11, 0.3) !important; 
+}
+
+html[data-theme='dark'] .bg-blue-50, 
+html[data-theme='dark'] .bg-blue-100 { 
+  background-color: rgba(59, 130, 246, 0.15) !important; 
+}
+html[data-theme='dark'] .text-blue-700, 
+html[data-theme='dark'] .text-blue-800, 
+html[data-theme='dark'] .text-blue-600 { 
+  color: #60a5fa !important; 
+}
+html[data-theme='dark'] .border-blue-200, 
+html[data-theme='dark'] .border-blue-300 { 
+  border-color: rgba(59, 130, 246, 0.3) !important; 
+}
+
+html[data-theme='dark'] .bg-red-50, 
+html[data-theme='dark'] .bg-red-100 { 
+  background-color: rgba(239, 68, 68, 0.15) !important; 
+}
+html[data-theme='dark'] .text-red-700, 
+html[data-theme='dark'] .text-red-800, 
+html[data-theme='dark'] .text-red-600 { 
+  color: #f87171 !important; 
+}
+html[data-theme='dark'] .border-red-200, 
+html[data-theme='dark'] .border-red-300 { 
+  border-color: rgba(239, 68, 68, 0.3) !important; 
+}
+
+html[data-theme='dark'] .bg-purple-100 { 
+  background-color: rgba(139, 92, 246, 0.15) !important; 
+}
+html[data-theme='dark'] .text-purple-700, 
+html[data-theme='dark'] .text-purple-800 { 
+  color: #a78bfa !important; 
+}
+html[data-theme='dark'] .border-purple-200 { 
+  border-color: rgba(139, 92, 246, 0.3) !important; 
+}
+
+/* Dynamic Opacity & Border overrides for davinci-gold custom colors */
+.bg-davinci-gold\/5 { background-color: rgba(var(--primary-color-rgb), 0.05) !important; }
+.bg-davinci-gold\/10 { background-color: rgba(var(--primary-color-rgb), 0.1) !important; }
+.bg-davinci-gold\/12 { background-color: rgba(var(--primary-color-rgb), 0.12) !important; }
+.bg-davinci-gold\/15 { background-color: rgba(var(--primary-color-rgb), 0.15) !important; }
+.bg-davinci-gold\/20 { background-color: rgba(var(--primary-color-rgb), 0.2) !important; }
+.bg-davinci-gold\/25 { background-color: rgba(var(--primary-color-rgb), 0.25) !important; }
+.border-davinci-gold\/20 { border-color: rgba(var(--primary-color-rgb), 0.2) !important; }
+.border-davinci-gold\/30 { border-color: rgba(var(--primary-color-rgb), 0.3) !important; }
+.border-davinci-gold\/60 { border-color: rgba(var(--primary-color-rgb), 0.6) !important; }
+
+.hover\:bg-davinci-gold\/5:hover { background-color: rgba(var(--primary-color-rgb), 0.05) !important; }
+.hover\:bg-davinci-gold\/10:hover { background-color: rgba(var(--primary-color-rgb), 0.1) !important; }
+.hover\:bg-davinci-gold\/15:hover { background-color: rgba(var(--primary-color-rgb), 0.15) !important; }
+.hover\:border-davinci-gold\/50:hover { border-color: rgba(var(--primary-color-rgb), 0.5) !important; }

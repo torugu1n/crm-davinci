@@ -1,0 +1,362 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Tenant {
+  id             String        @id @default(uuid())
+  name           String
+  subdomain      String        @unique
+  customDomain   String?       @unique @map("custom_domain")
+  logoUrl        String?       @map("logo_url")
+  primaryColor   String        @default("#C5A880") @map("primary_color")
+  secondaryColor String        @default("#18181b") @map("secondary_color")
+  backgroundColor String        @default("#FAF9FF") @map("background_color")
+  loginStyle     String        @default("split") @map("login_style")
+  rootRedirect   String        @default("login") @map("root_redirect")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+
+  whatsAppInstance String?       @unique @map("whatsapp_instance")
+  whatsAppToken    String?       @map("whatsapp_token")
+  whatsAppStatus   String        @default("DISCONNECTED") @map("whatsapp_status")
+
+  footerSlogan    String?       @map("footer_slogan")
+  footerInstagram String?       @map("footer_instagram")
+  footerWhatsapp  String?       @map("footer_whatsapp")
+  footerFacebook  String?       @map("footer_facebook")
+  footerHours     String?       @map("footer_hours")
+  footerAddress   String?       @map("footer_address")
+  footerPhone     String?       @map("footer_phone")
+  footerEmail     String?       @map("footer_email")
+  footerCopyright String?       @map("footer_copyright")
+  footerPoweredBy String?       @map("footer_powered_by")
+
+  users          User[]
+  clients        Client[]
+  services       Service[]
+  products       Product[]
+  appointments   Appointment[]
+  quickReplies   QuickReply[]
+  goals          Goal[]
+  auditLogs      AuditLog[]
+  subscriptionModuleEnabled Boolean @default(false) @map("subscription_module_enabled")
+  gatewayProvider           String?       @default("SIMULADO") @map("gateway_provider")
+  gatewayApiKey             String?       @map("gateway_api_key")
+  gatewayWebhookSecret      String?       @map("gateway_webhook_secret")
+  plans          Plan[]
+  active         Boolean       @default(true) @map("active")
+
+  saasPlan                  String        @default("BASIC") @map("saas_plan")
+  saasPlanLimitBarbers      Int           @default(3) @map("saas_plan_limit_barbers")
+  saasPlanLimitAttendants   Int           @default(1) @map("saas_plan_limit_attendants")
+  saasPlanLimitClients      Int           @default(500) @map("saas_plan_limit_clients")
+  whatsAppEnabled           Boolean       @default(true) @map("whatsapp_enabled")
+  chatbotIAEnabled          Boolean       @default(false) @map("chatbot_ia_enabled")
+  chatbotPrompt             String?       @map("chatbot_prompt")
+
+  trialEndsAt               DateTime?     @map("trial_ends_at")
+  subscriptionStatus        String        @default("TRIAL") @map("subscription_status")
+  asaasCustomerId           String?       @map("asaas_customer_id")
+  asaasSubscriptionId       String?       @map("asaas_subscription_id")
+
+  @@map("tenants")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  nome      String
+  email     String   @unique
+  senha     String
+  role      String   @default("BARBER") // "SUPER_ADMIN" | "ADMIN" | "ATTENDANT" | "BARBER"
+  roles     String[] @default([])
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  barber    Barber?
+
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("users")
+}
+
+model Barber {
+  id            String        @id @default(uuid())
+  userId        String        @unique @map("user_id")
+  categoria     String        @default("BARBER")
+  especialidade String
+  miniBio       String?       @map("mini_bio")
+  commissionRate Float        @default(50) @map("commission_rate")
+  notaMedia     Float         @default(5.0) @map("nota_media")
+  fotoUrl       String?       @map("foto_url")
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments  Appointment[]
+  services       Service[]     @relation("BarberServices")
+  productCommissions ProductCommission[]
+  serviceCommissions ServiceCommission[]
+  workSchedules WorkSchedule[]
+  agendaBlocks AgendaBlock[]
+  assignedClients Client[] @relation("AssignedBarber")
+
+  @@map("barbers")
+}
+
+model Client {
+  id               String        @id @default(uuid())
+  nome             String
+  telefone         String        @unique
+  email            String?
+  fotoUrl          String?       @map("foto_url")
+  aniversario      String?
+  cpf              String?
+  addressZip       String?       @map("address_zip")
+  addressStreet    String?       @map("address_street")
+  addressNumber    String?       @map("address_number")
+  addressCity      String?       @map("address_city")
+  addressState     String?       @map("address_state")
+  observacoes      String?
+  preferences      String?
+  frequency        Int           @default(0)
+  ticketMedio      Float         @default(0.0) @map("ticket_medio")
+  chatStatus       String        @default("NEW") @map("chat_status")
+  chatbotEnabled   Boolean       @default(true) @map("chatbot_enabled")
+  origem           String?
+  tags             String[]      @default([])
+  assignedBarberId String?       @map("assigned_barber_id")
+  assignedBarber   Barber?       @relation("AssignedBarber", fields: [assignedBarberId], references: [id], onDelete: SetNull)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  appointments     Appointment[]
+  messages         Message[]
+  subscriptions    Subscription[]
+
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("clients")
+}
+
+model Service {
+  id                String              @id @default(uuid())
+  nome              String
+  preco             Float
+  duracao           Int // em minutos
+  descricao         String?
+  appointments      Appointment[]
+  barbers           Barber[]            @relation("BarberServices")
+  customCommissions ServiceCommission[]
+
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("services")
+}
+
+model Product {
+  id        String   @id @default(uuid())
+  nome      String
+  preco     Float
+  descricao String?
+  commissionRate Float    @default(0) @map("commission_rate")
+  customCommissions ProductCommission[]
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("products")
+}
+
+model ProductCommission {
+  id             String   @id @default(uuid())
+  productId      String   @map("product_id")
+  barberId       String   @map("barber_id")
+  commissionRate Float    @map("commission_rate")
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  barber         Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, barberId])
+  @@map("product_commissions")
+}
+
+model Appointment {
+  id         String   @id @default(uuid())
+  clientId   String   @map("client_id")
+  barberId   String   @map("barber_id")
+  serviceId  String   @map("service_id")
+  data       DateTime
+  status     String   @default("SCHEDULED") // "SCHEDULED" | "CONFIRMED" | "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"
+  valor      Float
+  createdAt  DateTime @default(now()) @map("created_at")
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  barber     Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  service    Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  feedback   Feedback?
+  payWithCredit Boolean @default(false) @map("pay_with_credit")
+
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("appointments")
+}
+
+model Feedback {
+  id            String      @id @default(uuid())
+  appointmentId String      @unique @map("appointment_id")
+  nota          Int
+  comentario    String?
+  ratingBarber  Int         @default(5) @map("rating_barber")
+  ratingEnv     Int         @default(5) @map("rating_env")
+  ratingPunctual String?    @map("rating_punctual") // simplified
+  createdAt     DateTime    @default(now()) @map("created_at")
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@map("feedbacks")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  clientId  String   @map("client_id")
+  mensagem  String
+  tipo      String   // "SENT" | "RECEIVED"
+  createdAt DateTime @default(now()) @map("created_at")
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model WorkSchedule {
+  id          String   @id @default(uuid())
+  barberId    String   @map("barber_id")
+  dayOfWeek   Int      // 0 (Domingo) a 6 (Sábado)
+  startTime   String   // "09:00"
+  endTime     String   // "18:00"
+  breakStart  String?  @map("break_start")
+  breakEnd    String?  @map("break_end")
+  active      Boolean  @default(true)
+  barber      Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@unique([barberId, dayOfWeek])
+  @@map("work_schedules")
+}
+
+model AgendaBlock {
+  id          String   @id @default(uuid())
+  barberId    String   @map("barber_id")
+  titulo      String   // Ex: "Férias", "Almoço", "Médico"
+  dataInicio  DateTime @map("data_inicio")
+  dataFim     DateTime @map("data_fim")
+  barber      Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@map("agenda_blocks")
+}
+
+model QuickReply {
+  id        String   @id @default(uuid())
+  titulo    String
+  conteudo  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("quick_replies")
+}
+
+model Goal {
+  id          String   @id @default(uuid())
+  titulo      String
+  tipo        String   // "BILLING" | "SERVICES"
+  valorAlvo   Float    @map("valor_alvo")
+  valorAtual  Float    @default(0.0) @map("valor_atual")
+  dataInicio  DateTime @map("data_inicio")
+  dataFim     DateTime @map("data_fim")
+
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("goals")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  usuario   String
+  acao      String
+  detalhes  String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenantId  String? @map("tenant_id")
+  tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("audit_logs")
+}
+
+model ServiceCommission {
+  id             String   @id @default(uuid())
+  serviceId      String   @map("service_id")
+  barberId       String   @map("barber_id")
+  commissionRate Float    @map("commission_rate")
+  service        Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  barber         Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, barberId])
+  @@map("service_commissions")
+}
+
+model Plan {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  price           Float
+  interval        String   @default("monthly")
+  creditsPerMonth Int      @default(0) @map("credits_per_month")
+  gatewayPlanId   String?  @map("gateway_plan_id")
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tenantId        String   @map("tenant_id")
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptions   Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                    String    @id @default(uuid())
+  status                String    @default("ACTIVE")
+  remainingCredits      Int       @default(0) @map("remaining_credits")
+  gatewaySubscriptionId String?   @map("gateway_subscription_id")
+  gatewayCustomerId     String?   @map("gateway_customer_id")
+  expiresAt             DateTime? @map("expires_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  clientId              String    @map("client_id")
+  client                Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  planId                String    @map("plan_id")
+  plan                  Plan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model SystemSetting {
+  key   String @id
+  value String
+
+  @@map("system_settings")
+}
+
+model EmailVerification {
+  id        String   @id @default(uuid())
+  email     String
+  code      String
+  expiresAt DateTime @map("expires_at")
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([email, code])
+  @@map("email_verifications")
+}

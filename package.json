@@ -1,0 +1,23 @@
+{
+  "name": "crm-davinci-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "pnpm --dir backend install && pnpm --dir frontend install",
+    "dev:backend": "pnpm --dir backend run start:dev",
+    "dev:frontend": "pnpm --dir frontend run dev",
+    "dev": "pnpm --parallel --stream --filter crm-davinci-backend --filter crm-davinci-frontend run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "bcryptjs"
+    ]
+  }
+}

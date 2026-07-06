@@ -1,0 +1,6 @@
+ALTER TABLE "users"
+ADD COLUMN "roles" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN "is_active" BOOLEAN NOT NULL DEFAULT true;
+
+UPDATE "users"
+SET "roles" = ARRAY["role"];
