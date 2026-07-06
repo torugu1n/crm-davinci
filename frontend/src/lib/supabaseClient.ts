@@ -5,7 +5,19 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export const createSupabaseClient = (token?: string) => {
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase credentials are not set in environment variables.');
+    console.warn('Supabase credentials are not set in environment variables. Returning fallback mock client.');
+    return {
+      channel: () => ({
+        on: () => ({
+          on: () => ({
+            on: () => ({
+              subscribe: () => ({})
+            })
+          })
+        })
+      }),
+      removeChannel: () => {}
+    } as any;
   }
 
   return createClient(supabaseUrl, supabaseAnonKey, {
