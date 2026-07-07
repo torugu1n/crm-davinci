@@ -342,7 +342,7 @@ export default function LoginPage() {
           roles,
           is_active,
           tenant_id,
-          tenant:tenants (
+          tenant:tenant (
             subdomain
           ),
           barbers (
