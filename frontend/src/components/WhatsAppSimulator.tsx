@@ -467,7 +467,7 @@ export default function WhatsAppSimulator() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
+        (payload: any) => {
           queryClient.invalidateQueries({ queryKey: ['clients'] });
           const newMessage = payload.new;
           const camelCaseMessage = {

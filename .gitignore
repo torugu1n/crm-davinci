@@ -26,3 +26,5 @@ frontend/.next/
 backend/.env
 frontend/.env
 backend/uploads/
+.vercel
+.env*

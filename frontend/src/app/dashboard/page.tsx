@@ -94,7 +94,7 @@ export default function DashboardPage() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'appointments' },
-        (payload) => {
+        (payload: any) => {
           queryClient.invalidateQueries({ queryKey: ['appointments'] });
 
           if (payload.eventType === 'INSERT') {
@@ -109,7 +109,7 @@ export default function DashboardPage() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'feedbacks' },
-        (payload) => {
+        (payload: any) => {
           queryClient.invalidateQueries({ queryKey: ['feedbacks'] });
           addNotification({
             title: 'Novo Feedback',
@@ -121,7 +121,7 @@ export default function DashboardPage() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
+        (payload: any) => {
           queryClient.invalidateQueries({ queryKey: ['clients'] });
           window.dispatchEvent(new CustomEvent('supabase-new-message', { detail: payload.new }));
         }
@@ -129,7 +129,7 @@ export default function DashboardPage() {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'tenants' },
-        (payload) => {
+        (payload: any) => {
           if (payload.new.whatsapp_status !== payload.old.whatsapp_status) {
             window.dispatchEvent(new CustomEvent('supabase-whatsapp-status-changed', { detail: payload.new }));
             addNotification({
