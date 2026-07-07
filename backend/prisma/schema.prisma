@@ -82,6 +82,9 @@ model User {
   tenantId  String? @map("tenant_id")
   tenant    Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  isActiveLegacy Boolean? @map("isActive")
+  tenantIdLegacy String? @map("tenantId")
+
   @@map("users")
 }
 
