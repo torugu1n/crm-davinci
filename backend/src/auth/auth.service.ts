@@ -1,16 +1,17 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import * as bcrypt from 'bcryptjs';
 import { extractPhoneDigits, normalizeBirthday, normalizePhone, isSamePhoneNumber } from '../clients/client-formatters';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { RedisService } from '../redis.service';
+import { createClient } from '@supabase/supabase-js';
 
 /** TTL do OTP: 5 minutos */
 const OTP_TTL_SECONDS = 300;
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
   // Fallback em memória usado quando Redis está indisponível
   private otps = new Map<string, { code: string; expiresAt: number; nome: string; aniversario?: string }>();
 
@@ -20,6 +21,81 @@ export class AuthService {
     private whatsappService: WhatsappService,
     private redisService: RedisService,
   ) {}
+
+  async onModuleInit() {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.warn('Supabase credentials not available for Auth initialization.');
+      return;
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
+    const superAdmins = [
+      {
+        id: 'e291a8b5-7937-4e62-b6a6-478fc54b0b0c',
+        email: 'victorhugo@appvenusta.com.br',
+        password: 'Torugo123%',
+        nome: 'Victor Hugo',
+      },
+      {
+        email: 'superadmin@appvenusta.com.br',
+        password: 'superadminvtec',
+        nome: 'Super Admin Vtec',
+      }
+    ];
+
+    for (const admin of superAdmins) {
+      try {
+        const dbUser = await this.prisma.user.findUnique({
+          where: { email: admin.email }
+        });
+
+        const { data, error } = await supabaseAdmin.auth.admin.createUser({
+          id: admin.id || undefined,
+          email: admin.email,
+          password: admin.password,
+          email_confirm: true,
+          user_metadata: {
+            nome: admin.nome,
+          }
+        });
+
+        if (error) {
+          if (error.message.includes('already exists') || (error as any).status === 422) {
+            console.log(`Super admin ${admin.email} já existe no Supabase Auth.`);
+          } else {
+            console.error(`Erro ao criar super admin ${admin.email} no Supabase Auth:`, error.message);
+          }
+        } else if (data.user) {
+          console.log(`Super admin ${admin.email} criado com sucesso no Supabase Auth!`);
+          
+          if (!dbUser) {
+            await this.prisma.user.create({
+              data: {
+                id: data.user.id,
+                nome: admin.nome,
+                email: admin.email,
+                senha: await bcrypt.hash(admin.password, 10),
+                role: 'SUPER_ADMIN',
+                roles: ['SUPER_ADMIN'],
+                tenantId: null,
+              }
+            });
+          }
+        }
+      } catch (err: any) {
+        console.error(`Falha no seeding de Supabase Auth para ${admin.email}:`, err.message);
+      }
+    }
+  }
 
   private normalizeStaffIdentifier(identifier: string) {
     const normalized = identifier.trim().toLowerCase();

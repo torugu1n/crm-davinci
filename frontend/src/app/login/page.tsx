@@ -313,7 +313,14 @@ export default function LoginPage() {
     e.preventDefault(); setError(''); setLoading(true);
     try {
       const supabase = createSupabaseClient();
-      const email = staffLogin.includes('@') ? staffLogin.trim().toLowerCase() : `${staffLogin.trim().toLowerCase()}@salao.com`;
+      let email = staffLogin.trim().toLowerCase();
+      if (email === 'victorhugo') {
+        email = 'victorhugo@appvenusta.com.br';
+      } else if (email === 'superadmin') {
+        email = 'superadmin@appvenusta.com.br';
+      } else if (!email.includes('@')) {
+        email = `${email}@salao.com`;
+      }
       
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
