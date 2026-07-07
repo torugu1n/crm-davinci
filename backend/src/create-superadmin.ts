@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 async function main() {
   const email = 'victorhugo@appvenusta.com.br'.toLowerCase().trim();
-  const senha = 'Torugo123%'; 
+  const senha = 'Torugo0811@'; 
   const nome = 'Victor Hugo';
 
   const existing = await prisma.user.findUnique({
