@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Sparkles, User, Mail, Lock, Phone, CheckCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useStore } from '@/store/useStore';
+import { createSupabaseClient } from '@/lib/supabaseClient';
 
 function formatPhoneInput(value: string) {
   const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -152,6 +153,30 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
+      const supabase = createSupabaseClient();
+      
+      // 1. Sign up the user in Supabase Auth first
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: senha,
+        options: {
+          data: {
+            nome,
+            telefone: `${ddi}${telefone.replace(/\D/g, '')}`,
+          }
+        }
+      });
+
+      if (signUpError) {
+        throw new Error(signUpError.message || 'Erro ao realizar o cadastro no serviço de autenticação.');
+      }
+
+      const supabaseUserId = signUpData.user?.id;
+      if (!supabaseUserId) {
+        throw new Error('Erro ao obter identificador único do usuário de autenticação.');
+      }
+
+      // 2. Call the NestJS backend register endpoint to link the matching UUID in database
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
       const res = await fetch(`${apiUrl}/auth/register`, {
         method: 'POST',
@@ -159,6 +184,7 @@ export default function RegisterPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          id: supabaseUserId, // Link the matching UUID
           nome,
           email,
           telefone: `${ddi}${telefone.replace(/\D/g, '')}`,
@@ -168,7 +194,7 @@ export default function RegisterPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || 'Erro ao realizar o registro.');
+        throw new Error(data.message || 'Erro ao realizar o registro no banco de dados principal.');
       }
 
       // Redirect to login screen after successful registration, propagating the plan if present

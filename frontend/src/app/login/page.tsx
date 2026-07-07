@@ -9,6 +9,7 @@ import { useStore } from '@/store/useStore';
 import { canAccessDashboard, isProfessionalUser, isClientUser } from '@/lib/auth';
 import BrandLogo from '@/components/BrandLogo';
 import { getLogoUrl } from '@/lib/logo-helper';
+import { createSupabaseClient } from '@/lib/supabaseClient';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────── */
 function getTenantIdentifier() {
@@ -311,14 +312,60 @@ export default function LoginPage() {
   const handleStaffLogin = async (e: React.FormEvent) => {
     e.preventDefault(); setError(''); setLoading(true);
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (tenant?.subdomain) headers['x-tenant-subdomain'] = tenant.subdomain;
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/auth/login`, {
-        method: 'POST', headers, body: JSON.stringify({ email: staffLogin, senha: staffSenha }),
+      const supabase = createSupabaseClient();
+      const email = staffLogin.includes('@') ? staffLogin.trim().toLowerCase() : `${staffLogin.trim().toLowerCase()}@salao.com`;
+      
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password: staffSenha,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Credenciais inválidas');
-      const userSubdomain = data.user.subdomain;
+
+      if (authError) {
+        throw new Error(authError.message || 'Credenciais inválidas');
+      }
+
+      if (!authData.session) {
+        throw new Error('Sessão não pôde ser estabelecida.');
+      }
+
+      // Fetch user details from public.users table in Supabase
+      const { data: publicUser, error: publicUserError } = await supabase
+        .from('users')
+        .select(`
+          id,
+          nome,
+          email,
+          role,
+          roles,
+          is_active,
+          tenant_id,
+          tenant:tenants (
+            subdomain
+          ),
+          barbers (
+            id
+          )
+        `)
+        .eq('id', authData.user.id)
+        .single();
+
+      if (publicUserError || !publicUser) {
+        throw new Error('Dados de perfil do usuário não encontrados no banco.');
+      }
+
+      const formattedUser = {
+        id: publicUser.id,
+        nome: publicUser.nome,
+        email: publicUser.email,
+        role: publicUser.role,
+        roles: publicUser.roles || [],
+        isActive: publicUser.is_active,
+        barberId: publicUser.barbers?.[0]?.id || null,
+        tenantId: publicUser.tenant_id,
+        subdomain: (publicUser.tenant as any)?.subdomain || null,
+      };
+
+      const userSubdomain = formattedUser.subdomain;
       const currentSubdomain = getTenantIdentifier();
       if (userSubdomain && userSubdomain !== currentSubdomain && userSubdomain !== 'venusta' && userSubdomain !== 'davinci') {
         const protocol = window.location.protocol;
@@ -332,11 +379,12 @@ export default function LoginPage() {
           const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'appvenusta.com.br';
           targetHost = `${userSubdomain}.${baseDomain}`;
         }
-        window.location.href = `${protocol}//${targetHost}/login?token=${data.access_token}&user=${encodeURIComponent(JSON.stringify(data.user))}`;
+        window.location.href = `${protocol}//${targetHost}/login?token=${authData.session.access_token}&user=${encodeURIComponent(JSON.stringify(formattedUser))}`;
         return;
       }
-      setSession(data.access_token, data.user);
-      if (data.user.role === 'SUPER_ADMIN') router.push('/superadmin');
+
+      setSession(authData.session.access_token, formattedUser);
+      if (formattedUser.role === 'SUPER_ADMIN') router.push('/superadmin');
       else router.push('/dashboard');
     } catch (err: any) { setError(err.message); } finally { setLoading(false); }
   };
