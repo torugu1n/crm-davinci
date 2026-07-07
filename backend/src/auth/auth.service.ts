@@ -97,6 +97,44 @@ export class AuthService implements OnModuleInit {
     }
   }
 
+  async resolveIdentifier(identifier: string): Promise<string> {
+    const normalized = identifier.trim().toLowerCase();
+    if (!normalized) {
+      return '';
+    }
+
+    if (normalized.includes('@')) {
+      return normalized;
+    }
+
+    // Lookup user in public.users table
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: normalized, mode: 'insensitive' } },
+          { nome: { equals: normalized, mode: 'insensitive' } },
+          { email: { startsWith: normalized + '@', mode: 'insensitive' } }
+        ]
+      }
+    });
+
+    if (user) {
+      return user.email;
+    }
+
+    // Default alias mappings or fallback
+    const legacyAliases: Record<string, string> = {
+      barbeiro1: 'barbeiro1@salao.com',
+      profissional1: 'barbeiro1@salao.com',
+    };
+
+    if (legacyAliases[normalized]) {
+      return legacyAliases[normalized];
+    }
+
+    return `${normalized}@salao.com`;
+  }
+
   private normalizeStaffIdentifier(identifier: string) {
     const normalized = identifier.trim().toLowerCase();
     if (!normalized) {

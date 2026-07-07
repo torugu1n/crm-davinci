@@ -313,14 +313,10 @@ export default function LoginPage() {
     e.preventDefault(); setError(''); setLoading(true);
     try {
       const supabase = createSupabaseClient();
-      let email = staffLogin.trim().toLowerCase();
-      if (email === 'victorhugo') {
-        email = 'victorhugo@appvenusta.com.br';
-      } else if (email === 'superadmin') {
-        email = 'superadmin@appvenusta.com.br';
-      } else if (!email.includes('@')) {
-        email = `${email}@salao.com`;
-      }
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+      const resolveRes = await fetch(`${apiUrl}/auth/resolve-identifier?identifier=${encodeURIComponent(staffLogin)}`);
+      const resolveData = await resolveRes.json();
+      const email = resolveData.email || staffLogin.trim().toLowerCase();
       
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,

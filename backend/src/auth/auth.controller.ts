@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Query, UnauthorizedException, UseGuards, Request, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UnauthorizedException, UseGuards, Request, HttpException, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ActiveTenantId } from './tenant.decorator';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -14,6 +14,12 @@ export class AuthController {
     private authService: AuthService,
     private emailVerificationService: EmailVerificationService
   ) {}
+
+  @Get('resolve-identifier')
+  async resolveIdentifier(@Query('identifier') identifier: string) {
+    const email = await this.authService.resolveIdentifier(identifier);
+    return { email };
+  }
 
   @Post('send-verification-email')
   async sendVerificationEmail(@Body() body: { email: string }, @Request() req: any) {
