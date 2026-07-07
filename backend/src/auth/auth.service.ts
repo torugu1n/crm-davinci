@@ -58,52 +58,79 @@ export class AuthService implements OnModuleInit {
           where: { email: admin.email }
         });
 
-        let supabaseUser;
-
-        if (dbUser) {
-          // Update the user's password and metadata in Supabase Auth to ensure it matches
-          const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
-            dbUser.id,
-            {
-              password: admin.password,
-              user_metadata: { nome: admin.nome }
-            }
-          );
-          if (error) {
-            console.error(`Erro ao atualizar super admin ${admin.email} no Supabase:`, error.message);
-          } else {
-            supabaseUser = data.user;
-            console.log(`Super admin ${admin.email} atualizado com sucesso no Supabase.`);
+        // 1. Always attempt to create in Supabase Auth first
+        const { data, error } = await supabaseAdmin.auth.admin.createUser({
+          id: admin.id || undefined,
+          email: admin.email,
+          password: admin.password,
+          email_confirm: true,
+          user_metadata: {
+            nome: admin.nome,
           }
+        });
 
-          // Update password hash in public.users database
-          await this.prisma.user.update({
-            where: { id: dbUser.id },
-            data: {
-              senha: await bcrypt.hash(admin.password, 10),
-              nome: admin.nome,
-            }
-          });
-        } else {
-          // Create user in Supabase Auth
-          const { data, error } = await supabaseAdmin.auth.admin.createUser({
-            id: admin.id || undefined,
-            email: admin.email,
-            password: admin.password,
-            email_confirm: true,
-            user_metadata: {
-              nome: admin.nome,
-            }
-          });
+        let supabaseUser = data?.user;
 
-          if (error) {
+        if (error) {
+          if (error.message.includes('already exists') || (error as any).status === 422) {
+            console.log(`Super admin ${admin.email} já existe no Supabase Auth. Sincronizando senha...`);
+            
+            // List users to retrieve their Supabase ID
+            const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+              page: 1,
+              perPage: 100
+            });
+            
+            const existingUser = (listData?.users as any[])?.find(u => u.email === admin.email);
+            if (existingUser) {
+              const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+                existingUser.id,
+                {
+                  password: admin.password,
+                  user_metadata: { nome: admin.nome }
+                }
+              );
+              if (updateError) {
+                console.error(`Erro ao atualizar super admin ${admin.email} no Supabase:`, updateError.message);
+              } else {
+                supabaseUser = updateData.user;
+                console.log(`Super admin ${admin.email} atualizado com sucesso no Supabase.`);
+              }
+            }
+          } else {
             console.error(`Erro ao criar super admin ${admin.email} no Supabase Auth:`, error.message);
-          } else {
-            supabaseUser = data.user;
-            console.log(`Super admin ${admin.email} criado com sucesso no Supabase Auth.`);
           }
+        } else {
+          console.log(`Super admin ${admin.email} criado com sucesso no Supabase Auth.`);
+        }
 
-          if (supabaseUser) {
+        // 2. Sincronizar com o banco de dados público local
+        if (supabaseUser) {
+          if (dbUser) {
+            if (dbUser.id !== supabaseUser.id) {
+              console.log(`Sincronizando ID do super admin no banco local para ${supabaseUser.id}`);
+              await this.prisma.user.delete({ where: { id: dbUser.id } });
+              await this.prisma.user.create({
+                data: {
+                  id: supabaseUser.id,
+                  nome: admin.nome,
+                  email: admin.email,
+                  senha: await bcrypt.hash(admin.password, 10),
+                  role: 'SUPER_ADMIN',
+                  roles: ['SUPER_ADMIN'],
+                  tenantId: null,
+                }
+              });
+            } else {
+              await this.prisma.user.update({
+                where: { id: dbUser.id },
+                data: {
+                  senha: await bcrypt.hash(admin.password, 10),
+                  nome: admin.nome,
+                }
+              });
+            }
+          } else {
             await this.prisma.user.create({
               data: {
                 id: supabaseUser.id,
