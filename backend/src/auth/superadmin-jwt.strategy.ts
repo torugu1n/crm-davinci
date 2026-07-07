@@ -1,6 +1,7 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PrismaService } from '../prisma.service';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const jwtSecret = process.env.JWT_SECRET;
@@ -14,7 +15,7 @@ const secretKey = jwtSecret || defaultSecret;
 
 @Injectable()
 export class SuperAdminJwtStrategy extends PassportStrategy(Strategy, 'superadmin-jwt') {
-  constructor() {
+  constructor(private prisma: PrismaService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -23,15 +24,20 @@ export class SuperAdminJwtStrategy extends PassportStrategy(Strategy, 'superadmi
   }
 
   async validate(payload: any) {
-    if (payload.role !== 'SUPER_ADMIN') {
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+
+    if (!user || !user.isActive || user.role !== 'SUPER_ADMIN') {
       throw new UnauthorizedException('Acesso restrito a super administradores');
     }
+
     return {
-      id: payload.sub,
-      email: payload.email,
-      role: payload.role,
-      roles: payload.roles || [payload.role],
-      isActive: payload.isActive !== false,
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      roles: user.roles || [user.role],
+      isActive: user.isActive,
       tenantId: null,
     };
   }
